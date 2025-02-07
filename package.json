@@ -1,8 +1,18 @@
 {
   "name": "@anikitenko/fdo-sdk",
-  "repository": "https://github.com/anikitenko/fdo-sdk.git",
-  "version": "1.0.2",
-  "description": "SDK for FlexDevOPs (FDO) application",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anikitenko/fdo-sdk.git"
+  },
+  "version": "1.0.3",
+  "description": "SDK for FlexDevOPs (FDO) application modules",
+  "keywords": ["fdo", "flex", "devops", "flexdevops", "sdk", "fdo-sdk"],
+  "author": "anikitenko",
+  "license": "ISC",
+  "homepage": "https://fdo-sdk.alexvwan.me",
+  "bugs": {
+    "url": "https://github.com/anikitenko/fdo-sdk/issues"
+  },
   "main": "dist/fdo-sdk.bundle.js",
   "types": "dist/index.d.ts",
   "files": [
