@@ -1,13 +1,13 @@
 const path = require('path');
-const webpack = require('webpack');
 
 module.exports = {
     entry: './src/index.ts',  // Entry point of your SDK
     output: {
         filename: 'fdo-sdk.bundle.js',  // The name of the bundled SDK file
         path: path.resolve(__dirname, 'dist'),
-        library: 'FDO-SDK',           // Name of the global variable if you want to expose it globally
-        libraryTarget: 'umd',       // Works in both Node and browser environments
+        library: {
+            type: 'module',
+        },
         clean: true,                // Clean the dist folder before each build
     },
     resolve: {
