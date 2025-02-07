@@ -1,6 +1,8 @@
 {
   "name": "@anikitenko/fdo-sdk",
   "repository": "https://github.com/anikitenko/fdo-sdk.git",
+  "version": "1.0.0",
+  "description": "SDK for FlexDevOPs (FDO) application",
   "scripts": {
     "build": "webpack",
     "test": "jest"
