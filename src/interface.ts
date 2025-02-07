@@ -1,7 +1,9 @@
-import FDO_SDK from "./index";
+import {FDO_SDK} from "./index";
 import { IconNames } from "@blueprintjs/icons";
 
-export type AllowedIcons = keyof typeof IconNames
+export const LocalIconNames = IconNames;
+
+export type AllowedIcons = keyof typeof LocalIconNames
 
 export interface FDOInterface {
     init(sdk: FDO_SDK): void;

@@ -1,4 +1,6 @@
-export default class FDO_SDK {
+export * from './interface';
+
+export class FDO_SDK {
     public API_VERSION: string = "1.0.0";
     private _sdkPrivateData: Record<string, any> = {};  // Private data storage
 

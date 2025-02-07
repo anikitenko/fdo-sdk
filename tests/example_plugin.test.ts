@@ -1,6 +1,5 @@
-import MyPlugin from '../src/example_plugin';
-import FDO_SDK from '../src/index';
-import {FDOInterface, PluginMetadata} from "../src/interface";
+import MyPlugin from '../examples/example_plugin';
+import {FDO_SDK, FDOInterface, PluginMetadata} from '../src';
 
 describe('MyPlugin Tests', () => {
     let plugin: MyPlugin;

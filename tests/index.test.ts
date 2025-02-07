@@ -1,4 +1,4 @@
-import FDO_SDK from '../src';  // Adjust the import based on your file structure
+import {FDO_SDK} from '../src';  // Adjust the import based on your file structure
 
 describe('FDO_SDK Tests', () => {
     let api_version: string = "1.0.0";
