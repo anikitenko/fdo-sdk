@@ -1,9 +1,16 @@
 export default class FDO_SDK {
-    public api: string = "1.0";
+    public API_VERSION: string = "1.0.0";
     private _sdkPrivateData: Record<string, any> = {};  // Private data storage
 
     constructor() {
-        console.log("MiniSDK initialized.");
+        console.log("FDO_SDK initialized!");
+    }
+
+    public generatePluginName(name: string): string {
+        return name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
     }
 
     // 1. Must-Inherited Methods (abstract-like methods)

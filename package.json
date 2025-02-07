@@ -16,5 +16,8 @@
     "webpack": "^5.97.1",
     "webpack-cli": "^6.0.1",
     "webpack-node-externals": "^3.0.0"
+  },
+  "dependencies": {
+    "@blueprintjs/icons": "^5.17.1"
   }
 }

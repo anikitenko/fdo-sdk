@@ -1,6 +1,7 @@
 import FDO_SDK from '../src';  // Adjust the import based on your file structure
 
 describe('FDO_SDK Tests', () => {
+    let api_version: string = "1.0.0";
     let sdk: FDO_SDK;
 
     beforeEach(() => {
@@ -8,16 +9,23 @@ describe('FDO_SDK Tests', () => {
     });
 
     it('should initialize correctly', () => {
-        expect(sdk.api).toBe('1.0');
+        expect(sdk.API_VERSION).toBe(api_version);
         // You could also mock console.log to ensure "MiniSDK initialized." is logged
     });
 
+    it('should generate correct name', () => {
+        expect(sdk.generatePluginName("this is-a-random test")).toBe('this-is-a-random-test');
+        expect(sdk.generatePluginName("this+ is-a-random test")).toBe('this-is-a-random-test');
+        expect(sdk.generatePluginName("this - 34t 534is-a-random test")).toBe('this-34t-534is-a-random-test');
+        expect(sdk.generatePluginName("this 5/415/2345/324is-a-random test")).toBe('this-5-415-2345-324is-a-random-test');
+    })
+
     it('should throw error for unimplemented init method', () => {
-        expect(() => sdk.init(sdk)).toThrowError("Method 'init' must be implemented by plugin.");
+        expect(() => sdk.init(sdk)).toThrow("Method 'init' must be implemented by plugin.");
     });
 
     it('should throw error for unimplemented render method', () => {
-        expect(() => sdk.render()).toThrowError("Method 'render' must be implemented by plugin.");
+        expect(() => sdk.render()).toThrow("Method 'render' must be implemented by plugin.");
     });
 
     it('should log messages correctly', () => {
