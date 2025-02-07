@@ -9,15 +9,15 @@ describe('FDO_SDK Tests', () => {
     });
 
     it('should initialize correctly', () => {
-        expect(sdk.API_VERSION).toBe(api_version);
+        expect(FDO_SDK.API_VERSION).toBe(api_version);
         // You could also mock console.log to ensure "MiniSDK initialized." is logged
     });
 
     it('should generate correct name', () => {
-        expect(sdk.generatePluginName("this is-a-random test")).toBe('this-is-a-random-test');
-        expect(sdk.generatePluginName("this+ is-a-random test")).toBe('this-is-a-random-test');
-        expect(sdk.generatePluginName("this - 34t 534is-a-random test")).toBe('this-34t-534is-a-random-test');
-        expect(sdk.generatePluginName("this 5/415/2345/324is-a-random test")).toBe('this-5-415-2345-324is-a-random-test');
+        expect(FDO_SDK.generatePluginName("this is-a-random test")).toBe('this-is-a-random-test');
+        expect(FDO_SDK.generatePluginName("this+ is-a-random test")).toBe('this-is-a-random-test');
+        expect(FDO_SDK.generatePluginName("this - 34t 534is-a-random test")).toBe('this-34t-534is-a-random-test');
+        expect(FDO_SDK.generatePluginName("this 5/415/2345/324is-a-random test")).toBe('this-5-415-2345-324is-a-random-test');
     })
 
     it('should throw error for unimplemented init method', () => {
