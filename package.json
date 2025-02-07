@@ -1,7 +1,7 @@
 {
   "name": "@anikitenko/fdo-sdk",
   "repository": "https://github.com/anikitenko/fdo-sdk.git",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SDK for FlexDevOPs (FDO) application",
   "main": "dist/fdo-sdk.bundle.js",
   "types": "dist/index.d.ts",

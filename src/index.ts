@@ -1,4 +1,5 @@
 export * from './interface';
+export * from './example';
 
 export class FDO_SDK {
     public API_VERSION: string = "1.0.0";
