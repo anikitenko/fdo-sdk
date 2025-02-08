@@ -1,30 +1,25 @@
-export const EXAMPLE: string = `import {FDO_SDK, FDOInterface, PluginMetadata} from '@anikitenko/fdo-sdk';
-
-class MyPlugin extends FDO_SDK implements FDOInterface {
-    private readonly _metadata: PluginMetadata = {
-        name: "MyPlugin",
-        version: "1.0.0",
-        author: "John Doe",
-        description: "A sample plugin for FDO",
-        icon: "COG",
-    };
-
-    constructor() {
-        super();
-    }
-
-    public get metadata(): PluginMetadata {
-        return this._metadata;
-    }
-
-    public init(sdk: FDO_SDK): void {
-        sdk.log("MyPlugin initialized!");
-    }
-
-    public render(): string {
-        return "Rendered MyPlugin content!";
-    }
-}
-
-export default MyPlugin;
+export const EXAMPLE: string = `var MyPlugin = class {
+  _metadata = {
+    name: "MyPlugin",
+    version: "1.0.0",
+    author: "John Doe",
+    description: "A sample plugin for FDO",
+    icon: "COG"
+  };
+  constructor() {
+  }
+  get metadata() {
+    return this._metadata;
+  }
+  init(sdk) {
+    sdk.log("MyPlugin initialized!");
+  }
+  render() {
+    return "Rendered MyPlugin content!";
+  }
+};
+var example_plugin_default = MyPlugin;
+export {
+  example_plugin_default as default
+};
 `
