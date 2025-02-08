@@ -7,7 +7,7 @@ export class FDO_SDK {
         return name
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '');
+            .replace(/(^-+)|(-+$)/g, '');
     }
     private _sdkPrivateData: Record<string, any> = {};  // Private data storage
 
