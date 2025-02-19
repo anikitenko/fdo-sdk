@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/anikitenko/fdo-sdk.git"
   },
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "SDK for FlexDevOPs (FDO) application modules",
   "keywords": [
     "fdo",
@@ -16,7 +16,7 @@
   ],
   "author": "anikitenko",
   "license": "ISC",
-  "homepage": "https://fdo-sdk.alexvwan.me",
+  "homepage": "https://plugins.fdo.alexvwan.me",
   "bugs": {
     "url": "https://github.com/anikitenko/fdo-sdk/issues"
   },
