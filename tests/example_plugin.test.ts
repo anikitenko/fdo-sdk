@@ -10,6 +10,14 @@ describe('MyPlugin Tests', () => {
         plugin = new MyPlugin(); // Creating an instance of the plugin
     });
 
+    it('should create an instance of MyPlugin', () => {
+        expect(plugin).toBeInstanceOf(MyPlugin);
+    });
+
+    it('should have TYPE_TAG', () => {
+        expect(plugin.TYPE_TAG).toBe(sdk.TYPE_TAG);
+    });
+
     it('should implement init method and log initialization', () => {
         // Mocking console.log to check for logs
         console.log = jest.fn();

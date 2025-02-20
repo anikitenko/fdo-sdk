@@ -2,6 +2,8 @@ export * from './interface';
 
 export class FDO_SDK {
     public static readonly API_VERSION: string = "1.0.0";
+    static readonly TYPE_TAG = Symbol("FDO_SDK");
+    readonly TYPE_TAG = FDO_SDK.TYPE_TAG;
     public static generatePluginName(name: string): string {
         return name
             .toLowerCase()
