@@ -1,17 +1,26 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
+    "target": "es2020",
+    "module": "ES2015",
     "outDir": "./dist",
+    "baseUrl": "./src",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
     "moduleResolution": "node",
+    "jsxFragmentFactory": "React.Fragment",
+    "jsxFactory": "React.createElement",
+    "allowSyntheticDefaultImports": true,
+    "strictNullChecks": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
     "declaration": true,
-    "declarationDir": "dist",
-    "emitDeclarationOnly": false,
-    "noEmit": false,
-    "noEmitOnError": false
+    "types": [
+      "node"
+    ]
   },
   "include": ["src"]
 }
