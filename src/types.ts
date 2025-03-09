@@ -12,3 +12,7 @@ export type QuickAction = {
     name: string;
     message_type: string;
 };
+
+export type AddQuickAction = {
+
+}

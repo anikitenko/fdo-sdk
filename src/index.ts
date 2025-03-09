@@ -17,7 +17,7 @@ export class FDO_SDK {
     constructor() {
         PluginRegistry.registerPlugin(this)
         process.parentPort.on('message', (e) => {
-            this._logger.log('Received from main process:', e.data)
+            this._logger.info('Received from main process:', e.data)
             this.communicator.processMessage(e)
         })
         this._logger.log("FDO_SDK initialized!")

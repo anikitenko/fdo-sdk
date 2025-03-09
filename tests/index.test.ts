@@ -6,6 +6,7 @@ import { Logger } from "../src";
 describe("FDO_SDK", () => {
     let sdk: FDO_SDK;
     let mockLogger: jest.SpyInstance;
+    let mockLoggerInfo: jest.SpyInstance;
     let mockCommunicator: jest.SpyInstance;
 
     beforeEach(() => {
@@ -17,6 +18,7 @@ describe("FDO_SDK", () => {
 
         // Mock Logger methods
         mockLogger = jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+        mockLoggerInfo = jest.spyOn(Logger.prototype, "info").mockImplementation(() => {});
         jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
 
         // Mock PluginRegistry
@@ -56,7 +58,8 @@ describe("FDO_SDK", () => {
         messageCallback(mockMessage);
 
         // Expect logger to log the message
-        expect(mockLogger).toHaveBeenCalledWith("Received from main process:", mockMessage.data);
+        expect(mockLoggerInfo).toHaveBeenCalledWith("Received from main process:", mockMessage.data);
+        expect(mockLogger).toHaveBeenCalledWith("FDO_SDK initialized!");
 
         // Expect communicator to process the message
         expect(mockCommunicator).toHaveBeenCalledWith(mockMessage);
