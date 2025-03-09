@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "@blueprintjs/icons": "^5.17.1",
+    "@types/react": "^18.3.18",
     "electron": "^35.0.0",
     "node-polyfill-webpack-plugin": "^4.1.0",
     "tsconfig-paths-webpack-plugin": "^4.2.0",

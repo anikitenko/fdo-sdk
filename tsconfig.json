@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "module": "ES2015",
+    "target": "es6",
+    "module": "es6",
     "outDir": "./dist",
-    "baseUrl": "./src",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,9 +17,9 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "types": [
-      "node"
-    ]
+    "declarationDir": "dist",
+    "noEmit": false,
+    "noEmitOnError": false
   },
   "include": ["src"]
 }

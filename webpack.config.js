@@ -22,7 +22,7 @@ export default {
     externals: {
         fs: 'fs',
         electron: 'electron',
-        crypto: 'crypto'
+        crypto: 'crypto',
     },
     optimization: {
         minimize: false,
