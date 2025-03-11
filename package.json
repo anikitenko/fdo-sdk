@@ -21,31 +21,28 @@
     "url": "https://github.com/anikitenko/fdo-sdk/issues"
   },
   "main": "dist/fdo-sdk.bundle.js",
-  "types": "dist/index.d.ts",
   "type": "module",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "webpack",
+    "build": "webpack --config webpack.config.cjs",
+    "build:types": "tsc --emitDeclarationOnly",
     "test": "jest"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
-    "esbuild": "^0.25.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.2",
     "typescript": "^5.7.3",
+    "webpack": "^5.98.0",
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "@blueprintjs/icons": "^5.17.1",
-    "@types/react": "^18.3.18",
     "electron": "^35.0.0",
-    "node-polyfill-webpack-plugin": "^4.1.0",
-    "tsconfig-paths-webpack-plugin": "^4.2.0",
-    "webpack": "^5.98.0",
+    "@emotion/css": "^11.13.5",
+    "lighterhtml": "^4.2.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   }

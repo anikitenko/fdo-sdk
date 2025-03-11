@@ -68,3 +68,5 @@ export class Logger {
         this.logger.silly(message, ...meta)
     }
 }
+
+export default Logger

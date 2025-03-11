@@ -1,4 +1,4 @@
-import { FDO_SDK } from "./index";
+import {FDO_SDK} from "./index";
 import { QuickAction, SidePanelConfig } from "./types";
 
 export class PluginRegistry {
@@ -34,3 +34,5 @@ export class PluginRegistry {
         this.pluginInstance = null;
     }
 }
+
+export default PluginRegistry;

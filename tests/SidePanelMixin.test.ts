@@ -1,5 +1,6 @@
 import { SidePanelMixin } from "../src/SidePanelMixin";
-import { FDO_SDK, SidePanelConfig } from "../src";
+import {SidePanelConfig} from "../src/types";
+import {FDO_SDK} from "../src";
 
 class TestSidePanelPlugin extends SidePanelMixin(FDO_SDK) {
     defineSidePanel(): SidePanelConfig {

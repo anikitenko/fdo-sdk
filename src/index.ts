@@ -3,10 +3,8 @@ import "electron";
 import {Communicator} from "./Communicator";
 import {PluginRegistry} from "./PluginRegistry";
 
-export * from "./interface";
-export * from "./types"
-export * from "./enums"
-export * from "./Logger"
+export * from "./FDOInterface";
+export * from "./PluginMetadata";
 
 export class FDO_SDK {
     public static readonly API_VERSION: string = "1.0.0"
@@ -29,7 +27,7 @@ export class FDO_SDK {
         throw error
     }
 
-    public render() {
+    public render(): string {
         const error = new Error("Method 'render' must be implemented by plugin.")
         this._logger.error(error)
         throw error
@@ -43,4 +41,3 @@ export class FDO_SDK {
         this._logger.error(error)
     }
 }
-

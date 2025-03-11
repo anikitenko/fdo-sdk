@@ -1,7 +1,8 @@
 import { PluginRegistry } from "../src/PluginRegistry";
 import { QuickActionMixin } from "../src/QuickActionMixin";
 import { SidePanelMixin } from "../src/SidePanelMixin";
-import { FDO_SDK, QuickAction, SidePanelConfig } from "../src";
+import {QuickAction, SidePanelConfig} from "../src/types";
+import { FDO_SDK } from "../src";
 
 // Mock process.parentPort to prevent errors in tests
 beforeEach(() => {
@@ -20,7 +21,7 @@ describe("PluginRegistry", () => {
     test("should return empty quick actions and side panel when no mixins are used", () => {
         class NoMixinPlugin extends FDO_SDK {
             init() {}
-            render() {}
+            render(): any {}
         }
         PluginRegistry.registerPlugin(new NoMixinPlugin());
 
@@ -34,7 +35,7 @@ describe("PluginRegistry", () => {
                 return { icon: "settings", label: "Settings Panel", submenu_list: [] };
             }
             init() {}
-            render() {}
+            render(): any {}
         }
         PluginRegistry.registerPlugin(new SidePanelPlugin());
 
@@ -52,7 +53,7 @@ describe("PluginRegistry", () => {
                 return [{ name: "Run Task", message_type: "RUN_TASK" }];
             }
             init() {}
-            render() {}
+            render(): any {}
         }
         PluginRegistry.registerPlugin(new QuickActionPlugin());
 
@@ -71,7 +72,7 @@ describe("PluginRegistry", () => {
                 return { icon: "test-icon", label: "Test Panel", submenu_list: [] };
             }
             init() {}
-            render() {}
+            render(): any {}
         }
         PluginRegistry.registerPlugin(new FullFeaturePlugin());
 
@@ -88,7 +89,7 @@ describe("PluginRegistry", () => {
     test("should call init() on the registered plugin", () => {
         class TestPlugin extends QuickActionMixin(SidePanelMixin(FDO_SDK)) {
             init() {}
-            render() {}
+            render():any {}
         }
 
         const plugin = new TestPlugin();
@@ -103,7 +104,7 @@ describe("PluginRegistry", () => {
     test("should call render() on the registered plugin", () => {
         class TestPlugin extends QuickActionMixin(SidePanelMixin(FDO_SDK)) {
             init() {}
-            render() {}
+            render():any {}
         }
 
         const plugin = new TestPlugin();

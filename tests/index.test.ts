@@ -1,7 +1,7 @@
-import { FDO_SDK } from "../src";
+import {FDO_SDK} from "../src";
 import { PluginRegistry } from "../src/PluginRegistry";
 import { Communicator } from "../src/Communicator";
-import { Logger } from "../src";
+import { Logger } from "../src/Logger";
 
 describe("FDO_SDK", () => {
     let sdk: FDO_SDK;

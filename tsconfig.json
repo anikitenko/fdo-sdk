@@ -1,25 +1,18 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "module": "es6",
-    "outDir": "./dist",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "strict": true,
-    "moduleResolution": "node",
-    "jsxFragmentFactory": "React.Fragment",
-    "jsxFactory": "React.createElement",
-    "allowSyntheticDefaultImports": true,
-    "strictNullChecks": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
-    "allowJs": true,
-    "resolveJsonModule": true,
+    "outDir": "dist",
+    "sourceMap": true,
     "declaration": true,
-    "declarationDir": "dist",
-    "noEmit": false,
-    "noEmitOnError": false
+    "declarationMap": true
   },
-  "include": ["src"]
+  "include": [
+    "src/**/*"
+  ]
 }

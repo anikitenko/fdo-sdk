@@ -1,6 +1,6 @@
 import { Communicator } from "../src/Communicator";
 import { PluginRegistry } from "../src/PluginRegistry";
-import { MESSAGE_TYPE } from "../src";
+import { MESSAGE_TYPE } from "../src/enums";
 import {Logger} from "winston";
 
 describe("Communicator", () => {

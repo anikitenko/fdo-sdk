@@ -7,3 +7,5 @@ export function SidePanelMixin<T extends new (...args: any[]) => {}>(Base: T) {
         }
     };
 }
+
+export default SidePanelMixin

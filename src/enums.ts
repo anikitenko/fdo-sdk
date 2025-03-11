@@ -3,3 +3,5 @@ export enum MESSAGE_TYPE  {
     PLUGIN_INIT = 'PLUGIN_INIT',
     PLUGIN_RENDER = 'PLUGIN_RENDER',
 }
+
+export default MESSAGE_TYPE
