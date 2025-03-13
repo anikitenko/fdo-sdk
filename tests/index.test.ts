@@ -27,6 +27,12 @@ describe("FDO_SDK", () => {
         // Mock Communicator
         mockCommunicator = jest.spyOn(Communicator.prototype, "processMessage").mockImplementation(() => {});
 
+        jest.mock("electron", () => ({
+            shell: {
+                openExternal: jest.fn(),
+            },
+        }));
+
         sdk = new FDO_SDK();
     });
 

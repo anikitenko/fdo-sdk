@@ -5,13 +5,14 @@ export class DOMNested extends DOM {
         children: any[],
         options?: Partial<typeof DOM.DEFAULT_OPTIONS>
     ) {
-        const { blueprintClasses, style } = this.mergeOptions(options);
+        const { blueprintClasses, style, id } = this.mergeOptions(options);
 
         const defaultBlueprintClass = "";
         const blueprintClassString = blueprintClasses.join(" ");
         const generatedStyle = style ? this.createStyle(style) : undefined;
         const className = [defaultBlueprintClass, blueprintClassString, generatedStyle].filter(Boolean).join(" ");
-        return this.createElement("div", {class: className}, ...children);
+        const elementID = id !== "" ? id : (Math.random() + 1).toString(36).substring(2);
+        return this.createElement("div", {id: elementID, className: className}, ...children);
     }
 
     public createNestedList(
@@ -19,12 +20,13 @@ export class DOMNested extends DOM {
         unstyled?: boolean,
         options?: Partial<typeof DOM.DEFAULT_OPTIONS>
     ) {
-        const { blueprintClasses, style } = this.mergeOptions(options);
+        const { blueprintClasses, style, id } = this.mergeOptions(options);
 
         const defaultBlueprintClass = unstyled ? "bp5-list-unstyled" : "bp5-list";
         const blueprintClassString = blueprintClasses.join(" ");
         const generatedStyle = style ? this.createStyle(style) : undefined;
         const className = [defaultBlueprintClass, blueprintClassString, generatedStyle].filter(Boolean).join(" ");
-        return this.createElement("ul", {class: className}, ...children);
+        const elementID = id !== "" ? id : (Math.random() + 1).toString(36).substring(2);
+        return this.createElement("ul", {id, elementID, className: className}, ...children);
     }
 }

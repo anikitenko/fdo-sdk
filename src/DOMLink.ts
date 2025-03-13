@@ -10,13 +10,19 @@ export class DOMLink extends DOM {
     }
 
     public createLink(label: string, href: string) {
-        const { blueprintClasses, style, disableDefaultClass } = this.mergeOptions(this.options);
+        const { blueprintClasses, style, id } = this.mergeOptions(this.options);
 
-        const defaultBlueprintClass = disableDefaultClass ? "" : "bp5-button";
         const blueprintClassString = blueprintClasses.join(" ");
         const generatedStyle = style ? this.createStyle(style) : undefined;
-        const className = [defaultBlueprintClass, blueprintClassString, generatedStyle].filter(Boolean).join(" ");
+        const className = [blueprintClassString, generatedStyle].filter(Boolean).join(" ");
+        const elementID = id !== "" ? id : (Math.random() + 1).toString(36).substring(2);
 
-        return this.createElement("a", { class: className, href: href, ...this.props }, label);
+        return this.createElement("a",
+            {
+                id:  elementID,
+                className: className,
+                href: href,
+                ...this.props
+            }, label);
     }
 }

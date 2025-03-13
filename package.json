@@ -40,9 +40,16 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "electron": "^35.0.0",
     "@emotion/css": "^11.13.5",
-    "lighterhtml": "^4.2.0",
+    "@emotion/server": "^11.11.0",
+    "@emotion/styled": "^11.14.0",
+    "electron": "^35.0.0",
+    "goober": "^2.1.16",
+    "linaria": "^6.2.0",
+    "linkedom": "^0.18.9",
+    "styled-components": "^6.1.15",
+    "uhtml": "^4.7.0",
+    "uhtml-ssr": "^0.9.1",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   }

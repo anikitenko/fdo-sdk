@@ -12,10 +12,16 @@ module.exports = {
             name: 'fdoSDK',
             type: 'umd',
         },
+        publicPath: '',
         globalObject: 'typeof self !== "undefined" ? self : this'
     },
+    optimization: {
+        minimize: false,
+        usedExports: false,
+        concatenateModules: false,
+    },
     resolve: {
-        extensions: ['.ts', '.js', '.json']
+        extensions: ['.ts', '.js', '.json'],
     },
     module: {
         rules: [

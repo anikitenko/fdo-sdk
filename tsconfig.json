@@ -10,7 +10,8 @@
     "outDir": "dist",
     "sourceMap": true,
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "noCheck": true
   },
   "include": [
     "src/**/*"

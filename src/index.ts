@@ -5,6 +5,12 @@ import {PluginRegistry} from "./PluginRegistry";
 
 export * from "./FDOInterface";
 export * from "./PluginMetadata";
+export * from "./DOM"
+export * from "./DOMButton"
+export * from "./DOMInput"
+export * from "./DOMLink"
+export * from "./DOMNested"
+export * from "./DOMText"
 
 export class FDO_SDK {
     public static readonly API_VERSION: string = "1.0.0"
@@ -18,6 +24,13 @@ export class FDO_SDK {
             this._logger.info('Received from main process:', e.data)
             this.communicator.processMessage(e)
         })
+        if (this.render) {
+            const originalRender = this.render.bind(this);
+            this.render = () => {
+                const result = originalRender();
+                return JSON.stringify(result);
+            };
+        }
         this._logger.log("FDO_SDK initialized!")
     }
 
