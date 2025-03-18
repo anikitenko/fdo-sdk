@@ -1,97 +1,103 @@
 import { Communicator } from "../src/Communicator";
 import { PluginRegistry } from "../src/PluginRegistry";
 import { MESSAGE_TYPE } from "../src/enums";
-import {Logger} from "winston";
+
+// Mock process.parentPort
+const mockPostMessage = jest.fn();
+const mockOnMessage = jest.fn();
+global.process.parentPort = {
+    postMessage: mockPostMessage,
+    on: mockOnMessage,
+} as any;
+
+jest.mock("../src/Logger", () => ({
+    Logger: jest.fn().mockImplementation(() => ({
+        log: jest.fn(),
+    })),
+}));
+
+jest.mock("../src/PluginRegistry", () => ({
+    PluginRegistry: {
+        callInit: jest.fn(),
+        callRenderer: jest.fn().mockReturnValue("mock_rendered_output"),
+        callHandler: jest.fn().mockReturnValue("mock_handler_output"),
+        getQuickActions: jest.fn().mockReturnValue(["action1", "action2"]),
+        getSidePanelConfig: jest.fn().mockReturnValue(["panel1", "panel2"]),
+    },
+}));
 
 describe("Communicator", () => {
     let communicator: Communicator;
-    let mockPostMessage: jest.Mock;
 
     beforeEach(() => {
-        communicator = new Communicator();
-        jest.useFakeTimers(); // Control timers
-
-        // Mock process.parentPort
-        mockPostMessage = jest.fn();
-        (global as any).process.parentPort = {
-            postMessage: mockPostMessage,
-        };
-
-        // Mock PluginRegistry methods
-        jest.spyOn(PluginRegistry, "callInit").mockImplementation(() => {}); // Ensure it doesn't hang
-        jest.spyOn(PluginRegistry, "getQuickActions").mockReturnValue([{ name: "Test Action", message_type: "TEST_ACTION" }]);
-        jest.spyOn(PluginRegistry, "getSidePanelConfig").mockReturnValue({ icon: "test-icon", label: "Test Panel", submenu_list: [] });
-    });
-
-    afterEach(() => {
-        jest.useRealTimers();
         jest.clearAllMocks();
-        delete (global as any).process.parentPort;
+        communicator = new Communicator();
     });
 
-    test("should process PLUGIN_READY message", async () => {
-        const mockMessage = { data: { message: MESSAGE_TYPE.PLUGIN_READY } };
-
-        communicator.processMessage(mockMessage as any);
-
-        // Move time forward to ensure async tasks complete
-        jest.advanceTimersByTime(100);
-
-        expect(mockPostMessage).toHaveBeenCalledWith({
-            type: MESSAGE_TYPE.PLUGIN_READY,
-            response: true,
-        });
+    test("should initialize and call init()", () => {
+        expect(mockOnMessage).toHaveBeenCalledTimes(1);
     });
 
-    test("should process PLUGIN_INIT message", async () => {
-        const mockMessage = { data: { message: MESSAGE_TYPE.PLUGIN_INIT } };
+    test("should send a message correctly", () => {
+        (communicator as any).sendMessage({ test: "message" });
+        expect(mockPostMessage).toHaveBeenCalledWith({ test: "message" });
+    });
 
-        communicator.processMessage(mockMessage as any);
+    test("should listen to messages from main process and emit event", () => {
+        const mockEmit = jest.spyOn(communicator, "emit"); // Spy on emit
 
-        // Move time forward to ensure async tasks complete
-        jest.advanceTimersByTime(100);
+        const mockMessage = { data: { message: MESSAGE_TYPE.PLUGIN_READY, content: "test" } };
 
+        // Simulate message event
+        const callback = mockOnMessage.mock.calls[0][1];
+        callback(mockMessage);
+
+        // Ensure logger logs the message
+        expect((communicator as any)._logger.log).toHaveBeenCalledWith("Received from main process: PLUGIN_READY");
+
+        // Ensure emit was called with expected values
+        expect(mockEmit).toHaveBeenCalledWith(MESSAGE_TYPE.PLUGIN_READY, "test");
+
+        mockEmit.mockRestore(); // Cleanup after test
+    });
+
+    test("should handle PLUGIN_READY event", () => {
+        communicator.emit(MESSAGE_TYPE.PLUGIN_READY);
+        expect(mockPostMessage).toHaveBeenCalledWith({ type: MESSAGE_TYPE.PLUGIN_READY, response: true });
+    });
+
+    test("should handle PLUGIN_INIT event", () => {
+        communicator.emit(MESSAGE_TYPE.PLUGIN_INIT);
         expect(PluginRegistry.callInit).toHaveBeenCalled();
         expect(mockPostMessage).toHaveBeenCalledWith({
             type: MESSAGE_TYPE.PLUGIN_INIT,
-            response: {
-                quickActions: [{ name: "Test Action", message_type: "TEST_ACTION" }],
-                sidePanelActions: { icon: "test-icon", label: "Test Panel", submenu_list: [] },
-            },
+            response: { quickActions: ["action1", "action2"], sidePanelActions: ["panel1", "panel2"] },
         });
     });
 
-    test("should process PLUGIN_RENDER message", async () => {
-        const mockMessage = { data: { message: MESSAGE_TYPE.PLUGIN_RENDER } };
-        const renderSpy = jest.spyOn(PluginRegistry, "callRenderer").mockImplementation(() => "Rendered Output");
+    test("should handle PLUGIN_RENDER event", () => {
+        communicator.emit(MESSAGE_TYPE.PLUGIN_RENDER);
+        expect(PluginRegistry.callRenderer).toHaveBeenCalled();
+        expect(mockPostMessage).toHaveBeenCalledWith({ type: MESSAGE_TYPE.PLUGIN_RENDER, response: "mock_rendered_output" });
+    });
 
-        communicator.processMessage(mockMessage as any);
+    test("should handle UI_MESSAGE event", () => {
+        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, { handler: "customHandler", content: "test_data" });
 
-        // Move time forward to ensure async tasks complete
-        jest.advanceTimersByTime(100);
-
-        expect(renderSpy).toHaveBeenCalled();
+        expect(PluginRegistry.callHandler).toHaveBeenCalledWith("customHandler", "test_data");
         expect(mockPostMessage).toHaveBeenCalledWith({
-            type: MESSAGE_TYPE.PLUGIN_RENDER,
-            response: "Rendered Output",
+            type: MESSAGE_TYPE.UI_MESSAGE,
+            response: "mock_handler_output",
         });
     });
 
-    test("should not process invalid message", async () => {
-        const mockLogger = jest.spyOn(Logger.prototype, "log").mockImplementation((level: string, message: any) => {
-            console.log(`[MockLogger] ${level}: ${message}`); // Debugging output
-            return undefined as any; // Explicitly return something to satisfy TypeScript
+    test("should handle UI_MESSAGE event with default handler", () => {
+        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, { content: "test_data" });
+
+        expect(PluginRegistry.callHandler).toHaveBeenCalledWith("defaultHandler", "test_data");
+        expect(mockPostMessage).toHaveBeenCalledWith({
+            type: MESSAGE_TYPE.UI_MESSAGE,
+            response: "mock_handler_output",
         });
-
-        const mockMessage = { data: { message: "test123" } };
-
-        communicator.processMessage(mockMessage as any);
-
-        // Move time forward to ensure async tasks complete
-        jest.advanceTimersByTime(100);
-
-        expect(mockLogger).toHaveBeenCalledWith("info", "Received message: test123");
-        expect(mockLogger).toHaveBeenCalledWith("info", "Received unknown message type: test123");
     });
-
 });

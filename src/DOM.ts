@@ -1,5 +1,3 @@
-// @ts-ignore
-import {html, render} from 'uhtml-ssr';
 import { css as gooberCss, extractCss, setup } from 'goober';
 
 declare global {
@@ -21,7 +19,7 @@ setup(null);
 
 export class DOM {
     // Define a private static readonly type reference for UI options
-    protected static readonly DEFAULT_OPTIONS = {
+    static readonly DEFAULT_OPTIONS = {
         blueprintClasses: [] as string[],
         style: {} as Record<string, string>,
         disableDefaultClass: false,
@@ -53,6 +51,16 @@ export class DOM {
         return gooberCss`${cssString}`;
     }
 
+    /**
+     * Renders an element to an HTML string with CSS.
+     * @param element - The html element to render.
+     * @returns {string} - The final HTML string with Goober's styles.
+     */
+    public renderHTML(element: any): string {
+        const cssText = extractCss();
+        return `<style>{\`${cssText}\`}</style>${element}`
+    }
+
     // Helper to flatten children arrays and filter out null/undefined values.
     protected flattenChildren(children: any[]): any {
         const flattened = children.flat(Infinity).filter(child => child != null);
@@ -60,16 +68,20 @@ export class DOM {
         return flattened.length === 1 ? flattened[0] : flattened;
     }
 
-    /**
-     * Renders an element to an HTML string.
-     * @param element - The uhtml element to render.
-     * @returns {string} - The final HTML string with Emotion's styles.
-     */
-    public renderHTML(element: any) {
-        // First, render the element to a string using uhtml's render method.
-        const rawHtml = render(String, element);
-        const cssText = extractCss();
-        return `<style>{\`${cssText}\`}</style>${rawHtml}`
+    // Helper to build attributes without event handlers
+    protected createAttributes(props: Record<string, any>): string {
+        return Object.entries(props)
+            .filter(([key, value]) => !(key.startsWith("on") && typeof value === "function"))
+            .map(([key, value]) => `${key}="${value}"` )
+            .join(' ').trim();
+    }
+
+    // Helper to build attributes of event handlers
+    protected createOnAttributes(props: Record<string, any>): string {
+        return Object.entries(props)
+            .filter(([key, value]) => (key.startsWith("on") && typeof value === "function"))
+            .map(([key, value]) => `${key}={${value.toString()}}`)
+            .join(' ').trim();
     }
 
     /**
@@ -79,15 +91,20 @@ export class DOM {
      * @param children - Nested elements or text content
      * @returns A virtual DOM element
      */
-    public createElement(tag: string, props: Partial<Record<string, any>> = {}, ...children: any[]): HTMLElement {
+    public createElement(tag: string, props: Partial<Record<string, any>> = {}, ...children: any[]): string {
         const content = this.flattenChildren(children);
-        const attributes = Object.entries(props)
-            .filter(([key, value]) => !(key.startsWith("on") && typeof value === "function")) // Exclude event handlers
-            .map(([key, value]) => html` ${key}=\"${value}\" `);
-        const onAttributes = Object.entries(props)
-            .filter(([key, value]) => (key.startsWith("on") && typeof value === "function")) // Exclude event handlers
-            .map(([key, value]) => html` ${key}={${value.toString()}} `);
-        return html`<${tag} ${attributes} ${onAttributes}>${content}</${tag}>`
+        const attributes = this.createAttributes(props);
+        const onAttributes = this.createOnAttributes(props);
+
+        if (attributes && !onAttributes) {
+            return `<${tag} ${attributes}>${content}</${tag}>`;
+        } else if (onAttributes && !attributes) {
+            return `<${tag} ${onAttributes}>${content}</${tag}>`;
+        } else if (attributes && onAttributes) {
+            return `<${tag} ${attributes} ${onAttributes}>${content}</${tag}>`;
+        } else {
+            return `<${tag}>${content}</${tag}>`;
+        }
     }
 }
 

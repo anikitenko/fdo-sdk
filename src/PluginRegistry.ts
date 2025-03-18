@@ -49,6 +49,18 @@ export class PluginRegistry {
     public static clearPlugin(): void {
         this.pluginInstance = null;
     }
+
+    public static clearHandler(name: string): void {
+        if (this.handlers[name]) {
+            delete this.handlers[name];
+        }
+    }
+
+    public static clearAllHandlers(): void {
+        for (const name in this.handlers) {
+            delete this.handlers[name];
+        }
+    }
 }
 
 export default PluginRegistry;

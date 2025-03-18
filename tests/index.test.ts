@@ -1,13 +1,17 @@
 import {FDO_SDK} from "../src";
 import { PluginRegistry } from "../src/PluginRegistry";
-import { Communicator } from "../src/Communicator";
 import { Logger } from "../src/Logger";
+
+class MockPlugin extends FDO_SDK {
+    public render(): string {
+        return `<style>.test{"color": "green"}</style><h1>Hello from plugin!</h1>`
+    }
+}
 
 describe("FDO_SDK", () => {
     let sdk: FDO_SDK;
     let mockLogger: jest.SpyInstance;
     let mockLoggerInfo: jest.SpyInstance;
-    let mockCommunicator: jest.SpyInstance;
 
     beforeEach(() => {
         // Mock process.parentPort to prevent errors
@@ -23,9 +27,6 @@ describe("FDO_SDK", () => {
 
         // Mock PluginRegistry
         jest.spyOn(PluginRegistry, "registerPlugin").mockImplementation(() => {});
-
-        // Mock Communicator
-        mockCommunicator = jest.spyOn(Communicator.prototype, "processMessage").mockImplementation(() => {});
 
         jest.mock("electron", () => ({
             shell: {
@@ -62,13 +63,13 @@ describe("FDO_SDK", () => {
 
         // Call the extracted function manually with a test message
         messageCallback(mockMessage);
+    });
 
-        // Expect logger to log the message
-        expect(mockLoggerInfo).toHaveBeenCalledWith("Received from main process:", mockMessage.data);
-        expect(mockLogger).toHaveBeenCalledWith("FDO_SDK initialized!");
+    test("should ensure render function is bound and modified to return JSON", () => {
+        const mockSdk = new MockPlugin();
 
-        // Expect communicator to process the message
-        expect(mockCommunicator).toHaveBeenCalledWith(mockMessage);
+        // Check if the function is actually reassigned
+        expect(mockSdk.render).not.toBe(MockPlugin.prototype.render);
     });
 
     test("should log initialization message", () => {
@@ -79,8 +80,28 @@ describe("FDO_SDK", () => {
         expect(() => sdk.init()).toThrow("Method 'init' must be implemented by plugin.");
     });
 
-    test("should throw error when render() is called", () => {
+    test("should log an error and throw when render() is called", () => {
+        const logSpy = jest.spyOn(sdk["_logger"], "error"); // Spy on logger
         expect(() => sdk.render()).toThrow("Method 'render' must be implemented by plugin.");
+        expect(logSpy).toHaveBeenCalledWith(expect.any(Error)); // Ensure logger was called
+        expect(logSpy.mock.calls[0][0].message).toBe("Method 'render' must be implemented by plugin.");
+    });
+
+    test("should return JSON-stringify output when render is implemented", () => {
+        const mockSdk = new MockPlugin();
+
+        // Spy on the original render method
+        const renderSpy = jest.spyOn(mockSdk, "render");
+
+        // Call render and capture output
+        const result = mockSdk.render();
+
+        // Expected JSON output
+        const expectedOutput = JSON.stringify(`<style>.test{"color": "green"}</style><h1>Hello from plugin!</h1>`);
+
+        // Assertions
+        expect(renderSpy).toHaveBeenCalled();
+        expect(result).toBe(expectedOutput);
     });
 
     test("should log messages using log()", () => {

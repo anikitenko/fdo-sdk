@@ -1,23 +1,27 @@
 import { PluginRegistry } from "../src/PluginRegistry";
 import { QuickActionMixin } from "../src/QuickActionMixin";
 import { SidePanelMixin } from "../src/SidePanelMixin";
-import {QuickAction, SidePanelConfig} from "../src/types";
-import { FDO_SDK } from "../src";
-
-// Mock process.parentPort to prevent errors in tests
-beforeEach(() => {
-    (global as any).process.parentPort = {
-        on: jest.fn(),
-        postMessage: jest.fn(),
-    };
-});
-
-afterEach(() => {
-    delete (global as any).process.parentPort;
-    PluginRegistry.clearPlugin();
-});
+import {QuickAction, SidePanelConfig, FDO_SDK} from "../src";
+import { Logger } from "../src/Logger";
 
 describe("PluginRegistry", () => {
+    let mockLogger: jest.SpyInstance;
+
+    // Mock process.parentPort to prevent errors in tests
+    beforeEach(() => {
+        (global as any).process.parentPort = {
+            on: jest.fn(),
+            postMessage: jest.fn(),
+        };
+        mockLogger = jest.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+        PluginRegistry.clearAllHandlers()
+    });
+
+    afterEach(() => {
+        delete (global as any).process.parentPort;
+        PluginRegistry.clearPlugin();
+    });
+
     test("should return empty quick actions and side panel when no mixins are used", () => {
         class NoMixinPlugin extends FDO_SDK {
             init() {}
@@ -115,4 +119,48 @@ describe("PluginRegistry", () => {
 
         expect(renderSpy).toHaveBeenCalled();
     });
+
+    test("should register a handler", () => {
+        const mockHandler = jest.fn();
+        PluginRegistry.registerHandler("testHandler", mockHandler);
+
+        expect(PluginRegistry["handlers"]["testHandler"]).toBe(mockHandler);
+    });
+
+    test("should call a registered handler and return its output", () => {
+        const mockHandler = jest.fn((data) => `Received: ${data}`);
+        PluginRegistry.registerHandler("testHandler", mockHandler);
+
+        const result = PluginRegistry.callHandler("testHandler", "Hello");
+
+        expect(mockHandler).toHaveBeenCalledWith("Hello");
+        expect(result).toBe("Received: Hello");
+    });
+
+    test("should log a warning and return null if handler is not registered", () => {
+        const result = PluginRegistry.callHandler("unknownHandler", "Hello");
+
+        expect(mockLogger).toHaveBeenCalledWith("Handler 'unknownHandler' is not registered.");
+        expect(result).toBeNull();
+    });
+
+    test("should clear the plugin instance", () => {
+        PluginRegistry.clearPlugin();
+
+        expect(PluginRegistry["pluginInstance"]).toBeNull();
+    });
+
+    test("should clear all handlers", () => {
+        PluginRegistry.registerHandler("testHandler", jest.fn());
+        PluginRegistry.clearAllHandlers();
+
+        expect(PluginRegistry["handlers"]).toEqual({});
+    });
+
+    test("should clear one handler", () => {
+        PluginRegistry.registerHandler("testHandler", jest.fn());
+        PluginRegistry.clearHandler("testHandler");
+
+        expect(PluginRegistry["handlers"]["testHandler"]).toBeUndefined();
+    })
 });
