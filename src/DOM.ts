@@ -1,5 +1,18 @@
+// @ts-ignore
 import {html, render} from 'uhtml-ssr';
 import { css as gooberCss, extractCss, setup } from 'goober';
+
+declare global {
+    interface Window {
+        /**
+         * Creates a request to plugin's backend.
+         * @param type - The function name to call on the backend
+         * @param data - The data to send to the backend
+         * @returns {Promise<any>} - The response from the backend
+         */
+        createBackendReq: (type: string, data?: any) => Promise<any>;
+    }
+}
 
 // Set up goober for SSR. The first parameter is a pragma (which is optional here),
 // and the second parameter is the target for style injection.
@@ -66,7 +79,7 @@ export class DOM {
      * @param children - Nested elements or text content
      * @returns A virtual DOM element
      */
-    protected createElement(tag: string, props: Partial<string, any> = {}, ...children: any[]): HTMLElement {
+    public createElement(tag: string, props: Partial<Record<string, any>> = {}, ...children: any[]): HTMLElement {
         const content = this.flattenChildren(children);
         const attributes = Object.entries(props)
             .filter(([key, value]) => !(key.startsWith("on") && typeof value === "function")) // Exclude event handlers

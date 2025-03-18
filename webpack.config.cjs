@@ -33,16 +33,16 @@ module.exports = {
         ]
     },
     externals: {
-        fs: 'fs',
         electron: 'commonjs electron',
-        crypto: 'crypto',
-        os: "os",
-        https: "https",
-        http: "http",
-        zlib: "zlib",
-        path: "path",
-        stream: "stream",
-        util: "util",
-        buffer: "buffer"
+        fs: 'fs',
+        path: 'path',
+        os: 'os',
+        https: 'https',
+        http: 'http',
+        zlib: 'zlib',
+        util: 'util',
+        stream: 'stream',
+        buffer: 'buffer',
+        crypto: 'crypto'
     }
 };

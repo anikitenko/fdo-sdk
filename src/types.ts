@@ -11,6 +11,8 @@ export type SidePanelConfig = {
 export type QuickAction = {
     name: string;
     message_type: string;
+    subtitle?: string;
+    icon?: string;
 };
 
 export type AddQuickAction = {

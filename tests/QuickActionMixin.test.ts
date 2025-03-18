@@ -1,6 +1,4 @@
-import { QuickActionMixin } from "../src/QuickActionMixin";
-import {QuickAction} from "../src/types";
-import { FDO_SDK } from "../src";
+import { QuickActionMixin, QuickAction, FDO_SDK } from "../src";
 
 class TestQuickActionPlugin extends QuickActionMixin(FDO_SDK) {
     defineQuickActions(): QuickAction[] {
