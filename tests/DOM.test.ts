@@ -81,10 +81,10 @@ describe("DOM", () => {
     });
 
     test("flattenChildren should return a single child instead of an array if only one child exists", () => {
-        const children = [["onlyChild"]];
+        const children = ["onlyChild"];
         const result = (dom as any).flattenChildren(children);
 
-        expect(result).toBe("onlyChild");
+        expect(result).toStrictEqual(["onlyChild"]);
     });
 
     test("renderHTML should return HTML with extracted CSS", () => {

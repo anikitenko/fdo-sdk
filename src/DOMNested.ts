@@ -12,7 +12,7 @@ export class DOMNested extends DOM {
         const generatedStyle = style ? this.createStyle(style) : undefined;
         const className = [defaultBlueprintClass, blueprintClassString, generatedStyle].filter(Boolean).join(" ");
         const elementID = id !== "" ? id : (Math.random() + 1).toString(36).substring(2);
-        return this.createElement("div", {id: elementID, className: className}, ...children);
+        return this.createElement("div", {id: elementID, className: className}, children);
     }
 
     public createNestedList(

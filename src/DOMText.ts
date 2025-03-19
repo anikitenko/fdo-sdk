@@ -4,7 +4,7 @@ export class DOMText extends DOM {
     private createTextElement(
         element: string,
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
         disableDefaultClassOpt: boolean = false,
         defaultClass: string = "bp5-ui-text"
     ) {

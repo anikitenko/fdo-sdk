@@ -1,4 +1,4 @@
-import { css as gooberCss, extractCss, setup } from 'goober';
+import {css as gooberCss, extractCss, setup} from 'goober';
 
 declare global {
     interface Window {
@@ -62,10 +62,9 @@ export class DOM {
     }
 
     // Helper to flatten children arrays and filter out null/undefined values.
-    protected flattenChildren(children: any[]): any {
-        const flattened = children.flat(Infinity).filter(child => child != null);
+    protected flattenChildren(children: string[]): string[] {
         // If there's only one child, return it directly.
-        return flattened.length === 1 ? flattened[0] : flattened;
+        return children.flat(Infinity).filter(child => child != null)
     }
 
     // Helper to build attributes without event handlers
@@ -97,13 +96,13 @@ export class DOM {
         const onAttributes = this.createOnAttributes(props);
 
         if (attributes && !onAttributes) {
-            return `<${tag} ${attributes}>${content}</${tag}>`;
+            return `<${tag} ${attributes}>${content.join('')}</${tag}>`;
         } else if (onAttributes && !attributes) {
-            return `<${tag} ${onAttributes}>${content}</${tag}>`;
+            return `<${tag} ${onAttributes}>${content.join('')}</${tag}>`;
         } else if (attributes && onAttributes) {
-            return `<${tag} ${attributes} ${onAttributes}>${content}</${tag}>`;
+            return `<${tag} ${attributes} ${onAttributes}>${content.join('')}</${tag}>`;
         } else {
-            return `<${tag}>${content}</${tag}>`;
+            return `<${tag}>${content.join('')}</${tag}>`;
         }
     }
 }
