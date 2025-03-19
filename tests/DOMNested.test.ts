@@ -25,6 +25,6 @@ describe("DOMNested", () => {
         const text = domText.createHText(1, "Hello World", {id: "test-text"});
         const nested = domNested.createNestedBlockDiv([button, text], {id: "test-div"});
 
-        expect(nested.toString()).toBe(`<div id="test-div" className="go11"><button id="test-button" className="bp5-button custom-class go11" onClick={() => { }}>Click Me</button><h1 id="test-text" className="">Hello World</h1></div>`);
+        expect(nested.toString()).toBe(`<div id="test-div" className="go11"><button id="test-button" className="bp5-button custom-class go11" onClick={() => { }}>Click Me</button><h1 id="test-text" className="go11">Hello World</h1></div>`);
     });
 })

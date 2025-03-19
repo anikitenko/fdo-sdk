@@ -8,23 +8,11 @@ export class DOMText extends DOM {
         disableDefaultClassOpt: boolean = false,
         defaultClass: string = "bp5-ui-text"
     ) {
-        const { blueprintClasses, style, disableDefaultClass, id } = options || {};
-
-        // Default Blueprint class (if not disabled)
+        const { disableDefaultClass } = options || {};
         const defaultBlueprintClass = disableDefaultClass || disableDefaultClassOpt ? "" : defaultClass;
+        const props = this.combineProperties(defaultBlueprintClass, options)
 
-        // Merge multiple Blueprint classes (if provided)
-        const blueprintClassString = (blueprintClasses || []).join(" ");
-
-        // Generate dynamic styles using Emotion (if provided)
-        const generatedStyle = style ? this.createStyle(style) : undefined;
-
-        // Merge all classes properly
-        const className = [defaultBlueprintClass, blueprintClassString, generatedStyle].filter(Boolean).join(" ");
-
-        const elementID = id !== "" ? id : (Math.random() + 1).toString(36).substring(2);
-
-        return this.createElement(element, {id: elementID, className: className}, content);
+        return this.createElement(element, props, content);
     }
 
     public createBlockQuoteText(

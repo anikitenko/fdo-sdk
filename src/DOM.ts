@@ -29,8 +29,20 @@ export class DOM {
     /**
      * Handles merging options with defaults
      */
-    protected mergeOptions(userOptions?: Partial<typeof DOM.DEFAULT_OPTIONS>) {
+    private mergeOptions(userOptions?: Partial<typeof DOM.DEFAULT_OPTIONS>) {
         return {...DOM.DEFAULT_OPTIONS, ...userOptions};
+    }
+
+    protected combineProperties(defaultClass: string, options: Partial<typeof DOM.DEFAULT_OPTIONS>): Record<string, any> {
+        const { blueprintClasses, style, disableDefaultClass, id } = this.mergeOptions(options);
+        const defaultBlueprintClass = disableDefaultClass ? "" : defaultClass;
+
+        const blueprintClassString = (blueprintClasses || []).join(" ");
+        const generatedStyle = style ? this.createStyle(style) : undefined;
+        const className = [defaultBlueprintClass, blueprintClassString, generatedStyle].filter(Boolean).join(" ");
+        const elementID = id !== "" ? id : (Math.random() + 1).toString(36).substring(2);
+
+        return { id: elementID, className};
     }
 
     /**
@@ -42,7 +54,7 @@ export class DOM {
      * @param styleObj - A record of CSS properties and values.
      * @returns {string} - The generated class name.
      */
-    protected createStyle(styleObj: Record<string, string>): string {
+    private createStyle(styleObj: Record<string, string>): string {
         // Convert the style object into a CSS string.
         const cssString = Object.entries(styleObj)
             .map(([prop, value]) => `${prop}: ${value};`)
