@@ -1,4 +1,4 @@
-import {css as gooberCss, extractCss, setup} from 'goober';
+import {css as gooberCss, extractCss, setup, keyframes} from 'goober';
 
 // Set up goober for SSR. The first parameter is a pragma (which is optional here),
 // and the second parameter is the target for style injection.
@@ -44,6 +44,19 @@ export class DOM {
      */
     public createClassFromStyle(styleObj: Record<string, string>): string {
         return gooberCss({...styleObj})
+    }
+
+    /**
+     * Creates a style using goober’s keyframes function.
+     *
+     * This function converts the style object into a CSS string and passes it
+     * to goober’s keyframes tagged template literal to generate a class name.
+     *
+     * @param keyframeObj - A record of CSS properties and values.
+     * @returns {string} - The generated class name.
+     */
+    public createStyleKeyframe(keyframeObj: Record<string, string>): string {
+        return keyframes({...keyframeObj})
     }
 
     /**
