@@ -1,7 +1,7 @@
 import {DOM} from "./DOM";
 
 export class DOMNested extends DOM {
-    public createNestedBlockDiv(
+    public createBlockDiv(
         children: any[],
         options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
     ) {
@@ -9,12 +9,19 @@ export class DOMNested extends DOM {
         return this.createElement("div", props, children);
     }
 
-    public createNestedList(
+    public createList(
         children: any[],
-        unstyled?: boolean,
         options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
     ) {
-        const props = this.combineProperties(unstyled ? "bp5-list-unstyled" : "bp5-list", options)
+        const props = this.combineProperties("", options)
         return this.createElement("ul", props, children);
+    }
+
+    public createListItem(
+        children: any[],
+        options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
+    ) {
+        const props = this.combineProperties("", options)
+        return this.createElement("li", props, children);
     }
 }

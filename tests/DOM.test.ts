@@ -37,7 +37,7 @@ describe("DOM", () => {
         const mergedOptions = (dom as any).mergeOptions(userOptions);
 
         expect(mergedOptions).toEqual({
-            blueprintClasses: [],
+            classes: [],
             style: { color: "red" },
             disableDefaultClass: false,
             id: "custom-id",
@@ -60,16 +60,16 @@ describe("DOM", () => {
 
     test("createStyle should convert style object to CSS string and return class name", () => {
         const styleObj = { color: "red", "font-size": "16px" };
-        const className = (dom as any).createStyle(styleObj);
+        const className = (dom as any).createClassFromStyle(styleObj);
 
         const gooberMock = gooberCss as jest.MockedFunction<typeof gooberCss>;
 
         // Check that gooberCss was called correctly with a tagged template literal
         expect(gooberCss).toHaveBeenCalledTimes(1);
 
-        const cssString = gooberMock.mock.calls[0][1] as unknown as string;
+        const cssString = gooberMock.mock.calls[0][0] as Record<string, string>;
 
-        expect(cssString.trim()).toBe("color: red; font-size: 16px;");
+        expect(cssString).toStrictEqual(styleObj);
         expect(className).toBe("mocked-class");
     });
 
@@ -91,7 +91,7 @@ describe("DOM", () => {
         const element = "<div>Hello</div>";
         const result = dom.renderHTML(element);
         expect(extractCss).toHaveBeenCalled();
-        expect(result).toBe(`<style>{\`mocked-css\`}</style><div>Hello</div>`);
+        expect(result).toBe(`<style>{\`mocked-css\`}</style><div>Hello</div><script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>`);
     });
 
     test("createAttributes should return attributes without event handlers", () => {

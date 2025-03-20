@@ -1,17 +1,5 @@
 import {css as gooberCss, extractCss, setup} from 'goober';
 
-declare global {
-    interface Window {
-        /**
-         * Creates a request to plugin's backend.
-         * @param type - The function name to call on the backend
-         * @param data - The data to send to the backend
-         * @returns {Promise<any>} - The response from the backend
-         */
-        createBackendReq: (type: string, data?: any) => Promise<any>;
-    }
-}
-
 // Set up goober for SSR. The first parameter is a pragma (which is optional here),
 // and the second parameter is the target for style injection.
 // For SSR, we don't need a target, so we pass undefined.
@@ -20,7 +8,7 @@ setup(null);
 export class DOM {
     // Define a private static readonly type reference for UI options
     static readonly DEFAULT_OPTIONS = {
-        blueprintClasses: [] as string[],
+        classes: [] as string[],
         style: {} as Record<string, string>,
         disableDefaultClass: false,
         id: ""
@@ -34,12 +22,12 @@ export class DOM {
     }
 
     protected combineProperties(defaultClass: string, options: Partial<typeof DOM.DEFAULT_OPTIONS>): Record<string, any> {
-        const { blueprintClasses, style, disableDefaultClass, id } = this.mergeOptions(options);
-        const defaultBlueprintClass = disableDefaultClass ? "" : defaultClass;
+        const { classes, style, disableDefaultClass, id } = this.mergeOptions(options);
+        const defaultPropClass = disableDefaultClass ? "" : defaultClass;
 
-        const blueprintClassString = (blueprintClasses || []).join(" ");
-        const generatedStyle = style ? this.createStyle(style) : undefined;
-        const className = [defaultBlueprintClass, blueprintClassString, generatedStyle].filter(Boolean).join(" ");
+        const classString = (classes || []).join(" ");
+        const generatedStyle = style ? this.createClassFromStyle(style) : undefined;
+        const className = [defaultPropClass, classString, generatedStyle].filter(Boolean).join(" ");
         const elementID = id !== "" ? id : (Math.random() + 1).toString(36).substring(2);
 
         return { id: elementID, className};
@@ -54,13 +42,8 @@ export class DOM {
      * @param styleObj - A record of CSS properties and values.
      * @returns {string} - The generated class name.
      */
-    private createStyle(styleObj: Record<string, string>): string {
-        // Convert the style object into a CSS string.
-        const cssString = Object.entries(styleObj)
-            .map(([prop, value]) => `${prop}: ${value};`)
-            .join(" ");
-        // Use goober's css function to generate a class name.
-        return gooberCss`${cssString}`;
+    public createClassFromStyle(styleObj: Record<string, string>): string {
+        return gooberCss({...styleObj})
     }
 
     /**
@@ -68,9 +51,9 @@ export class DOM {
      * @param element - The html element to render.
      * @returns {string} - The final HTML string with Goober's styles.
      */
-    public renderHTML(element: any): string {
+    public renderHTML(element: string): string {
         const cssText = extractCss();
-        return `<style>{\`${cssText}\`}</style>${element}`
+        return `<style>{\`${cssText}\`}</style>${element}<script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>`
     }
 
     // Helper to flatten children arrays and filter out null/undefined values.

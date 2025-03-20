@@ -6,7 +6,7 @@ export class DOMText extends DOM {
         content: string,
         options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
         disableDefaultClassOpt: boolean = false,
-        defaultClass: string = "bp5-ui-text"
+        defaultClass: string = ""
     ) {
         const { disableDefaultClass } = options || {};
         const defaultBlueprintClass = disableDefaultClass || disableDefaultClassOpt ? "" : defaultClass;
@@ -19,7 +19,7 @@ export class DOMText extends DOM {
         content: string,
         options?: Partial<typeof DOM.DEFAULT_OPTIONS>
     ) {
-        return this.createTextElement("blockquote", content, options, false, "bp5-blockquote");
+        return this.createTextElement("blockquote", content, options, false, "");
     }
 
     public createPText(
@@ -40,7 +40,7 @@ export class DOMText extends DOM {
         content: string,
         options?: Partial<typeof DOM.DEFAULT_OPTIONS>
     ) {
-        return this.createTextElement("code", content, options, false, "bp5-code")
+        return this.createTextElement("code", content, options, false, "")
     }
 
     public createStrongText(
@@ -64,5 +64,12 @@ export class DOMText extends DOM {
         options?: Partial<typeof DOM.DEFAULT_OPTIONS>
     ) {
         return this.createTextElement("pre", content, options, true)
+    }
+
+    public createIText(
+        content: string,
+        options?: Partial<typeof DOM.DEFAULT_OPTIONS>
+    ) {
+        return this.createTextElement("i", content, options, true)
     }
 }

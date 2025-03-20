@@ -34,7 +34,10 @@ export class PluginRegistry {
     }
 
     public static callRenderer(): any {
-        return this.pluginInstance?.render()
+        return {
+            render: this.pluginInstance?.render(),
+            onLoad: this.pluginInstance?.renderOnLoad()
+        }
     }
 
     public static callHandler(name: string, data: any) {
