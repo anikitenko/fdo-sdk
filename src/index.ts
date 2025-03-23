@@ -15,6 +15,7 @@ export * from "./DOMInput";
 export * from "./DOMLink";
 export * from "./DOMNested";
 export * from "./DOMText";
+export * from "./DOMMisc";
 
 declare global {
     interface Window {
@@ -49,6 +50,13 @@ declare global {
          * @param scriptContent
          */
         executeInjectedScript: (scriptContent: string) => void
+
+        /**
+         * Applies a  class to a selector.
+         * @param className
+         * @param selector
+         */
+        applyClassToSelector: (className: string, selector: string) => void
     }
 
     type Gutter = {

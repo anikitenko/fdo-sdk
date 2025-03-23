@@ -1,4 +1,5 @@
 const path = require('path');
+const DOMMetadataPlugin = require("./extract-dom-classes");
 
 module.exports = {
     mode: 'production',
@@ -32,6 +33,12 @@ module.exports = {
             }
         ]
     },
+    plugins: [
+        new DOMMetadataPlugin({
+            srcDir: "src",
+            outFile: "dom-metadata.json",
+        })
+    ],
     externals: {
         electron: 'commonjs electron',
         fs: 'fs',

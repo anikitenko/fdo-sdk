@@ -48,8 +48,10 @@
     "linaria": "^6.2.0",
     "linkedom": "^0.18.9",
     "styled-components": "^6.1.15",
+    "ts-morph": "^25.0.1",
     "uhtml": "^4.7.0",
     "uhtml-ssr": "^0.9.1",
+    "webpack-sources": "^3.2.3",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   }
