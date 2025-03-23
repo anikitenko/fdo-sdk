@@ -15,6 +15,10 @@ export class DOMNested extends DOM {
      * @uiName Create block div
      * @param options - The options to apply to the div block.
      * @returns {string} - The rendered div block.
+     * @example <caption>Create a new div block.</caption>
+     * const child1 = new DOMNested().createBlockDiv(["Hello"]);
+     * const child2 = new DOMNested().createBlockDiv(["World"]);
+     * const div = new DOMNested().createBlockDiv([child1, child2]);
      */
     public createBlockDiv(
         children: any[],
@@ -30,6 +34,10 @@ export class DOMNested extends DOM {
      * @uiName Create list
      * @param options - The options to apply to the list.
      * @returns {string} - The rendered list.
+     * @example <caption>Create a new unordered list.</caption>
+     * const child1 = new DOMNested().createListItem(["Hello"]);
+     * const child2 = new DOMNested().createListItem(["World"]);
+     * const list = new DOMNested().createList([child1, child2]);
      */
     public createList(
         children: any[],
@@ -45,6 +53,8 @@ export class DOMNested extends DOM {
      * @uiName Create list item
      * @param options - The options to apply to the list item.
      * @returns {string} - The rendered list item.
+     * @example <caption>Create a new list item.</caption>
+     * const child1 = new DOMNested().createListItem(["Hello"]);
      */
     public createListItem(
         children: any[],
@@ -60,6 +70,8 @@ export class DOMNested extends DOM {
      * @uiName Create fieldset
      * @param options - The options to apply to the fieldset.
      * @returns {string} - The rendered fieldset.
+     * @example <caption>Create a new fieldset.</caption>
+     * const fieldset = new DOMNested().createFieldset(["Hello"]);
      */
     public createFieldset(
         children: any[],
@@ -75,6 +87,8 @@ export class DOMNested extends DOM {
      * @uiName Create form
      * @param options - The options to apply to the form.
      * @returns {string} - The rendered form.
+     * @example <caption>Create a new form.</caption>
+     * const form = new DOMNested().createForm(["Hello"]);
      */
     public createForm(
         children: any[],

@@ -17,6 +17,9 @@ export class DOMButton extends DOM {
      * @param otherProps - The other properties to apply to the button.
      * @returns {string} - The rendered button element.
      * @uiName Create button
+     * @example <caption>Example usage of createButton.</caption>
+     * // Creates a button with the label "Click me" and an onClick function that logs "Button clicked".
+     * createButton("Click me", () => console.log("Button clicked"));
      */
     public createButton(label: string,
                         onClick: Function,

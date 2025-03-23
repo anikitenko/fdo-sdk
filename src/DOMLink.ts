@@ -23,6 +23,8 @@ export class DOMLink extends DOM {
      * @param href - The href of the link.
      * @returns {string} - The rendered link element.
      * @uiName Create link
+     * @example <caption>Create a new link element.</caption>
+     * const link = new DOMLink().createLink("Click me", "https://example.com");
      */
     public createLink(label: string, href: string): string {
         const props = this.combineProperties("", this.options)

@@ -15,6 +15,8 @@ export class DOMText extends DOM {
      * @param content - The content of the blockquote.
      * @param options - The options to apply to the blockquote.
      * @returns {string} - The rendered blockquote text element.
+     * @example <caption>Create a new blockquote text element.</caption>
+     * const blockquote = new DOMText().createBlockQuoteText("This is a blockquote");
      */
     public createBlockQuoteText(
         content: string,
@@ -29,6 +31,8 @@ export class DOMText extends DOM {
      * @param content - The content of the p text.
      * @param options - The options to apply to the p text.
      * @returns {string} - The rendered p text element.
+     * @example <caption>Create a new p text element.</caption>
+     * const p = new DOMText().createPText("This is a p text");
      */
     public createPText(
         content: string,
@@ -43,6 +47,8 @@ export class DOMText extends DOM {
      * @param content - The content of the span text.
      * @param options - The options to apply to the span text.
      * @returns {string} - The rendered span text element.
+     * @example <caption>Create a new span text element.</caption>
+     * const span = new DOMText().createSpanText("This is a span text");
      */
     public createSpanText(
         content: string,
@@ -57,6 +63,8 @@ export class DOMText extends DOM {
      * @param content - The content of the code text.
      * @param options - The options to apply to the code text.
      * @returns {string} - The rendered code text element.
+     * @example <caption>Create a new code text element.</caption>
+     * const code = new DOMText().createCodeText("This is a code text");
      */
     public createCodeText(
         content: string,
@@ -71,6 +79,8 @@ export class DOMText extends DOM {
      * @param content - The content of the strong text.
      * @param options - The options to apply to the strong text.
      * @returns {string} - The rendered strong text element.
+     * @example <caption>Create a new strong text element.</caption>
+     * const strong = new DOMText().createStrongText("This is a strong text");
      */
     public createStrongText(
         content: string,
@@ -85,6 +95,8 @@ export class DOMText extends DOM {
      * @param content - The content of the em text.
      * @param options - The options to apply to the em text.
      * @returns {string} - The rendered em text element.
+     * @example <caption>Create a new em text element.</caption>
+     * const em = new DOMText().createEmText("This is a em text");
      */
     public createEmText(
         content: string,
@@ -100,6 +112,8 @@ export class DOMText extends DOM {
      * @param content - The content of the h text.
      * @param options - The options to apply to the h text.
      * @returns {string} - The rendered h text element.
+     * @example <caption>Create a new h text element.</caption>
+     * const h = new DOMText().createHText(1, "This is a h text");
      */
     public createHText(
         level: number,
@@ -116,6 +130,8 @@ export class DOMText extends DOM {
      * @param content - The content of the pre text.
      * @param options - The options to apply to the pre text.
      * @returns {string} - The rendered pre text element.
+     * @example <caption>Create a new pre text element.</caption>
+     * const pre = new DOMText().createPreText("This is a pre text");
      */
     public createPreText(
         content: string,
@@ -130,6 +146,8 @@ export class DOMText extends DOM {
      * @param content - The content of the i text.
      * @param options - The options to apply to the i text.
      * @returns {string} - The rendered i text element.
+     * @example <caption>Create a new i text element.</caption>
+     * const i = new DOMText().createIText("This is a i text");
      */
     public createIText(
         content: string,
@@ -145,6 +163,8 @@ export class DOMText extends DOM {
      * @param htmlFor - The for attribute of the label text.
      * @param options - The options to apply to the label text.
      * @returns {string} - The rendered label text element.
+     * @example <caption>Create a new label text element.</caption>
+     * const label = new DOMText().createLabelText("This is a label text", "for");
      */
     public createLabelText(
         content: string,
@@ -164,6 +184,8 @@ export class DOMText extends DOM {
      * @param extraProps - The extra properties to apply to the element.
      * @returns {string} - The rendered text element.
      * @uiName Create text element
+     * @example <caption>Create a new text element.</caption>
+     * const text = new DOMText().createTextElement("span", "This is a text element", DOM.DEFAULT_OPTIONS, false, "", {"data-test": "test"});
      */
     private createTextElement(
         element: string,

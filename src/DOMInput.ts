@@ -22,6 +22,8 @@ export class DOMInput extends DOM {
      * @param type - The type of the input.
      * @returns {string} - The rendered input element.
      * @uiName Create input
+     * @example <caption>Create a new input element.</caption>
+     * const input = new DOMInput().createInput("text");
      */
     public createInput(type: string): string {
         const props = this.combineProperties("", this.options)
@@ -34,6 +36,8 @@ export class DOMInput extends DOM {
      * @param type - The type of the textarea.
      * @returns {string} - The rendered textarea element.
      * @uiName Create textarea
+     * @example <caption>Create a new textarea element.</caption>
+     * const textarea = new DOMInput().createTextarea("text");
      */
     public createTextarea(type: string): string {
         const props = this.combineProperties("", this.options)

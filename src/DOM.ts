@@ -24,6 +24,12 @@ export class DOM {
      * @param styleObj A record of CSS properties and values
      * @returns {string} Generated class name
      * @uiName Create class from style
+     * @example const class = createClassFromStyle({
+     *   "background-color": 'red',
+     *   color: 'white',
+     *   padding: '10px',
+     *   "border-radius": '5px',
+     * });
      */
     public createClassFromStyle(styleObj: Record<string, string>): string {
         return gooberCss({...styleObj})
@@ -38,6 +44,14 @@ export class DOM {
      * @returns {string} - The generated class name.
      * @param keyframe - The keyframe string to create.
      * @uiName Create keyframe from style
+     * @example const class = createStyleKeyframe(`
+     *   from {
+     *     transform: rotate(0deg);
+     *   }
+     *   to {
+     *     transform: rotate(360deg);
+     *   }
+     * `);
      */
     public createStyleKeyframe(keyframe: string): string {
         return keyframes`${keyframe}`
@@ -47,6 +61,7 @@ export class DOM {
      * Renders an element to an HTML string with CSS.
      * @param element - The html element to render.
      * @returns {string} - The final HTML string with Goober's styles.
+     * @example const html = renderHTML('<div>Hello, World!</div>');
      * @uiSkip
      */
     public renderHTML(element: string): string {
@@ -60,6 +75,7 @@ export class DOM {
      * @param props - An object of attributes and event listeners
      * @param children - Nested elements or text content
      * @returns {string} - A virtual DOM element
+     * @example const div = createElement('div', { className: 'container' }, 'Hello, World!');
      * @uiName Create element
      */
     public createElement(tag: string, props: Partial<Record<string, any>> = {}, ...children: any[]): string {

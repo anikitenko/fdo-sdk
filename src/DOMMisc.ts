@@ -14,6 +14,8 @@ export class DOMMisc extends DOM {
      * @param options - The options to apply to the divider.
      * @returns {string} - The rendered divider element.
      * @uiName Create divider
+     * @example <caption>Create a new divider element.</caption>
+     * const divider = new DOMMisc().divider();
      */
     public divider(options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS): string {
         const defaultOptions = DOM.DEFAULT_OPTIONS
