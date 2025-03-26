@@ -1,64 +1,124 @@
-import {FDO_SDK} from '../src';  // Adjust the import based on your file structure
+import {FDO_SDK} from "../src";
+import { PluginRegistry } from "../src/PluginRegistry";
+import { Logger } from "../src/Logger";
 
-describe('FDO_SDK Tests', () => {
-    let api_version: string = "1.0.0";
+class MockPlugin extends FDO_SDK {
+    public render(): string {
+        return `<style>.test{"color": "green"}</style><h1>Hello from plugin!</h1>`
+    }
+}
+
+describe("FDO_SDK", () => {
     let sdk: FDO_SDK;
+    let mockLogger: jest.SpyInstance;
+    let mockLoggerInfo: jest.SpyInstance;
 
     beforeEach(() => {
+        // Mock process.parentPort to prevent errors
+        (global as any).process.parentPort = {
+            on: jest.fn(),
+            postMessage: jest.fn(),
+        };
+
+        // Mock Logger methods
+        mockLogger = jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+        mockLoggerInfo = jest.spyOn(Logger.prototype, "info").mockImplementation(() => {});
+        jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+
+        // Mock PluginRegistry
+        jest.spyOn(PluginRegistry, "registerPlugin").mockImplementation(() => {});
+
+        jest.mock("electron", () => ({
+            shell: {
+                openExternal: jest.fn(),
+            },
+        }));
+
         sdk = new FDO_SDK();
     });
 
-    it('should initialize correctly', () => {
-        expect(FDO_SDK.API_VERSION).toBe(api_version);
-        // You could also mock console.log to ensure "MiniSDK initialized." is logged
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete (global as any).process.parentPort;
     });
 
-    it('should generate correct name', () => {
-        expect(FDO_SDK.generatePluginName("this is-a-random test")).toBe('this-is-a-random-test');
-        expect(FDO_SDK.generatePluginName("this+ is-a-random test")).toBe('this-is-a-random-test');
-        expect(FDO_SDK.generatePluginName("this - 34t 534is-a-random test")).toBe('this-34t-534is-a-random-test');
-        expect(FDO_SDK.generatePluginName("this 5/415/2345/324is-a-random test")).toBe('this-5-415-2345-324is-a-random-test');
-    })
-
-    it('should throw error for unimplemented init method', () => {
-        expect(() => sdk.init(sdk)).toThrow("Method 'init' must be implemented by plugin.");
+    test("should have correct static properties", () => {
+        expect(FDO_SDK.API_VERSION).toBe("1.0.0");
+        expect(FDO_SDK.TYPE_TAG).toBeDefined();
     });
 
-    it('should throw error for unimplemented render method', () => {
+    test("should register itself in PluginRegistry on instantiation", () => {
+        expect(PluginRegistry.registerPlugin).toHaveBeenCalledWith(sdk);
+    });
+
+    test("should set up process.parentPort message listener", () => {
+        expect(process.parentPort.on).toHaveBeenCalledWith("message", expect.any(Function));
+    });
+
+    test("should process messages from parent process", () => {
+        const mockMessage = { data: "test-message" };
+
+        // Simulate the callback execution (extract the actual function from the Jest mock)
+        const messageCallback = (process.parentPort.on as jest.Mock).mock.calls[0][1];
+
+        // Call the extracted function manually with a test message
+        messageCallback(mockMessage);
+    });
+
+    test("should ensure render function is bound and modified to return JSON", () => {
+        const mockSdk = new MockPlugin();
+
+        // Check if the function is actually reassigned
+        expect(mockSdk.render).not.toBe(MockPlugin.prototype.render);
+    });
+
+    test("should log initialization message", () => {
+        expect(mockLogger).toHaveBeenCalledWith("FDO_SDK initialized!");
+    });
+
+    test("should throw error when init() is called", () => {
+        expect(() => sdk.init()).toThrow("Method 'init' must be implemented by plugin.");
+    });
+
+    test("should log an error and throw when render() is called", () => {
+        const logSpy = jest.spyOn(sdk["_logger"], "error"); // Spy on logger
         expect(() => sdk.render()).toThrow("Method 'render' must be implemented by plugin.");
+        expect(logSpy).toHaveBeenCalledWith(expect.any(Error)); // Ensure logger was called
+        expect(logSpy.mock.calls[0][0].message).toBe("Method 'render' must be implemented by plugin.");
     });
 
-    it('should log messages correctly', () => {
-        // Mocking console.log
-        console.log = jest.fn();
+    test("should return JSON-stringify output when render is implemented", () => {
+        const mockSdk = new MockPlugin();
 
-        const message = 'Test message';
-        sdk.log(message);
-        expect(console.log).toHaveBeenCalledWith(`[SDK LOG]: ${message}`);
+        // Spy on the original render method
+        const renderSpy = jest.spyOn(mockSdk, "render");
+
+        // Call render and capture output
+        const result = mockSdk.render();
+
+        // Expected JSON output
+        const expectedOutput = JSON.stringify(`<style>.test{"color": "green"}</style><h1>Hello from plugin!</h1>`);
+
+        // Assertions
+        expect(renderSpy).toHaveBeenCalled();
+        expect(result).toBe(expectedOutput);
     });
 
-    it('should create a tab with content', () => {
-        const tabName = 'MyTab';
-        const contentFn = () => 'Tab content here';
-        const result = sdk.createTab(tabName, contentFn);
-
-        expect(result).toBe('Tab content here');
+    test("should log messages using log()", () => {
+        sdk.log("Test message");
+        expect(mockLogger).toHaveBeenCalledWith("Test message");
     });
 
-    it('should store file correctly', () => {
-        // Mocking console.log
-        console.log = jest.fn();
-
-        const filename = 'test.txt';
-        const data = 'File data here';
-        sdk.storeFile(filename, data);
-        expect(console.log).toHaveBeenCalledWith(`Storing file: ${filename} with data: ${data}`);
+    test("should log errors using error()", () => {
+        const error = new Error("Test error");
+        sdk.error(error);
+        expect(Logger.prototype.error).toHaveBeenCalledWith(error);
     });
 
-    it('should not expose private and protected methods', () => {
-        // _privateMethod is private and should not be directly accessible, so we can skip this in tests
-        // _updatePrivateData is protected and should not be directly accessible, so we can skip this in tests
-        // _getPrivateData is protected and should not be directly accessible, so we can skip this in tests
-        // Just make sure it's not publicly accessible by calling it indirectly (if needed)
+    test('renderOnLoad returns a function as string', () => {
+        const result = sdk.renderOnLoad();
+
+        expect(typeof result).toBe('string');
+        expect(result).toContain('() =>'); // Optional, to verify it's a function
     });
 });
