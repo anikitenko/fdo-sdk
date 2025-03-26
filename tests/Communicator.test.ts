@@ -61,6 +61,32 @@ describe("Communicator", () => {
         mockEmit.mockRestore(); // Cleanup after test
     });
 
+    test("should handle unknown message types", () => {
+        const mockEmit = jest.spyOn(communicator, "emit"); // Spy on emit
+
+        const mockMessage = { data: { message: "UNKNOWN_TYPE", content: "test" } };
+
+        // Simulate message event
+        const callback = mockOnMessage.mock.calls[0][1];
+        callback(mockMessage);
+
+        // Ensure logger logs the message
+        expect((communicator as any)._logger.log).toHaveBeenCalledWith("Received from main process: UNKNOWN_TYPE");
+
+        // Ensure emit was called with expected values
+        expect(mockEmit).toHaveBeenCalledWith("UNKNOWN_TYPE", "test");
+
+        mockEmit.mockRestore(); // Cleanup after test
+    })
+
+    test("should handle unknown content", () => {
+        const mockEmit = jest.spyOn(communicator, "emit"); // Spy on emit
+        const mockMessage = { data: { message: "test", undefined } };
+        const callback = mockOnMessage.mock.calls[0][1];
+        callback(mockMessage);
+        expect(mockEmit).toHaveBeenCalledWith("test", undefined);
+    })
+
     test("should handle PLUGIN_READY event", () => {
         communicator.emit(MESSAGE_TYPE.PLUGIN_READY);
         expect(mockPostMessage).toHaveBeenCalledWith({ type: MESSAGE_TYPE.PLUGIN_READY, response: true });
