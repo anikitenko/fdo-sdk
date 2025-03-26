@@ -21,6 +21,7 @@
     "url": "https://github.com/anikitenko/fdo-sdk/issues"
   },
   "main": "dist/fdo-sdk.bundle.js",
+  "types": "dist/types/index.d.ts",
   "type": "module",
   "files": [
     "dist"
