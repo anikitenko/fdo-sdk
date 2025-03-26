@@ -28,6 +28,16 @@ describe("DOMNested", () => {
         expect(nested.toString()).toBe(`<div id="test-div" className="go11"><button id="test-button" className="pure-button custom-class go11" onClick={() => { }}>Click Me</button><h1 id="test-text" className="go11">Hello World</h1></div>`);
     });
 
+    test("createBlockDiv with no options", () => {
+        const output = domNested.createBlockDiv(["Hello"]);
+        expect(output).toContain("<div");
+    });
+
+    test("createBlockDiv with custom options", () => {
+        const output = domNested.createBlockDiv(["World"], { disableDefaultClass: true });
+        expect(output).toContain("<div");
+    });
+
     it("should create a ul element with li child", () => {
         const child1 = domNested.createListItem(["Hello"], {}, "hello");
         const child2 = domNested.createListItem(["World"], {}, "world");
@@ -35,15 +45,65 @@ describe("DOMNested", () => {
         expect(list.toString()).toBe(`<ul id="list" className="go11"><li id="hello" className="go11">Hello</li><li id="world" className="go11">World</li></ul>`);
     });
 
+    test("ul element with no options", () => {
+        const output = domNested.createList(["li"]);
+        expect(output).toContain("<ul");
+    });
+
+    test("ul element with custom options", () => {
+        const output = domNested.createList(["li"], { disableDefaultClass: true });
+        expect(output).toContain("<ul");
+    });
+
+    test("li element with no options", () => {
+        const output = domNested.createListItem(["test"]);
+        expect(output).toContain("<li");
+    });
+
+    test("li element with custom options", () => {
+        const output = domNested.createListItem(["test"], { disableDefaultClass: true });
+        expect(output).toContain("<li");
+    });
+
     it("should create a fieldset", () => {
         const legend = domNested.createLegend(["Legend"], {}, "legend");
         const fieldset = domNested.createFieldset([legend], {}, "fieldset");
         expect(fieldset.toString()).toBe(`<fieldset id="fieldset" className="go11"><legend id="legend" className="go11">Legend</legend></fieldset>`);
-    })
+    });
+
+    test("fieldset element with no options", () => {
+        const output = domNested.createFieldset(["test"]);
+        expect(output).toContain("<fieldset");
+    });
+
+    test("fieldset element with custom options", () => {
+        const output = domNested.createFieldset(["test"], { disableDefaultClass: true });
+        expect(output).toContain("<fieldset");
+    });
+
+    test("legend element with no options", () => {
+        const output = domNested.createLegend(["test"]);
+        expect(output).toContain("<legend");
+    });
+
+    test("legend element with custom options", () => {
+        const output = domNested.createLegend(["test"], { disableDefaultClass: true });
+        expect(output).toContain("<legend");
+    });
 
     it("should create a form", () => {
         const form = domNested.createForm([], {}, "form");
         expect(form.toString()).toBe(`<form id="form" className="go11"></form>`);
     })
+
+    test("form element with no options", () => {
+        const output = domNested.createForm([]);
+        expect(output).toContain("<form");
+    });
+
+    test("form element with custom options", () => {
+        const output = domNested.createForm([], { disableDefaultClass: true });
+        expect(output).toContain("<form");
+    });
 
 })

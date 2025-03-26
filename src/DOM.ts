@@ -102,7 +102,16 @@ export class DOM {
         return openTag + closeTag
     }
 
-    protected combineProperties(defaultClass: string, options: Partial<typeof DOM.DEFAULT_OPTIONS>, id: string = ""): Record<string, any> {
+    /**
+     * Combines properties into a single object.
+     * @param defaultClass - The default class name.
+     * @param options - An object containing classes, style, and disableDefaultClass.
+     * @param id - An optional ID for the element.
+     * @returns {Record<string, any>} - An object containing the combined properties.
+     * @example const props = combineProperties('default-class', { classes: ['class1', 'class2'], style: { color: 'red' }, disableDefaultClass: false }, 'element-id');
+     * @uiSkip
+     */
+    public combineProperties(defaultClass: string, options: Partial<typeof DOM.DEFAULT_OPTIONS>, id: string = ""): Record<string, any> {
         const {classes, style, disableDefaultClass} = this.mergeOptions(options);
         const defaultPropClass = disableDefaultClass ? "" : defaultClass;
 
@@ -120,16 +129,26 @@ export class DOM {
         return children.flat(Infinity).filter(child => child != null)
     }
 
-    // Helper to build attributes without event handlers
-    protected createAttributes(props: Record<string, any>): string {
+    /**
+     * Helper to build attributes of element
+     * @param props - An object of attributes and event listeners
+     * @returns {string} - A string of attributes.
+     * @uiSkip
+     */
+    public createAttributes(props: Record<string, any>): string {
         return Object.entries(props)
             .filter(([key, value]) => !(key.startsWith("on") && typeof value === "function"))
             .map(([key, value]) => `${key}="${value}"`)
             .join(' ').trim();
     }
 
-    // Helper to build attributes of event handlers
-    protected createOnAttributes(props: Record<string, any>): string {
+    /**
+     * Helper to build On attributes of element
+     * @param props - An object of attributes and event listeners
+     * @returns {string} - A string of attributes.
+     * @uiSkip
+     */
+    public createOnAttributes(props: Record<string, any>): string {
         return Object.entries(props)
             .filter(([key, value]) => (key.startsWith("on") && typeof value === "function"))
             .map(([key, value]) => `${key}={${value.toString()}}`)
@@ -138,8 +157,11 @@ export class DOM {
 
     /**
      * Handles merging options with defaults
+     * @param userOptions - An object of options
+     * @returns {Record<string, any>} - An object of merged options
+     * @uiSkip
      */
-    private mergeOptions(userOptions?: Partial<typeof DOM.DEFAULT_OPTIONS>) {
+    public mergeOptions(userOptions?: Partial<typeof DOM.DEFAULT_OPTIONS>): Record<string, any> {
         return {...DOM.DEFAULT_OPTIONS, ...userOptions};
     }
 }

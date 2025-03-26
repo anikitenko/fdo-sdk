@@ -160,4 +160,150 @@ describe("DOM", () => {
         const element = dom.createElement("button", { onClick: () => {}, className: keyframe}, "Content");
         expect(element.toString()).toBe(`<button className="mocked-keyframe" onClick={() => { }}>Content</button>`);
     });
+
+    test("createElement with no props or children (empty tag)", () => {
+        const dom = new DOM(true);
+        const result = dom.createElement("div");
+        expect(result).toBe("<div/>");
+    });
+
+    test("createElement with attributes only", () => {
+        const dom = new DOM(false);
+
+        // Stub dependencies
+        jest.spyOn(dom, "createAttributes").mockReturnValue("id='test'");
+        jest.spyOn(dom, "createOnAttributes").mockReturnValue("");
+
+        const result = dom.createElement("div", {}, "Hello");
+        expect(result).toBe("<div id='test'>Hello</div>");
+    });
+
+    test("createElement with onAttributes only", () => {
+        const dom = new DOM(false);
+
+        jest.spyOn(dom, "createAttributes").mockReturnValue("");
+        jest.spyOn(dom, "createOnAttributes").mockReturnValue("onClick='doSomething()'");
+
+        const result = dom.createElement("button", {}, "Click");
+        expect(result).toBe("<button onClick='doSomething()'>Click</button>");
+    });
+
+    test("createElement with both attributes and onAttributes", () => {
+        const dom = new DOM(false);
+
+        jest.spyOn(dom, "createAttributes").mockReturnValue("id='test'");
+        jest.spyOn(dom, "createOnAttributes").mockReturnValue("onClick='fn()'");
+
+        const result = dom.createElement("span", {}, "Wow");
+        expect(result).toBe("<span id='test' onClick='fn()'>Wow</span>");
+    });
+
+    test("createElement with no attributes", () => {
+        const dom = new DOM(false);
+
+        jest.spyOn(dom, "createAttributes").mockReturnValue("");
+        jest.spyOn(dom, "createOnAttributes").mockReturnValue("");
+
+        const result = dom.createElement("hr");
+        expect(result).toBe("<hr></hr>");
+    });
+
+    test("combineProperties with all defaults", () => {
+        const dom = new DOM();
+
+        jest.spyOn(dom, "mergeOptions").mockReturnValue({ classes: [], disableDefaultClass: false });
+        jest.spyOn(dom, "createClassFromStyle").mockReturnValue("go11");
+
+        const result = dom.combineProperties("default", {});
+        expect(result.id).toMatch(/^[a-z0-9]+$/); // random id
+        expect(result.className).toBe("default");
+    });
+
+    test("combineProperties with disableDefaultClass true", () => {
+        const dom = new DOM();
+
+        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+            classes: ["x"],
+            disableDefaultClass: true,
+        });
+
+        const result = dom.combineProperties("default", {});
+        expect(result.className).toBe("x"); // no "default" class
+    });
+
+    test("combineProperties with custom style", () => {
+        const dom = new DOM();
+
+        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+            classes: ["x"],
+            style: { color: "red" },
+            disableDefaultClass: false,
+        });
+        jest.spyOn(dom, "createClassFromStyle").mockReturnValue("style-123");
+
+        const result = dom.combineProperties("main", {});
+        expect(result.className).toBe("main x style-123");
+    });
+
+    test("combineProperties with custom ID", () => {
+        const dom = new DOM();
+        jest.spyOn(dom, "mergeOptions").mockReturnValue({ classes: [], disableDefaultClass: false });
+
+        const result = dom.combineProperties("box", {}, "custom-id");
+        expect(result.id).toBe("custom-id");
+    });
+
+    test("combineProperties with all falsy class components", () => {
+        const dom = new DOM();
+
+        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+            classes: [],
+            disableDefaultClass: true,
+            style: undefined,
+        });
+
+        const result = dom.combineProperties("default", {});
+        expect(result.className).toBe(""); // nothing passed filter(Boolean)
+    });
+
+    test("combineProperties with only generatedStyle truthy", () => {
+        const dom = new DOM();
+
+        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+            classes: [],
+            disableDefaultClass: true,
+            style: { color: "red" },
+        });
+
+        jest.spyOn(dom, "createClassFromStyle").mockReturnValue("styled");
+
+        const result = dom.combineProperties("default", {});
+        expect(result.className).toBe("styled");
+    });
+
+    test("combineProperties handles undefined classes", () => {
+        const dom = new DOM();
+
+        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+            // no `classes` property
+            disableDefaultClass: true,
+            style: undefined,
+        });
+
+        const result = dom.combineProperties("unused", {});
+        expect(result.className).toBe(""); // everything falsy
+    });
+
+    test("combineProperties handles undefined style", () => {
+        const dom = new DOM();
+
+        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+            classes: [],
+            disableDefaultClass: false,
+            style: undefined,
+        });
+
+        const result = dom.combineProperties("base", {});
+        expect(result.className).toBe("base");
+    });
 });

@@ -18,26 +18,20 @@ export class DOMMisc extends DOM {
      * @example <caption>Create a new divider element.</caption>
      * const divider = new DOMMisc().divider();
      */
-    public divider(options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS, id?: string): string {
-        const defaultOptions = {
+    public divider(options?: Partial<typeof DOM.DEFAULT_OPTIONS>, id?: string): string {
+        const style = {
+            ...DOM.DEFAULT_OPTIONS.style,
+            "border-top": "1px solid #cccccd", margin: "10px",
+            ...(options?.style || {})
+        };
+
+        const mergedOptions: Partial<typeof DOM.DEFAULT_OPTIONS> = {
             ...DOM.DEFAULT_OPTIONS,
-            style: {
-                ...DOM.DEFAULT_OPTIONS.style,
-                ["border-top"]: "1px solid #cccccd",
-                margin: "10px",
-            },
+            ...options || {},
+            style
         };
 
-        const styledOptions = {
-            ...defaultOptions,
-            ...options,
-            style: {
-                ...defaultOptions.style,
-                ...options?.style,
-            },
-        };
-
-        const props = this.combineProperties("", styledOptions, id);
+        const props = this.combineProperties("", mergedOptions, id);
         return this.createElement("hr", props);
     }
 }

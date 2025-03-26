@@ -67,6 +67,34 @@ describe("PluginRegistry", () => {
         expect(PluginRegistry.getSidePanelConfig()).toBeNull();
     });
 
+    test("callInit and callRenderer with no plugin instance", () => {
+        PluginRegistry['pluginInstance'] = null;
+
+        expect(() => PluginRegistry.callInit()).not.toThrow();
+
+        const output = PluginRegistry.callRenderer();
+        expect(output).toEqual({ render: undefined, onLoad: undefined });
+    });
+
+    test("callInit and callRenderer with plugin instance", () => {
+        const mockPlugin = {
+            init: jest.fn(),
+            render: jest.fn().mockReturnValue("<div>Hello</div>"),
+            renderOnLoad: jest.fn().mockReturnValue("() => console.log('loaded')")
+        };
+
+        PluginRegistry['pluginInstance'] = mockPlugin as any;
+
+        PluginRegistry.callInit();
+        expect(mockPlugin.init).toHaveBeenCalled();
+
+        const output = PluginRegistry.callRenderer();
+        expect(output).toEqual({
+            render: "<div>Hello</div>",
+            onLoad: "() => console.log('loaded')"
+        });
+    });
+
     test("should return both quick actions and side panel config when using both mixins", () => {
         class FullFeaturePlugin extends QuickActionMixin(SidePanelMixin(FDO_SDK)) {
             defineQuickActions(): QuickAction[] {

@@ -151,4 +151,45 @@ describe("DOMText", () => {
         const small = domText.createSmallText("Hello World", {}, "hello");
         expect(small).toBe(`<small id="hello" className="go11">Hello World</small>`);
     })
+
+    test("createTextElement with no options and defaultClass fallback", () => {
+        const result = (domText as any).createTextElement("span", "Hello");
+        expect(result).toContain("<span");
+    });
+
+    test("createTextElement with empty options object", () => {
+        const result = (domText as any).createTextElement("span", "Text", undefined, {}, false, "text-class");
+        expect(result).toContain("class");
+    });
+
+    test("createTextElement with disableDefaultClass true in options", () => {
+        const result = (domText as any).createTextElement("div", "Yo", undefined, { disableDefaultClass: true }, false, "bp-divider");
+        expect(result).not.toContain("bp-divider");
+    });
+
+    test("createTextElement with disableDefaultClassOpt true", () => {
+        const result = (domText as any).createTextElement("div", "Yo", undefined, {}, true, "bp-divider");
+        expect(result).not.toContain("bp-divider");
+    });
+
+    test("createTextElement with extraProps", () => {
+        const result = (domText as any).createTextElement("p", "Extra", undefined, {}, false, "text-class", { role: "status" });
+        expect(result).toContain('role="status"');
+    });
+
+    test("createTextElement with options explicitly undefined", () => {
+        const result = (domText as any).createTextElement("span", "Hi", undefined, undefined, false, "default-class");
+        expect(result).toContain("default-class");
+    });
+
+    it("should run createTextElement with undefined options", () => {
+        const output = (domText as any).createTextElement("div", "Hello", undefined, undefined, false, "class-a");
+        expect(output).toContain("class-a");
+    });
+
+    it("should run createTextElement with empty options object", () => {
+        const output = (domText as any).createTextElement("div", "Hello", undefined, {}, false, "class-b");
+        expect(output).toContain("class-b");
+    });
+
 })

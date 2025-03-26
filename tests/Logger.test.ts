@@ -1,5 +1,5 @@
 import { Logger } from "../src/Logger";
-import winston from "winston";
+import * as winston from "winston";
 
 jest.mock("winston", () => {
     const logMethods = {
@@ -30,6 +30,13 @@ jest.mock("winston", () => {
 describe("Logger", () => {
     let logger: Logger;
     let winstonLoggerMock: any;
+    const originalPlatform = process.platform;
+
+    const setPlatform = (platform: string) => {
+        Object.defineProperty(process, 'platform', {
+            value: platform,
+        });
+    };
 
     beforeEach(() => {
         // Capture the mocked logger that Winston creates
@@ -38,7 +45,35 @@ describe("Logger", () => {
     });
 
     afterEach(() => {
+        delete process.env.LOG_LEVEL;
+        setPlatform(originalPlatform);
+        jest.resetModules();
         jest.clearAllMocks();
+    });
+
+    it("should use LOG_LEVEL from environment", () => {
+        process.env.LOG_LEVEL = 'debug';
+        const logger = new Logger();
+        expect(logger['logLevel']).toBe('debug');
+    });
+
+    it("should default to 'info' when LOG_LEVEL is not set", () => {
+        const logger = new Logger();
+        expect(logger['logLevel']).toBe('info');
+    });
+
+    it("should use Windows line ending", async () => {
+        setPlatform('win32');
+        const { Logger } = await import('../src/Logger'); // dynamic re-import
+        const logger = new Logger();
+        expect(logger['LINE_END']).toBe('\r\n');
+    });
+
+    it("should use Unix line ending", async () => {
+        setPlatform('linux');
+        const { Logger } = await import('../src/Logger');
+        const logger = new Logger();
+        expect(logger['LINE_END']).toBe('\n');
     });
 
     test("should log message", () => {

@@ -417,7 +417,10 @@ export class DOMText extends DOM {
         defaultClass: string = "",
         extraProps: Record<string, string> = {}
     ): string {
-        const {disableDefaultClass} = options || {};
+        const disableDefaultClass =
+            options && "disableDefaultClass" in options
+                ? options.disableDefaultClass
+                : DOM.DEFAULT_OPTIONS.disableDefaultClass;
         const defaultBlueprintClass = disableDefaultClass || disableDefaultClassOpt ? "" : defaultClass;
         const props = this.combineProperties(defaultBlueprintClass, options, id)
 

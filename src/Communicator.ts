@@ -19,10 +19,9 @@ export class Communicator extends EventEmitter {
     private init() {
         process.parentPort.on("message", (message: MessageEvent) => {
             const data = message.data;
-            this._logger.log(`Received from main process: ${data.message}`);
+            this._logger.log(`Received from main process: ${data?.message}`);
 
-            // 🔹 Emit event instead of switch case
-            this.emit(data.message, data?.content);
+            this.emit(data?.message, data?.content);
         });
 
         // 🔹 Register event handlers dynamically

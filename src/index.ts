@@ -162,7 +162,7 @@ export class FDO_SDK {
     }
 
     public renderOnLoad(): string {
-        const load = () => {}
+        const load = '() => {}'
         return load.toString()
     }
 

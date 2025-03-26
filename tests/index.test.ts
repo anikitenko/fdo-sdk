@@ -114,4 +114,11 @@ describe("FDO_SDK", () => {
         sdk.error(error);
         expect(Logger.prototype.error).toHaveBeenCalledWith(error);
     });
+
+    test('renderOnLoad returns a function as string', () => {
+        const result = sdk.renderOnLoad();
+
+        expect(typeof result).toBe('string');
+        expect(result).toContain('() =>'); // Optional, to verify it's a function
+    });
 });

@@ -126,4 +126,15 @@ describe("Communicator", () => {
             response: "mock_handler_output",
         });
     });
+
+    it("should handle message with undefined data", () => {
+        const communicator = new Communicator();
+        const emitSpy = jest.spyOn(communicator, "emit");
+
+        // simulate parentPort.on listener call
+        const onMock = (process.parentPort.on as jest.Mock).mock.calls[0][1]; // second arg is the callback
+        onMock({ data: undefined });
+
+        expect(emitSpy).toHaveBeenCalledTimes(0)
+    });
 });
