@@ -37,21 +37,13 @@
     "ts-loader": "^9.5.2",
     "typescript": "^5.7.3",
     "webpack": "^5.98.0",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "ts-morph": "^25.0.1",
+    "webpack-sources": "^3.2.3"
   },
   "dependencies": {
-    "@emotion/css": "^11.13.5",
-    "@emotion/server": "^11.11.0",
-    "@emotion/styled": "^11.14.0",
     "electron": "^35.0.0",
     "goober": "^2.1.16",
-    "linaria": "^6.2.0",
-    "linkedom": "^0.18.9",
-    "styled-components": "^6.1.15",
-    "ts-morph": "^25.0.1",
-    "uhtml": "^4.7.0",
-    "uhtml-ssr": "^0.9.1",
-    "webpack-sources": "^3.2.3",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   }
