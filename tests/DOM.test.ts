@@ -6,6 +6,7 @@ jest.mock("goober", () => ({
         return "mocked-class";
     }),
     extractCss: jest.fn(() => "mocked-css"),
+    keyframes: jest.fn(() => "mocked-keyframe"),
     setup: jest.fn()
 }));
 
@@ -145,5 +146,18 @@ describe("DOM", () => {
     test("should create an element with action attributes and children", () => {
         const element = dom.createElement("button", { onClick: () => {}, className: "mock"}, "Content");
         expect(element.toString()).toBe(`<button className="mock" onClick={() => { }}>Content</button>`);
+    });
+
+    test("should create keyframe", () => {
+        const keyframe = dom.createStyleKeyframe(`
+        from {
+            color: red;
+        }
+        to {
+            color: blue;
+        }
+        `);
+        const element = dom.createElement("button", { onClick: () => {}, className: keyframe}, "Content");
+        expect(element.toString()).toBe(`<button className="mocked-keyframe" onClick={() => { }}>Content</button>`);
     });
 });

@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 23
       - run: npm ci
-      - run: npm test
+      - uses: ArtiomTr/jest-coverage-report-action@v2
       - run: npm run build
       - name: Setup Vals
         run: |

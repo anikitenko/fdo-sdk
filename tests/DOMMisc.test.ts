@@ -13,7 +13,7 @@ describe("DOMMisc", () => {
     });
 
     it("should create a divider with correct default options", () => {
-        const divider = domMisc.divider({classes: ["test"], id: "test"});
+        const divider = domMisc.divider({classes: ["test"]}, "test");
         expect(divider.toString()).toBe(`<hr id="test" className="test go2473750146"></hr>`)
     })
 })

@@ -1,18 +1,21 @@
 import {DOM} from "./DOM";
 
 export class DOMInput extends DOM {
+    private readonly id: string | undefined
     private readonly options: Partial<typeof DOM.DEFAULT_OPTIONS>
     private readonly props: Record<string, any> | undefined
 
     /**
      * Creates a new DOMInput instance.
+     * @param id - The id of the input.
      * @param styleOptions - The style options to apply to the input.
      * @param props - The properties to apply to the input.
      * @constructor - Creates a new DOMInput instance with the given style options and properties.
      */
-    constructor(styleOptions: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
+    constructor(id :string, styleOptions: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
                 props?: Record<string, any>) {
-        super()
+        super(true)
+        this.id = id
         this.options = styleOptions
         this.props = props
     }
@@ -26,22 +29,21 @@ export class DOMInput extends DOM {
      * const input = new DOMInput().createInput("text");
      */
     public createInput(type: string): string {
-        const props = this.combineProperties("", this.options)
+        const props = this.combineProperties("", this.options, this.id)
 
         return this.createElement("input", {...props, type: type, ...this.props});
     }
 
     /**
      * Creates a new textarea element.
-     * @param type - The type of the textarea.
      * @returns {string} - The rendered textarea element.
      * @uiName Create textarea
      * @example <caption>Create a new textarea element.</caption>
      * const textarea = new DOMInput().createTextarea("text");
      */
-    public createTextarea(type: string): string {
-        const props = this.combineProperties("", this.options)
+    public createTextarea(): string {
+        const props = this.combineProperties("", this.options, this.id)
 
-        return this.createElement("textarea", {...props, type: type, ...this.props});
+        return this.createElement("textarea", {...props, ...this.props});
     }
 }

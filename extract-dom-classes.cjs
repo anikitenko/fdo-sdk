@@ -30,7 +30,6 @@ class DOMMetadataPlugin {
                             for (const cls of classes) {
                                 const className = cls.getName();
                                 const constructors = cls.getConstructors()
-                                    .filter(ctor => ctor.getBody())
                                     .map(ctor => {
                                         const jsDoc = ctor.getJsDocs()[0];
                                         const description = jsDoc?.getComment() || "";

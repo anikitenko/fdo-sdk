@@ -15,9 +15,9 @@ describe("DOMButton", () => {
     it("should create a button element with correct properties", () => {
         const mockOnClick = () => {};
         const label = "Click Me";
-        const options = { id: "test-button", classes: ["custom-class"] };
+        const options = { classes: ["custom-class"] };
 
-        const button = domButton.createButton(label, mockOnClick, options);
+        const button = domButton.createButton(label, mockOnClick, options, "test-button");
 
         expect(button.toString()).toBe(`<button id="test-button" className="pure-button custom-class go11" onClick={() => { }}>Click Me</button>`);
     });

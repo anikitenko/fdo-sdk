@@ -7,13 +7,16 @@ import {css as gooberCss, extractCss, keyframes, setup} from 'goober';
 setup(null);
 
 export class DOM {
-    // Define a private static readonly type reference for UI options
+    private readonly selfCloseTag: boolean
     static readonly DEFAULT_OPTIONS = {
         classes: [] as string[],
         style: {} as Record<string, string>,
         disableDefaultClass: false,
-        id: "",
     };
+
+    constructor(selfCloseTag?: boolean) {
+        this.selfCloseTag = selfCloseTag ?? false
+    }
 
     /**
      * Creates a style using goober’s css function.
@@ -44,7 +47,7 @@ export class DOM {
      * @returns {string} - The generated class name.
      * @param keyframe - The keyframe string to create.
      * @uiName Create keyframe from style
-     * @example const class = createStyleKeyframe(`
+     * @example const className = createStyleKeyframe(`
      *   from {
      *     transform: rotate(0deg);
      *   }
@@ -82,20 +85,25 @@ export class DOM {
         const content = this.flattenChildren(children);
         const attributes = this.createAttributes(props);
         const onAttributes = this.createOnAttributes(props);
+        const closeTagWithContent = `>${content.join('')}</${tag}>`
+        const closeTag = this.selfCloseTag ? "/>" : closeTagWithContent
 
+        let openTag;
         if (attributes && !onAttributes) {
-            return `<${tag} ${attributes}>${content.join('')}</${tag}>`;
+            openTag = `<${tag} ${attributes}`;
         } else if (onAttributes && !attributes) {
-            return `<${tag} ${onAttributes}>${content.join('')}</${tag}>`;
+            openTag = `<${tag} ${onAttributes}`;
         } else if (attributes && onAttributes) {
-            return `<${tag} ${attributes} ${onAttributes}>${content.join('')}</${tag}>`;
+            openTag = `<${tag} ${attributes} ${onAttributes}`;
         } else {
-            return `<${tag}>${content.join('')}</${tag}>`;
+            openTag = `<${tag}`;
         }
+
+        return openTag + closeTag
     }
 
-    protected combineProperties(defaultClass: string, options: Partial<typeof DOM.DEFAULT_OPTIONS>): Record<string, any> {
-        const {classes, style, disableDefaultClass, id} = this.mergeOptions(options);
+    protected combineProperties(defaultClass: string, options: Partial<typeof DOM.DEFAULT_OPTIONS>, id: string = ""): Record<string, any> {
+        const {classes, style, disableDefaultClass} = this.mergeOptions(options);
         const defaultPropClass = disableDefaultClass ? "" : defaultClass;
 
         const classString = (classes || []).join(" ");
