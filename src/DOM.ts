@@ -14,6 +14,11 @@ export class DOM {
         disableDefaultClass: false,
     };
 
+    /**
+     * Creates a new DOM instance.
+     * @constructor - Creates a new DOM instance.
+     * @param selfCloseTag - Whether the element should be self-closing. Defaults to false.
+     */
     constructor(selfCloseTag?: boolean) {
         this.selfCloseTag = selfCloseTag ?? false
     }
