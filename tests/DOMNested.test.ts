@@ -106,4 +106,9 @@ describe("DOMNested", () => {
         expect(output).toContain("<form");
     });
 
+    it("should create list item with custom attributes", () => {
+        const output = domNested.createListItem(["test"], { classes: ["test-class"], customAttributes: { "data-static": "true" } }, "test-id");
+        expect(output).toContain(`data-static="true"`);
+    })
+
 })

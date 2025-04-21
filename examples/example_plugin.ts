@@ -1,4 +1,4 @@
-import {FDO_SDK, PluginMetadata, FDOInterface} from '@anikitenko/fdo-sdk';
+import {FDO_SDK, PluginMetadata, FDOInterface} from '../src';
 
 class MyPlugin extends FDO_SDK implements FDOInterface {
     private readonly _metadata: PluginMetadata = {

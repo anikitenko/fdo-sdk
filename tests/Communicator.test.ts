@@ -107,23 +107,33 @@ describe("Communicator", () => {
         expect(mockPostMessage).toHaveBeenCalledWith({ type: MESSAGE_TYPE.PLUGIN_RENDER, response: "mock_rendered_output" });
     });
 
-    test("should handle UI_MESSAGE event", () => {
-        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, { handler: "customHandler", content: "test_data" });
+    test("should handle UI_MESSAGE event", async () => {
+        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
+            handler: "customHandler",
+            content: "test_data"
+        });
+
+        // Wait for next event loop tick or async operation
+        await Promise.resolve(); // or use waitFor or flushPromises if needed
 
         expect(PluginRegistry.callHandler).toHaveBeenCalledWith("customHandler", "test_data");
         expect(mockPostMessage).toHaveBeenCalledWith({
             type: MESSAGE_TYPE.UI_MESSAGE,
-            response: "mock_handler_output",
+            response: "mock_handler_output"
         });
     });
 
-    test("should handle UI_MESSAGE event with default handler", () => {
-        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, { content: "test_data" });
+    test("should handle UI_MESSAGE event with default handler", async () => {
+        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
+            content: "test_data"
+        });
+
+        await Promise.resolve();
 
         expect(PluginRegistry.callHandler).toHaveBeenCalledWith("defaultHandler", "test_data");
         expect(mockPostMessage).toHaveBeenCalledWith({
             type: MESSAGE_TYPE.UI_MESSAGE,
-            response: "mock_handler_output",
+            response: "mock_handler_output"
         });
     });
 

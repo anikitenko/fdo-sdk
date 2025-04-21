@@ -155,18 +155,18 @@ describe("PluginRegistry", () => {
         expect(PluginRegistry["handlers"]["testHandler"]).toBe(mockHandler);
     });
 
-    test("should call a registered handler and return its output", () => {
+    test("should call a registered handler and return its output", async () => {
         const mockHandler = jest.fn((data) => `Received: ${data}`);
         PluginRegistry.registerHandler("testHandler", mockHandler);
 
-        const result = PluginRegistry.callHandler("testHandler", "Hello");
+        const result = await PluginRegistry.callHandler("testHandler", "Hello");
 
         expect(mockHandler).toHaveBeenCalledWith("Hello");
         expect(result).toBe("Received: Hello");
     });
 
-    test("should log a warning and return null if handler is not registered", () => {
-        const result = PluginRegistry.callHandler("unknownHandler", "Hello");
+    test("should log a warning and return null if handler is not registered", async () => {
+        const result = await PluginRegistry.callHandler("unknownHandler", "Hello");
 
         expect(mockLogger).toHaveBeenCalledWith("Handler 'unknownHandler' is not registered.");
         expect(result).toBeNull();

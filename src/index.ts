@@ -3,6 +3,10 @@ import "electron";
 import {Communicator} from "./Communicator";
 import {PluginRegistry} from "./PluginRegistry";
 
+export { atomicWriteFile, atomicWriteFileSync } from "./utils/atomic";
+export { pify } from "./utils/pify";
+export { runWithSudo } from "./utils/runWithSudo";
+
 export * from "./FDOInterface";
 export * from "./PluginMetadata";
 export * from "./QuickActionMixin";
@@ -66,6 +70,7 @@ declare global {
     type MinSizes = { [track: number]: number };
     type Direction = 'row' | 'column';
     type GridTemplateProperty = 'grid-template-column' | 'grid-template-row';
+
     interface SplitOptions {
         // An array of objects, with `element` and `track` keys. `element` is the element in the grid to enable as a draggable gutter. `track` is the grid track the gutter element is positioned on. These must match.
         columnGutters?: Gutter[];
@@ -110,6 +115,7 @@ declare global {
         gridTemplateColumns?: string;
         gridTemplateRows?: string;
     }
+
     interface SplitInstance {
         // Adds a draggable row gutter. The element must be a direct descendant of the element with grid layout, and positioned in the specified track.
         addColumnGutter: (element: HTMLElement, track: number) => void;
@@ -122,6 +128,7 @@ declare global {
         // Destroy the instance by removing the attached event listeners. If `immediate = false` is passed, the instance is destroyed after dragging ends. If a gutter isn't currently being dragged, it's destroyed immediately.
         destroy: (immediate?: boolean) => void;
     }
+
     function Split(options: SplitOptions): SplitInstance;
 }
 

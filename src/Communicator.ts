@@ -52,9 +52,19 @@ export class Communicator extends EventEmitter {
         });
 
         // 🔹 UI ↔ Plugin Communication
-        this.on(MESSAGE_TYPE.UI_MESSAGE, (data) => {
+        this.on(MESSAGE_TYPE.UI_MESSAGE, async (data) => {
             const handlerName = data.handler || "defaultHandler";
-            const response = PluginRegistry.callHandler(handlerName, data.content);
+            let response;
+
+            try {
+                response = await PluginRegistry.callHandler(handlerName, data.content);
+            } catch (error) {
+                this._logger.error(new Error(`Error in handler "${handlerName}": ${error}`));
+                response = {
+                    error: error instanceof Error ? error.message : "Unknown error"
+                };
+            }
+
             this.sendMessage({
                 type: MESSAGE_TYPE.UI_MESSAGE,
                 response

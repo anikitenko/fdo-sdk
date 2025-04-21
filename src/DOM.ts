@@ -141,10 +141,24 @@ export class DOM {
      * @uiSkip
      */
     public createAttributes(props: Record<string, any>): string {
+        const booleanAttrs = new Set([
+            "checked", "disabled", "readonly", "required", "autoplay", "controls",
+            "hidden", "multiple", "selected", "default", "open", "loop"
+        ])
+
         return Object.entries(props)
             .filter(([key, value]) => !(key.startsWith("on") && typeof value === "function"))
-            .map(([key, value]) => `${key}="${value}"`)
-            .join(' ').trim();
+            .map(([key, value]) => {
+                if (typeof value === "boolean") {
+                    return booleanAttrs.has(key)
+                        ? (value ? key : "") // render as `checked` if true, skip if false
+                        : `${key}="${value}"` // custom boolean-like (e.g., data-*) as string
+                }
+                return `${key}="${value}"`
+            })
+            .filter(Boolean)
+            .join(" ")
+            .trim()
     }
 
     /**
