@@ -1,28 +1,29 @@
 import {StoreType} from "./types";
 
-export const StoreDefault: StoreType = (() => {
-    const memory: Record<string, any> = {}
-
-    return {
+export const StoreDefault: StoreType & { memory?: Record<string, any> } = (() => {
+    const store: StoreType & { memory?: Record<string, any> } = {
+        memory: {},
         get(key) {
-            return memory.hasOwnProperty(key) ? memory[key] : undefined
+            return Object.prototype.hasOwnProperty.call(this.memory!, key) ? this.memory![key] : undefined
         },
         set(key, value) {
-            memory[key] = value
+            this.memory![key] = value
         },
         remove(key) {
-            delete memory[key]
+            delete this.memory![key]
         },
         clear() {
-            for (const key in memory) {
-                delete memory[key]
+            for (const key in this.memory) {
+                delete this.memory[key]
             }
         },
         has(key) {
-            return key in memory
+            return key in this.memory!
         },
         keys() {
-            return Object.keys(memory)
+            return Object.keys(this.memory!)
         }
     }
+
+    return store
 })()

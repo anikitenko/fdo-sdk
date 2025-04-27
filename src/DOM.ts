@@ -91,7 +91,7 @@ export class DOM {
         const attributes = this.createAttributes(props);
         const onAttributes = this.createOnAttributes(props);
         const closeTagWithContent = `>${content.join('')}</${tag}>`
-        const closeTag = this.selfCloseTag ? "/>" : closeTagWithContent
+        const closeTag = this.selfCloseTag ? ` />` : closeTagWithContent
 
         let openTag;
         if (attributes && !onAttributes) {

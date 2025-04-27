@@ -22,8 +22,8 @@ export type AddQuickAction = {
 export interface StoreType {
     get<T = any>(key: string): T | undefined
     set<T = any>(key: string, value: T): void
-    remove?(key: string): void
-    clear?(): void
-    has?(key: string): boolean
-    keys?(): string[]
+    remove(key: string): void
+    clear(): void
+    has(key: string): boolean
+    keys(): string[]
 }

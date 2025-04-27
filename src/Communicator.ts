@@ -21,7 +21,9 @@ export class Communicator extends EventEmitter {
             const data = message.data;
             this._logger.log(`Received from main process: ${data?.message}`);
 
-            this.emit(data?.message, data?.content);
+            if (data) {
+                this.emit(data.message, data.content);
+            }
         });
 
         // 🔹 Register event handlers dynamically
