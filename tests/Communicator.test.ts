@@ -13,6 +13,7 @@ global.process.parentPort = {
 jest.mock("../src/Logger", () => ({
     Logger: jest.fn().mockImplementation(() => ({
         log: jest.fn(),
+        error: jest.fn(),
     })),
 }));
 
@@ -107,23 +108,33 @@ describe("Communicator", () => {
         expect(mockPostMessage).toHaveBeenCalledWith({ type: MESSAGE_TYPE.PLUGIN_RENDER, response: "mock_rendered_output" });
     });
 
-    test("should handle UI_MESSAGE event", () => {
-        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, { handler: "customHandler", content: "test_data" });
+    test("should handle UI_MESSAGE event", async () => {
+        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
+            handler: "customHandler",
+            content: "test_data"
+        });
+
+        // Wait for next event loop tick or async operation
+        await Promise.resolve(); // or use waitFor or flushPromises if needed
 
         expect(PluginRegistry.callHandler).toHaveBeenCalledWith("customHandler", "test_data");
         expect(mockPostMessage).toHaveBeenCalledWith({
             type: MESSAGE_TYPE.UI_MESSAGE,
-            response: "mock_handler_output",
+            response: "mock_handler_output"
         });
     });
 
-    test("should handle UI_MESSAGE event with default handler", () => {
-        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, { content: "test_data" });
+    test("should handle UI_MESSAGE event with default handler", async () => {
+        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
+            content: "test_data"
+        });
+
+        await Promise.resolve();
 
         expect(PluginRegistry.callHandler).toHaveBeenCalledWith("defaultHandler", "test_data");
         expect(mockPostMessage).toHaveBeenCalledWith({
             type: MESSAGE_TYPE.UI_MESSAGE,
-            response: "mock_handler_output",
+            response: "mock_handler_output"
         });
     });
 
@@ -136,5 +147,97 @@ describe("Communicator", () => {
         onMock({ data: undefined });
 
         expect(emitSpy).toHaveBeenCalledTimes(0)
+    });
+
+    describe("Error handling in UI_MESSAGE", () => {
+        test("should handle Error objects thrown by handler", async () => {
+            // Setup PluginRegistry.callHandler to throw an Error
+            const error = new Error("Test error");
+            (PluginRegistry.callHandler as jest.Mock).mockRejectedValueOnce(error);
+
+            communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
+                handler: "errorHandler",
+                content: "test_data"
+            });
+
+            // Wait for async operation to complete
+            await Promise.resolve();
+
+            // Verify error was logged
+            expect((communicator as any)._logger.error).toHaveBeenCalled();
+
+            // Verify error response was sent
+            expect(mockPostMessage).toHaveBeenCalledWith({
+                type: MESSAGE_TYPE.UI_MESSAGE,
+                response: {
+                    error: "Test error"
+                }
+            });
+        });
+
+        test("should handle non-Error objects thrown by handler", async () => {
+            // Setup PluginRegistry.callHandler to throw a non-Error
+            (PluginRegistry.callHandler as jest.Mock).mockRejectedValueOnce("String error");
+
+            communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
+                handler: "errorHandler",
+                content: "test_data"
+            });
+
+            // Wait for async operation to complete
+            await Promise.resolve();
+
+            // Verify error was logged
+            expect((communicator as any)._logger.error).toHaveBeenCalled();
+
+            // Verify error response was sent
+            expect(mockPostMessage).toHaveBeenCalledWith({
+                type: MESSAGE_TYPE.UI_MESSAGE,
+                response: {
+                    error: "Unknown error"
+                }
+            });
+        });
+    });
+
+    describe("Comprehensive message handling", () => {
+        test("should handle null message data", () => {
+            const emitSpy = jest.spyOn(communicator, "emit");
+
+            // Simulate message event with null data
+            const callback = mockOnMessage.mock.calls[0][1];
+            callback({ data: null });
+
+            // Should not emit any event
+            expect(emitSpy).toHaveBeenCalledTimes(0);
+        });
+
+        test("should handle message with missing message property", () => {
+            const emitSpy = jest.spyOn(communicator, "emit");
+
+            // Simulate message event with data but no message property
+            const callback = mockOnMessage.mock.calls[0][1];
+            callback({ data: { content: "test" } });
+
+            // Should log with undefined message
+            expect((communicator as any)._logger.log).toHaveBeenCalledWith("Received from main process: undefined");
+
+            // Should emit with undefined message type
+            expect(emitSpy).toHaveBeenCalledWith(undefined, "test");
+        });
+
+        test("should handle message with empty object data", () => {
+            const emitSpy = jest.spyOn(communicator, "emit");
+
+            // Simulate message event with empty object data
+            const callback = mockOnMessage.mock.calls[0][1];
+            callback({ data: {} });
+
+            // Should log with undefined message
+            expect((communicator as any)._logger.log).toHaveBeenCalledWith("Received from main process: undefined");
+
+            // Should emit with undefined message type and content
+            expect(emitSpy).toHaveBeenCalledWith(undefined, undefined);
+        });
     });
 });

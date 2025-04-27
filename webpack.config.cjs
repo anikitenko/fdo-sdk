@@ -50,6 +50,8 @@ module.exports = {
         util: 'util',
         stream: 'stream',
         buffer: 'buffer',
-        crypto: 'crypto'
+        crypto: 'crypto',
+        "worker_threads": "worker_threads",
+        "child_process": "child_process"
     }
 };

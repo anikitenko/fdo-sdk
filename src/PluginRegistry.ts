@@ -1,11 +1,17 @@
-import {FDO_SDK} from "./index";
+import {FDO_SDK, StoreType} from "./index";
 import {QuickAction, SidePanelConfig} from "./types";
 import {Logger} from "./Logger";
+import {StoreDefault} from "./StoreDefault";
+import {StoreJson} from "./StoreJson";
 
 export class PluginRegistry {
     private static readonly _logger: Logger = new Logger()
     private static pluginInstance: FDO_SDK | null = null;
     private static readonly handlers: Record<string, Function> = {};
+    private static readonly stores: Record<string, StoreType> = {
+        default: StoreDefault,
+        json: StoreJson,
+    }
 
     public static registerPlugin(plugin: FDO_SDK): void {
         this.pluginInstance = plugin;
@@ -13,6 +19,23 @@ export class PluginRegistry {
 
     public static registerHandler(name: string, handler: (data: any) => any) {
         this.handlers[name] = handler;
+    }
+
+    public static useStore(name: string = "default") : StoreType {
+        if (this.stores[name]) {
+            return this.stores[name];
+        } else {
+            this._logger.warn(`Store '${name}' is not registered. Using default store...`);
+            return StoreDefault
+        }
+    }
+
+    public static registerStore(name: string, store: StoreType) {
+        if (this.stores[name]) {
+            this._logger.warn(`Store '${name}' is already registered. Skipping...`);
+            return
+        }
+        this.stores[name] = store;
     }
 
     public static getQuickActions(): QuickAction[] {
@@ -40,9 +63,16 @@ export class PluginRegistry {
         }
     }
 
-    public static callHandler(name: string, data: any) {
-        if (PluginRegistry.handlers[name]) {
-            return PluginRegistry.handlers[name](data);
+    public static async callHandler(name: string, data: any): Promise<any> {
+        const handler = PluginRegistry.handlers[name];
+
+        if (handler) {
+            try {
+                return await handler(data);
+            } catch (err) {
+                this._logger.error(new Error(`Handler '${name}' threw an error: ${err}`));
+                return null;
+            }
         } else {
             this._logger.warn(`Handler '${name}' is not registered.`);
             return null;

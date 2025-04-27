@@ -12,6 +12,11 @@ describe("DOMNested", () => {
         domText = new DOMText();
     });
 
+    it("should create a DOMNested instance", () => {
+        const instance = new DOMNested();
+        expect(instance).toBeInstanceOf(DOMNested);
+    });
+
     it("should be defined", () => {
         expect(domNested).toBeDefined();
     });
@@ -106,4 +111,66 @@ describe("DOMNested", () => {
         expect(output).toContain("<form");
     });
 
+    it("should create list item with custom attributes", () => {
+        const output = domNested.createListItem(["test"], { classes: ["test-class"], customAttributes: { "data-static": "true" } }, "test-id");
+        expect(output).toContain(`data-static="true"`);
+    });
+
+    it("should create block div with custom attributes", () => {
+        const output = domNested.createBlockDiv(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "block-div" } }, "test-id");
+        expect(output).toContain(`data-testid="block-div"`);
+        expect(output).toContain(`id="test-id"`);
+        expect(output).toContain(`className=`);
+    });
+
+    it("should create list with custom attributes", () => {
+        const output = domNested.createList(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "list" } }, "test-id");
+        expect(output).toContain(`data-testid="list"`);
+        expect(output).toContain(`id="test-id"`);
+        expect(output).toContain(`className=`);
+    });
+
+    it("should create fieldset with custom attributes", () => {
+        const output = domNested.createFieldset(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "fieldset" } }, "test-id");
+        expect(output).toContain(`data-testid="fieldset"`);
+        expect(output).toContain(`id="test-id"`);
+        expect(output).toContain(`className=`);
+    });
+
+    it("should create legend with custom attributes", () => {
+        const output = domNested.createLegend(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "legend" } }, "test-id");
+        expect(output).toContain(`data-testid="legend"`);
+        expect(output).toContain(`id="test-id"`);
+        expect(output).toContain(`className=`);
+    });
+
+    it("should create form with custom attributes", () => {
+        const output = domNested.createForm(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "form" } }, "test-id");
+        expect(output).toContain(`data-testid="form"`);
+        expect(output).toContain(`id="test-id"`);
+        expect(output).toContain(`className=`);
+    });
+
+    it("should handle empty children arrays", () => {
+        const output = domNested.createBlockDiv([]);
+        expect(output).toContain("<div");
+        expect(output).toContain("</div>");
+    });
+
+    it("should handle multiple custom attributes", () => {
+        const output = domNested.createBlockDiv(
+            ["test"], 
+            { 
+                customAttributes: { 
+                    "data-testid": "block-div", 
+                    "aria-label": "Test Div",
+                    "data-value": "123"
+                } 
+            }, 
+            "test-id"
+        );
+        expect(output).toContain(`data-testid="block-div"`);
+        expect(output).toContain(`aria-label="Test Div"`);
+        expect(output).toContain(`data-value="123"`);
+    });
 })

@@ -81,17 +81,61 @@ describe("DOM", () => {
         expect(result).toEqual(["text1", "text2", "text3"]);
     });
 
-    test("flattenChildren should return a single child instead of an array if only one child exists", () => {
+    test("flattenChildren should return a single child in an array", () => {
         const children = ["onlyChild"];
         const result = (dom as any).flattenChildren(children);
 
         expect(result).toStrictEqual(["onlyChild"]);
     });
 
+    test("flattenChildren should handle empty arrays", () => {
+        const children: any[] = [];
+        const result = (dom as any).flattenChildren(children);
+
+        expect(result).toEqual([]);
+    });
+
+    test("flattenChildren should filter out null and undefined but keep other falsy values", () => {
+        const children = ["text", null, undefined, false, 0, ""];
+        const result = (dom as any).flattenChildren(children);
+
+        // The implementation filters out null and undefined but keeps other falsy values like false, 0, and ""
+        expect(result).toEqual(["text", false, 0, ""]);
+    });
+
+    test("flattenChildren should handle complex nested structures", () => {
+        const children = [
+            [["level3"], [["level4"]]],
+            null,
+            [undefined, ["text"]],
+            ["", 0, false]
+        ];
+        const result = (dom as any).flattenChildren(children);
+
+        expect(result).toEqual(["level3", "level4", "text", "", 0, false]);
+    });
+
     test("renderHTML should return HTML with extracted CSS", () => {
         const element = "<div>Hello</div>";
         const result = dom.renderHTML(element);
+
+        // Verify extractCss was called to get the styles
         expect(extractCss).toHaveBeenCalled();
+
+        // Check the structure of the output
+        expect(result).toContain("<style>{\`mocked-css\`}</style>"); // Style tag with extracted CSS
+        expect(result).toContain("<div>Hello</div>"); // Original element
+        expect(result).toContain('<script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>'); // Script placeholder
+
+        // Verify the order of elements
+        const styleIndex = result.indexOf("<style>");
+        const elementIndex = result.indexOf("<div>");
+        const scriptIndex = result.indexOf("<script");
+
+        expect(styleIndex).toBeLessThan(elementIndex); // Style should come before the element
+        expect(elementIndex).toBeLessThan(scriptIndex); // Element should come before the script
+
+        // Verify the complete string
         expect(result).toBe(`<style>{\`mocked-css\`}</style><div>Hello</div><script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>`);
     });
 
@@ -111,6 +155,25 @@ describe("DOM", () => {
         expect(attributes).toBe(`id="test" class="box"`);
     });
 
+    test("createAttributes should handle boolean attributes correctly", () => {
+        const props = { 
+            checked: true, 
+            disabled: false, 
+            required: true,
+            readonly: false,
+            hidden: true,
+            "data-custom": true
+        };
+        const attributes = (dom as any).createAttributes(props);
+
+        expect(attributes).toContain("checked");
+        expect(attributes).not.toContain("disabled");
+        expect(attributes).toContain("required");
+        expect(attributes).not.toContain("readonly");
+        expect(attributes).toContain("hidden");
+        expect(attributes).toContain(`data-custom="true"`); // Custom boolean attributes use string format
+    });
+
     test("createOnAttributes should return only event handlers as stringified functions", () => {
         const mockClickHandler = jest.fn();
         const props = { onClick: mockClickHandler, onHover: jest.fn(), id: "test" };
@@ -121,50 +184,79 @@ describe("DOM", () => {
         expect(eventAttributes).not.toContain("id");
     });
 
-    test("createElement should create an HTML element with attributes and children", () => {
-        const element = dom.createElement("div", { id: "test", "class": "box" }, "Content");
+    test("createElement should create elements with various configurations", () => {
+        // Test case 1: Element with both attributes and children
+        const element1 = dom.createElement("div", { id: "test", "class": "box" }, "Content");
+        expect(element1.toString()).toBe(`<div id="test" class="box">Content</div>`);
 
-        expect(element.toString()).toBe(`<div id="test" class="box">Content</div>`);
+        // Test case 2: Element with no attributes
+        const element2 = dom.createElement("span", {}, "Hello");
+        expect(element2.toString()).toBe(`<span>Hello</span>`);
+
+        // Test case 3: Element with event handler
+        const element3 = dom.createElement("button", { onClick: () => {}}, "Content");
+        expect(element3.toString()).toBe(`<button onClick={() => { }}>Content</button>`);
+
+        // Test case 4: Element with both regular attributes and event handlers
+        const element4 = dom.createElement("button", { onClick: () => {}, className: "mock"}, "Content");
+        expect(element4.toString()).toBe(`<button className="mock" onClick={() => { }}>Content</button>`);
     });
 
-    test("createElement should create an element with no attributes", () => {
-        const element = dom.createElement("span", {}, "Hello");
-
-        expect(element.toString()).toBe(`<span>Hello</span>`);
-    });
-
-    test("should create an element with attributes and children", () => {
-        const element = dom.createElement("div", { id: "test", class: "box" }, "Content");
-        expect(element.toString()).toBe(`<div id="test" class="box">Content</div>`);
-    });
-
-    test("should create an element with action attributes", () => {
-        const element = dom.createElement("button", { onClick: () => {}}, "Content");
-        expect(element.toString()).toBe(`<button onClick={() => { }}>Content</button>`);
-    });
-
-    test("should create an element with action attributes and children", () => {
-        const element = dom.createElement("button", { onClick: () => {}, className: "mock"}, "Content");
-        expect(element.toString()).toBe(`<button className="mock" onClick={() => { }}>Content</button>`);
-    });
-
-    test("should create keyframe", () => {
-        const keyframe = dom.createStyleKeyframe(`
+    test("should create keyframe and return the generated class name", () => {
+        const keyframeCSS = `
         from {
             color: red;
         }
         to {
             color: blue;
         }
-        `);
-        const element = dom.createElement("button", { onClick: () => {}, className: keyframe}, "Content");
+        `;
+        const keyframeClass = dom.createStyleKeyframe(keyframeCSS);
+
+        // Verify the keyframes function was called
+        const keyframesMock = require("goober").keyframes as jest.Mock;
+        expect(keyframesMock).toHaveBeenCalled();
+
+        // Verify the returned class name
+        expect(keyframeClass).toBe("mocked-keyframe");
+    });
+
+    test("should create keyframe and use it in an element", () => {
+        const keyframeCSS = `
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+        `;
+        const keyframeClass = dom.createStyleKeyframe(keyframeCSS);
+
+        // Use the keyframe class in an element
+        const element = dom.createElement("button", { 
+            onClick: () => {}, 
+            className: keyframeClass
+        }, "Content");
+
+        // Verify the element has the keyframe class
         expect(element.toString()).toBe(`<button className="mocked-keyframe" onClick={() => { }}>Content</button>`);
+    });
+
+    test("should create keyframe with complex animation steps", () => {
+        const complexKeyframe = `
+        0% { opacity: 0; transform: scale(0.5); }
+        50% { opacity: 0.5; transform: scale(0.75); }
+        100% { opacity: 1; transform: scale(1); }
+        `;
+
+        const keyframeClass = dom.createStyleKeyframe(complexKeyframe);
+
+        // Verify the keyframes function was called
+        const keyframesMock = require("goober").keyframes as jest.Mock;
+        expect(keyframesMock).toHaveBeenCalled();
+        expect(keyframeClass).toBe("mocked-keyframe");
     });
 
     test("createElement with no props or children (empty tag)", () => {
         const dom = new DOM(true);
         const result = dom.createElement("div");
-        expect(result).toBe("<div/>");
+        expect(result).toBe("<div />");
     });
 
     test("createElement with attributes only", () => {
