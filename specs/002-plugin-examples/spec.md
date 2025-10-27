@@ -156,12 +156,16 @@ A plugin developer wants to create rich, styled UI components using the SDK's DO
 
 - **SC-001**: Developers can create their first working plugin in under 15 minutes using the basic example as a starting point
 - **SC-002**: Each example runs successfully without modification in a standard FDO SDK environment
-- **SC-003**: 90% of plugin developers report that examples helped them understand SDK features without needing additional documentation
+- **SC-003**: 90% of plugin developers report that examples helped them understand SDK features without needing additional documentation (measured via post-release developer survey sent to npm package users)
 - **SC-004**: Examples cover 100% of the public SDK API surface area (all exported classes and methods are demonstrated in at least one example)
-- **SC-005**: Plugin development onboarding time is reduced by 50% compared to learning from API documentation alone
+- **SC-005**: Plugin development onboarding time is reduced by 50% compared to learning from API documentation alone (measured by comparing average time-to-first-plugin before and after examples release, tracked via developer surveys and GitHub issue timestamps)
 - **SC-006**: Zero critical bugs or errors in example code that would prevent them from running
 - **SC-007**: Each example includes at least 20% inline documentation relative to code volume (measured by comment lines vs code lines)
 - **SC-008**: Examples demonstrate at least 3 different complexity levels (basic, intermediate, advanced) to support developers at different skill levels
+
+### Measurement Approach
+
+- **SC-003 & SC-005**: Post-release developer surveys will be conducted 3 months and 6 months after examples are published to npm. Surveys will be sent to developers who have downloaded the package and will ask about their experience with the examples, time to create first plugin, and whether examples were sufficient without additional documentation. Baseline metrics for SC-005 will be established by analyzing historical GitHub issues and support requests to estimate average onboarding time before examples existed.
 
 ## Assumptions
 

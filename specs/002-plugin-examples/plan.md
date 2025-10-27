@@ -60,6 +60,8 @@ specs/[###-feature]/
 
 ```text
 examples/
+├── README.md                    # Brief overview pointing to quickstart.md
+├── metadata-template.ts         # Reusable PluginMetadata template/helper
 ├── 01-basic-plugin.ts           # P1: Basic plugin creation (lifecycle, rendering)
 ├── 02-interactive-plugin.ts     # P2: Interactive UI with handlers and messaging
 ├── 03-persistence-plugin.ts     # P3: Data persistence with storage backends
@@ -77,7 +79,7 @@ tests/
 └── ...                          # Existing tests (no changes for this feature)
 ```
 
-**Structure Decision**: Single project structure. All 5 example files will be added to the existing `examples/` directory with numbered prefixes (01-05) to indicate learning progression. No changes to existing SDK source code or tests are required - this is purely additive content in the examples directory.
+**Structure Decision**: Single project structure. All 5 example files will be added to the existing `examples/` directory with numbered prefixes (01-05) to indicate learning progression. The `metadata-template.ts` file provides a reusable template that developers can copy when creating their own plugins. The `examples/README.md` serves as a brief entry point that directs developers to the comprehensive `quickstart.md` guide in the specs directory. No changes to existing SDK source code or tests are required - this is purely additive content in the examples directory.
 
 ## Complexity Tracking
 
