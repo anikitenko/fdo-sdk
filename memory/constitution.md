@@ -63,4 +63,4 @@ The SDK follows Semantic Versioning (SemVer 2.0.0):
 
 All pull requests MUST be reviewed against these principles before merging. CI checks MUST enforce testing, building, and type checking requirements. Maintainers MUST ensure that changes align with the core principles outlined in this constitution.
 
-**Version**: 1.0.0 | **Ratified**: 2025-01-27 | **Last Amended**: 2025-01-27
+**Version**: 1.0.0 | **Ratified**: 2025-10-27 | **Last Amended**: 2025-10-27
