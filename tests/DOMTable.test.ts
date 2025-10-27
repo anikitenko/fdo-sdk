@@ -36,6 +36,11 @@ describe("DOMTable", () => {
             expect(thead).toContain("<thead");
             expect(thead).toContain("</thead>");
         });
+
+        it("should accept custom attributes", () => {
+            const thead = domTable.createTableHead([], { customAttributes: { "data-section": "header" } });
+            expect(thead).toContain('data-section="header"');
+        });
     });
 
     describe("createTableBody", () => {
@@ -43,6 +48,11 @@ describe("DOMTable", () => {
             const tbody = domTable.createTableBody(["<tr></tr>"]);
             expect(tbody).toContain("<tbody");
             expect(tbody).toContain("</tbody>");
+        });
+
+        it("should accept custom attributes", () => {
+            const tbody = domTable.createTableBody([], { customAttributes: { "data-section": "body" } });
+            expect(tbody).toContain('data-section="body"');
         });
     });
 
@@ -52,6 +62,11 @@ describe("DOMTable", () => {
             expect(tfoot).toContain("<tfoot");
             expect(tfoot).toContain("</tfoot>");
         });
+
+        it("should accept custom attributes", () => {
+            const tfoot = domTable.createTableFoot([], { customAttributes: { "data-section": "footer" } });
+            expect(tfoot).toContain('data-section="footer"');
+        });
     });
 
     describe("createTableRow", () => {
@@ -59,6 +74,11 @@ describe("DOMTable", () => {
             const row = domTable.createTableRow(["<td>Cell</td>"]);
             expect(row).toContain("<tr");
             expect(row).toContain("</tr>");
+        });
+
+        it("should accept custom attributes", () => {
+            const row = domTable.createTableRow([], { customAttributes: { "data-row-id": "123" } });
+            expect(row).toContain('data-row-id="123"');
         });
     });
 
@@ -73,6 +93,11 @@ describe("DOMTable", () => {
         it("should accept scope attribute", () => {
             const header = domTable.createTableHeader(["Name"], {}, undefined, { scope: "col" });
             expect(header).toContain('scope="col"');
+        });
+
+        it("should accept custom attributes", () => {
+            const header = domTable.createTableHeader(["Name"], { customAttributes: { "data-sortable": "true" } });
+            expect(header).toContain('data-sortable="true"');
         });
     });
 
@@ -89,6 +114,11 @@ describe("DOMTable", () => {
             expect(cell).toContain('colspan="2"');
             expect(cell).toContain('rowspan="3"');
         });
+
+        it("should accept custom attributes", () => {
+            const cell = domTable.createTableCell(["Data"], { customAttributes: { "data-cell-type": "numeric" } });
+            expect(cell).toContain('data-cell-type="numeric"');
+        });
     });
 
     describe("createCaption", () => {
@@ -97,6 +127,11 @@ describe("DOMTable", () => {
             expect(caption).toContain("<caption");
             expect(caption).toContain("</caption>");
             expect(caption).toContain("Table Caption");
+        });
+
+        it("should accept custom attributes", () => {
+            const caption = domTable.createCaption(["Table Caption"], { customAttributes: { "data-caption-style": "bold" } });
+            expect(caption).toContain('data-caption-style="bold"');
         });
     });
 

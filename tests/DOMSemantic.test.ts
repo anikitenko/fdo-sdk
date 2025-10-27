@@ -24,6 +24,11 @@ describe("DOMSemantic", () => {
             const article = domSemantic.createArticle([], { classes: ["custom-article"] });
             expect(article).toContain("custom-article");
         });
+
+        it("should accept custom attributes", () => {
+            const article = domSemantic.createArticle([], { customAttributes: { "data-article-id": "123" } });
+            expect(article).toContain('data-article-id="123"');
+        });
     });
 
     describe("createSection", () => {
@@ -32,6 +37,11 @@ describe("DOMSemantic", () => {
             expect(section).toContain("<section");
             expect(section).toContain("</section>");
             expect(section).toContain("<p>Content</p>");
+        });
+
+        it("should accept custom attributes", () => {
+            const section = domSemantic.createSection([], { customAttributes: { "data-section-name": "intro" } });
+            expect(section).toContain('data-section-name="intro"');
         });
     });
 
@@ -42,6 +52,11 @@ describe("DOMSemantic", () => {
             expect(nav).toContain("</nav>");
             expect(nav).toContain("<a href='/'>Home</a>");
         });
+
+        it("should accept custom attributes", () => {
+            const nav = domSemantic.createNav([], { customAttributes: { "aria-label": "Main navigation" } });
+            expect(nav).toContain('aria-label="Main navigation"');
+        });
     });
 
     describe("createHeader", () => {
@@ -50,6 +65,11 @@ describe("DOMSemantic", () => {
             expect(header).toContain("<header");
             expect(header).toContain("</header>");
             expect(header).toContain("<h1>Site Title</h1>");
+        });
+
+        it("should accept custom attributes", () => {
+            const header = domSemantic.createHeader([], { customAttributes: { "role": "banner" } });
+            expect(header).toContain('role="banner"');
         });
     });
 
@@ -60,6 +80,11 @@ describe("DOMSemantic", () => {
             expect(footer).toContain("</footer>");
             expect(footer).toContain("<p>&copy; 2025</p>");
         });
+
+        it("should accept custom attributes", () => {
+            const footer = domSemantic.createFooter([], { customAttributes: { "role": "contentinfo" } });
+            expect(footer).toContain('role="contentinfo"');
+        });
     });
 
     describe("createAside", () => {
@@ -69,6 +94,11 @@ describe("DOMSemantic", () => {
             expect(aside).toContain("</aside>");
             expect(aside).toContain("<h3>Sidebar</h3>");
         });
+
+        it("should accept custom attributes", () => {
+            const aside = domSemantic.createAside([], { customAttributes: { "aria-label": "Sidebar" } });
+            expect(aside).toContain('aria-label="Sidebar"');
+        });
     });
 
     describe("createMain", () => {
@@ -77,6 +107,11 @@ describe("DOMSemantic", () => {
             expect(main).toContain("<main");
             expect(main).toContain("</main>");
             expect(main).toContain("<article>Content</article>");
+        });
+
+        it("should accept custom attributes", () => {
+            const main = domSemantic.createMain([], { customAttributes: { "role": "main" } });
+            expect(main).toContain('role="main"');
         });
     });
 
