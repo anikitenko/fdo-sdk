@@ -173,4 +173,102 @@ describe("DOMNested", () => {
         expect(output).toContain(`aria-label="Test Div"`);
         expect(output).toContain(`data-value="123"`);
     });
+
+    describe("createOrderedList", () => {
+        it("should create an ol element", () => {
+            const child1 = domNested.createListItem(["First item"]);
+            const child2 = domNested.createListItem(["Second item"]);
+            const ol = domNested.createOrderedList([child1, child2]);
+            expect(ol).toContain("<ol");
+            expect(ol).toContain("</ol>");
+            expect(ol).toContain("First item");
+            expect(ol).toContain("Second item");
+        });
+
+        it("should apply custom classes to ordered list", () => {
+            const ol = domNested.createOrderedList([], { classes: ["custom-ol"] });
+            expect(ol).toContain("custom-ol");
+        });
+
+        it("should accept custom attributes on ordered list", () => {
+            const ol = domNested.createOrderedList([], { customAttributes: { "data-test": "value" } });
+            expect(ol).toContain('data-test="value"');
+        });
+    });
+
+    describe("createDefinitionList", () => {
+        it("should create a dl element", () => {
+            const term = domNested.createDefinitionTerm(["API"]);
+            const desc = domNested.createDefinitionDescription(["Application Programming Interface"]);
+            const dl = domNested.createDefinitionList([term, desc]);
+            expect(dl).toContain("<dl");
+            expect(dl).toContain("</dl>");
+            expect(dl).toContain("API");
+            expect(dl).toContain("Application Programming Interface");
+        });
+
+        it("should apply custom classes to definition list", () => {
+            const dl = domNested.createDefinitionList([], { classes: ["custom-dl"] });
+            expect(dl).toContain("custom-dl");
+        });
+    });
+
+    describe("createDefinitionTerm", () => {
+        it("should create a dt element", () => {
+            const dt = domNested.createDefinitionTerm(["Term"]);
+            expect(dt).toContain("<dt");
+            expect(dt).toContain("</dt>");
+            expect(dt).toContain("Term");
+        });
+
+        it("should apply custom classes to definition term", () => {
+            const dt = domNested.createDefinitionTerm(["Term"], { classes: ["custom-dt"] });
+            expect(dt).toContain("custom-dt");
+        });
+    });
+
+    describe("createDefinitionDescription", () => {
+        it("should create a dd element", () => {
+            const dd = domNested.createDefinitionDescription(["Description"]);
+            expect(dd).toContain("<dd");
+            expect(dd).toContain("</dd>");
+            expect(dd).toContain("Description");
+        });
+
+        it("should apply custom classes to definition description", () => {
+            const dd = domNested.createDefinitionDescription(["Description"], { classes: ["custom-dd"] });
+            expect(dd).toContain("custom-dd");
+        });
+    });
+
+    describe("integration - new list types", () => {
+        it("should create a complete ordered list structure", () => {
+            const item1 = domNested.createListItem(["Step 1"]);
+            const item2 = domNested.createListItem(["Step 2"]);
+            const item3 = domNested.createListItem(["Step 3"]);
+            const ol = domNested.createOrderedList([item1, item2, item3]);
+            
+            expect(ol).toContain("<ol");
+            expect(ol).toContain("<li");
+            expect(ol).toContain("Step 1");
+            expect(ol).toContain("Step 2");
+            expect(ol).toContain("Step 3");
+        });
+
+        it("should create a complete definition list structure", () => {
+            const term1 = domNested.createDefinitionTerm(["HTML"]);
+            const desc1 = domNested.createDefinitionDescription(["HyperText Markup Language"]);
+            const term2 = domNested.createDefinitionTerm(["CSS"]);
+            const desc2 = domNested.createDefinitionDescription(["Cascading Style Sheets"]);
+            const dl = domNested.createDefinitionList([term1, desc1, term2, desc2]);
+            
+            expect(dl).toContain("<dl");
+            expect(dl).toContain("<dt");
+            expect(dl).toContain("<dd");
+            expect(dl).toContain("HTML");
+            expect(dl).toContain("HyperText Markup Language");
+            expect(dl).toContain("CSS");
+            expect(dl).toContain("Cascading Style Sheets");
+        });
+    });
 })

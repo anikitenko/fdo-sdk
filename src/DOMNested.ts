@@ -174,4 +174,116 @@ export class DOMNested extends DOM {
 
         return this.createElement("form", props, children);
     }
+
+    /**
+     * Creates a new ordered list
+     * @param children - The children of the ordered list.
+     * @uiName Create ordered list
+     * @param options - The options to apply to the ordered list.
+     * @param id - The id of the ordered list.
+     * @returns {string} - The rendered ordered list.
+     * @example <caption>Create a new ordered list.</caption>
+     * const child1 = new DOMNested().createListItem(["First item"]);
+     * const child2 = new DOMNested().createListItem(["Second item"]);
+     * const ol = new DOMNested().createOrderedList([child1, child2]);
+     */
+    public createOrderedList(
+        children: any[],
+        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        id?: string
+    ): string {
+        const props = this.combineProperties("", options, id)
+
+        // Merge custom attributes (like data-static) into props
+        if (options.customAttributes) {
+            for (const [attr, value] of Object.entries(options.customAttributes)) {
+                props[attr] = value
+            }
+        }
+
+        return this.createElement("ol", props, children);
+    }
+
+    /**
+     * Creates a new definition list
+     * @param children - The children of the definition list (dt and dd elements).
+     * @uiName Create definition list
+     * @param options - The options to apply to the definition list.
+     * @param id - The id of the definition list.
+     * @returns {string} - The rendered definition list.
+     * @example <caption>Create a new definition list.</caption>
+     * const term1 = new DOMNested().createDefinitionTerm(["Term 1"]);
+     * const desc1 = new DOMNested().createDefinitionDescription(["Description 1"]);
+     * const dl = new DOMNested().createDefinitionList([term1, desc1]);
+     */
+    public createDefinitionList(
+        children: any[],
+        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        id?: string
+    ): string {
+        const props = this.combineProperties("", options, id)
+
+        // Merge custom attributes (like data-static) into props
+        if (options.customAttributes) {
+            for (const [attr, value] of Object.entries(options.customAttributes)) {
+                props[attr] = value
+            }
+        }
+
+        return this.createElement("dl", props, children);
+    }
+
+    /**
+     * Creates a new definition term
+     * @param children - The children of the definition term.
+     * @uiName Create definition term
+     * @param options - The options to apply to the definition term.
+     * @param id - The id of the definition term.
+     * @returns {string} - The rendered definition term.
+     * @example <caption>Create a new definition term.</caption>
+     * const dt = new DOMNested().createDefinitionTerm(["API"]);
+     */
+    public createDefinitionTerm(
+        children: any[],
+        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        id?: string
+    ): string {
+        const props = this.combineProperties("", options, id)
+
+        // Merge custom attributes (like data-static) into props
+        if (options.customAttributes) {
+            for (const [attr, value] of Object.entries(options.customAttributes)) {
+                props[attr] = value
+            }
+        }
+
+        return this.createElement("dt", props, children);
+    }
+
+    /**
+     * Creates a new definition description
+     * @param children - The children of the definition description.
+     * @uiName Create definition description
+     * @param options - The options to apply to the definition description.
+     * @param id - The id of the definition description.
+     * @returns {string} - The rendered definition description.
+     * @example <caption>Create a new definition description.</caption>
+     * const dd = new DOMNested().createDefinitionDescription(["Application Programming Interface"]);
+     */
+    public createDefinitionDescription(
+        children: any[],
+        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        id?: string
+    ): string {
+        const props = this.combineProperties("", options, id)
+
+        // Merge custom attributes (like data-static) into props
+        if (options.customAttributes) {
+            for (const [attr, value] of Object.entries(options.customAttributes)) {
+                props[attr] = value
+            }
+        }
+
+        return this.createElement("dd", props, children);
+    }
 }
