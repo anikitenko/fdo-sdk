@@ -20,6 +20,9 @@ export * from "./DOMLink";
 export * from "./DOMNested";
 export * from "./DOMText";
 export * from "./DOMMisc";
+export * from "./DOMTable";
+export * from "./DOMMedia";
+export * from "./DOMSemantic";
 
 declare global {
     interface Window {

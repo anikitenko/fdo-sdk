@@ -26,10 +26,12 @@
   "files": [
     "dist"
   ],
-  "scripts": {
+    "scripts": {
     "build": "webpack --config webpack.config.cjs",
     "build:types": "tsc --emitDeclarationOnly",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "coverage:open": "npx opn coverage/lcov-report/index.html || true"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
