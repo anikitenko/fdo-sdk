@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Build output
+dist/
+build/
+lib/
+out/
+
+# Coverage reports
+coverage/
+
+# Generated files
+*.generated.*
+*.min.*
+
+# Package files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Documentation
+docs/

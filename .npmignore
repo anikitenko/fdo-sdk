@@ -1,0 +1,50 @@
+# Source
+src/
+tests/
+examples/
+specs/
+
+# Development configs
+.github/
+.vscode/
+.idea/
+.eslintrc*
+.prettierrc*
+.babelrc*
+tsconfig.json
+jest.config.js
+webpack.config.*
+
+# Development files
+*.test.ts
+*.spec.ts
+*.test.js
+*.spec.js
+__tests__/
+__mocks__/
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Build artifacts
+coverage/
+.nyc_output/
+*.tsbuildinfo
+.eslintcache
+
+# Git files
+.git/
+.gitignore
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+.github/workflows/
+
+# Editor files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
