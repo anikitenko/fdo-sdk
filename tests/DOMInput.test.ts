@@ -60,9 +60,12 @@ describe("DOMInput", () => {
         });
 
         it("should handle disabled default class", () => {
+            // pass style: undefined to avoid the DEFAULT_OPTIONS empty style
+            // which otherwise causes createClassFromStyle to generate a class (e.g. go11)
             const select = new DOMInput("test-id", {
                 disableDefaultClass: true,
-                classes: ['custom-class']
+                classes: ['custom-class'],
+                style: undefined as any
             }).createSelect([]);
             expect(select).toContain('custom-class');
             expect(select).not.toContain('go11');
