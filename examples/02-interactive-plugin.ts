@@ -23,7 +23,15 @@
  * 5. Log all user interactions to the console
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry } from "@anikitenko/fdo-sdk";
+import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry, DOMText, DOMNested, DOMButton, DOMInput } from "../src";
+
+declare global {
+  interface Window {
+    fdoSDK: {
+      sendMessage: (handler: string, data: any) => Promise<any>;
+    };
+  }
+}
 
 /**
  * InteractivePlugin demonstrates user interaction handling.
@@ -188,112 +196,193 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
    */
   render(): string {
     try {
-      const html = `
-        <div style="padding: 20px; font-family: Arial, sans-serif;">
-          <h1>${this._metadata.name}</h1>
-          <p>${this._metadata.description}</p>
+      const domText = new DOMText();
+      const domNested = new DOMNested();
+      const domButton = new DOMButton();
+      const domInput = new DOMInput("userName", {
+        style: {
+          padding: '8px',
+          width: '300px',
+          marginBottom: '10px'
+        }
+      });
+
+      // Create main container
+      const mainContent = domNested.createBlockDiv([
+        // Header section
+        domText.createHText(1, this._metadata.name),
+        domText.createPText(this._metadata.description),
+        
+        // Counter Example
+        domNested.createBlockDiv([
+          domText.createHText(3, 'Counter Example'),
+          domText.createPText([
+            'Current count: ',
+            domText.createStrongText(this.counter.toString())
+          ].join('')),
           
-          <!-- Counter Example -->
-          <div style="margin-top: 20px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;">
-            <h3>Counter Example</h3>
-            <p>Current count: <strong id="counter-display">${this.counter}</strong></p>
-            
-            <button 
-              onclick="window.fdoSDK.sendMessage('incrementCounter', {})"
-              style="padding: 10px 20px; margin-right: 10px; cursor: pointer;">
-              Increment
-            </button>
-            
-            <button 
-              onclick="window.fdoSDK.sendMessage('decrementCounter', {})"
-              style="padding: 10px 20px; cursor: pointer;">
-              Decrement
-            </button>
-            
-            <p style="margin-top: 10px; font-size: 12px; color: #666;">
-              Click the buttons to increment or decrement the counter.
-              The counter value is maintained in plugin state.
-            </p>
-          </div>
-          
-          <!-- Form Example -->
-          <div style="margin-top: 20px; padding: 15px; background-color: #e8f4f8; border-radius: 5px;">
-            <h3>Form Example</h3>
-            <form onsubmit="event.preventDefault(); handleFormSubmit();">
-              <label for="userName" style="display: block; margin-bottom: 5px;">
-                Enter your name:
-              </label>
-              <input 
-                type="text" 
-                id="userName" 
-                name="userName"
-                placeholder="Your name"
-                style="padding: 8px; width: 300px; margin-bottom: 10px;"
-                required
-              />
-              
-              <br>
-              
-              <button 
-                type="submit"
-                style="padding: 10px 20px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 3px;">
-                Submit
-              </button>
-            </form>
-            
-            <div id="form-result" style="margin-top: 10px;"></div>
-            
-            <p style="margin-top: 10px; font-size: 12px; color: #666;">
-              Enter your name and submit the form to see async handler processing.
-            </p>
-          </div>
-          
-          <!-- JavaScript for form handling -->
-          <script>
-            
-            async function handleFormSubmit() {
-              const userName = document.getElementById('userName').value;
-              const resultDiv = document.getElementById('form-result');
-              
-              if (!userName || userName.trim() === '') {
-                resultDiv.innerHTML = '<p style="color: red;">Please enter your name</p>';
-                return;
-              }
-              
-              resultDiv.innerHTML = '<p style="color: #666;">Processing...</p>';
-              
-              try {
-                const result = await window.fdoSDK.sendMessage('submitForm', { userName });
-                
-                if (result.success) {
-                  resultDiv.innerHTML = \`
-                    <p style="color: green;">\${result.message}</p>
-                    <p style="font-size: 12px; color: #666;">Processed at: \${result.timestamp}</p>
-                  \`;
-                } else {
-                  resultDiv.innerHTML = \`<p style="color: red;">Error: \${result.error}</p>\`;
-                }
-              } catch (error) {
-                resultDiv.innerHTML = '<p style="color: red;">An error occurred. Check the console.</p>';
-                console.error('Form submission error:', error);
+          domButton.createButton('Increment', 
+            () => window.fdoSDK.sendMessage('incrementCounter', {}),
+            {
+              style: {
+                padding: '10px 20px',
+                marginRight: '10px',
+                cursor: 'pointer'
               }
             }
-          </script>
+          ),
           
-          <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-radius: 5px;">
-            <h3>Key Concepts</h3>
-            <ul>
-              <li><strong>Message Handlers:</strong> Functions registered in init() that respond to UI events</li>
-              <li><strong>Handler Registration:</strong> Use PluginRegistry.registerHandler(name, function)</li>
-              <li><strong>Async Patterns:</strong> Handlers can be async for long-running operations</li>
-              <li><strong>Error Handling:</strong> Always wrap handler logic in try-catch blocks</li>
-              <li><strong>State Management:</strong> Use class properties for temporary state, storage for persistence</li>
-            </ul>
-          </div>
-        </div>
-      `;
+          domButton.createButton('Decrement',
+            () => window.fdoSDK.sendMessage('decrementCounter', {}),
+            {
+              style: {
+                padding: '10px 20px',
+                cursor: 'pointer'
+              }
+            }
+          ),
+          
+          domText.createPText(
+            'Click the buttons to increment or decrement the counter. The counter value is maintained in plugin state.',
+            {
+              style: {
+                marginTop: '10px',
+                fontSize: '12px',
+                color: '#666'
+              }
+            }
+          )
+        ], {
+          style: {
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#f0f0f0',
+            borderRadius: '5px'
+          }
+        }),
+        
+        // Form Example
+        domNested.createBlockDiv([
+          domText.createHText(3, 'Form Example'),
+          domNested.createForm([
+            domText.createLabelText('Enter your name:', 'userName', {
+              style: {
+                display: 'block',
+                marginBottom: '5px'
+              }
+            }),
+            
+            domInput.createInput('text'),
+            
+            domButton.createButton('Submit', 
+              () => handleFormSubmit(),
+              {
+                style: {
+                  padding: '10px 20px',
+                  cursor: 'pointer',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '3px'
+                }
+              })
+          ], {
+            customAttributes: {
+              onsubmit: 'event.preventDefault(); handleFormSubmit();'
+            }
+          }),
+          
+          domNested.createBlockDiv([], {
+            customAttributes: {
+              id: 'form-result'
+            },
+            style: {
+              marginTop: '10px'
+            }
+          }),
+          
+          domText.createPText(
+            'Enter your name and submit the form to see async handler processing.',
+            {
+              style: {
+                marginTop: '10px',
+                fontSize: '12px',
+                color: '#666'
+              }
+            }
+          )
+        ], {
+          style: {
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#e8f4f8',
+            borderRadius: '5px'
+          }
+        }),
+        
+        `<script>
+          const plugin = this;
+          async function handleFormSubmit() {
+            const userName = document.getElementById('userName').value;
+            const resultDiv = document.getElementById('form-result');
+            
+            if (!userName || userName.trim() === '') {
+              resultDiv.innerHTML = '${domText.createPText("Please enter your name", { style: { color: 'red' } })}';
+              return;
+            }
+            
+            resultDiv.innerHTML = '${domText.createPText("Processing...", { style: { color: '#666' } })}';
+            
+            try {
+              await plugin.handleFormSubmit({ userName });
+            } catch (error) {
+              resultDiv.innerHTML = '${domText.createPText("An error occurred. Check the console.", { style: { color: 'red' } })}';
+              console.error('Form submission error:', error);
+            }
+          }
+        </script>`,
+        
+        // Key Concepts
+        domNested.createBlockDiv([
+          domText.createHText(3, 'Key Concepts'),
+          domNested.createList([
+            domNested.createListItem([
+              domText.createStrongText('Message Handlers:'),
+              ' Functions registered in init() that respond to UI events'
+            ]),
+            domNested.createListItem([
+              domText.createStrongText('Handler Registration:'),
+              ' Use PluginRegistry.registerHandler(name, function)'
+            ]),
+            domNested.createListItem([
+              domText.createStrongText('Async Patterns:'),
+              ' Handlers can be async for long-running operations'
+            ]),
+            domNested.createListItem([
+              domText.createStrongText('Error Handling:'),
+              ' Always wrap handler logic in try-catch blocks'
+            ]),
+            domNested.createListItem([
+              domText.createStrongText('State Management:'),
+              ' Use class properties for temporary state, storage for persistence'
+            ])
+          ])
+        ], {
+          style: {
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#fff3cd',
+            borderRadius: '5px'
+          }
+        })
+      ], {
+        style: {
+          padding: '20px',
+          fontFamily: 'Arial, sans-serif'
+        }
+      });
       
-      return html;
+      return mainContent;
       
     } catch (error) {
       this.error(error as Error);

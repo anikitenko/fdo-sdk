@@ -23,7 +23,15 @@
  * 5. Clear temporary data on each session
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry } from "@anikitenko/fdo-sdk";
+import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry, DOMText, DOMNested, DOMButton, DOMInput } from "../src";
+
+declare global {
+  interface Window {
+    fdoSDK: {
+      sendMessage: (handler: string, data: any) => Promise<any>;
+    };
+  }
+}
 
 /**
  * PersistencePlugin demonstrates data storage and retrieval.
@@ -257,115 +265,217 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
       const lastAction = this.tempStore.get(this.KEYS.LAST_ACTION);
       const sessionStart = this.tempStore.get(this.KEYS.SESSION_START);
 
-      const html = `
-        <div style="padding: 20px; font-family: Arial, sans-serif;">
-          <h1>${this._metadata.name}</h1>
-          <p>${this._metadata.description}</p>
+      const domText = new DOMText();
+      const domNested = new DOMNested();
+      const domButton = new DOMButton();
+      const domInput = new DOMInput("", {});
+
+      // Create main container
+      const mainContent = domNested.createBlockDiv([
+        // Header section
+        domText.createHText(1, this._metadata.name),
+        domText.createPText(this._metadata.description),
+        
+        // Persistent Data Section
+        domNested.createBlockDiv([
+          domText.createHText(3, "Persistent Preferences (StoreJson)"),
+          domText.createPText("These preferences are saved to a file and persist across application restarts.", {
+            style: {
+              fontSize: '12px',
+              color: '#666',
+              marginBottom: '15px'
+            }
+          }),
           
-          <!-- Persistent Data Section -->
-          <div style="margin-top: 20px; padding: 15px; background-color: #e8f4f8; border-radius: 5px;">
-            <h3>Persistent Preferences (StoreJson)</h3>
-            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
-              These preferences are saved to a file and persist across application restarts.
-            </p>
+          // Current values display
+          domNested.createBlockDiv([
+            domText.createPText([
+              domText.createStrongText("User Name:"),
+              ` ${userName}`
+            ].join(''), { style: { marginBottom: '10px' } }),
             
-            <div style="margin-bottom: 10px;">
-              <strong>User Name:</strong> ${userName}
-            </div>
-            <div style="margin-bottom: 10px;">
-              <strong>Theme:</strong> ${theme}
-            </div>
-            <div style="margin-bottom: 10px;">
-              <strong>Notifications:</strong> ${notificationsEnabled ? "Enabled" : "Disabled"}
-            </div>
+            domText.createPText([
+              domText.createStrongText("Theme:"),
+              ` ${theme}`
+            ].join(''), { style: { marginBottom: '10px' } }),
             
-            <form onsubmit="event.preventDefault(); savePreferences();" style="margin-top: 15px;">
-              <div style="margin-bottom: 10px;">
-                <label for="userName" style="display: block; margin-bottom: 5px;">User Name:</label>
-                <input 
-                  type="text" 
-                  id="userName" 
-                  value="${userName === 'Not set' ? '' : userName}"
-                  placeholder="Enter your name"
-                  style="padding: 8px; width: 300px;"
-                />
-              </div>
-              
-              <div style="margin-bottom: 10px;">
-                <label for="theme" style="display: block; margin-bottom: 5px;">Theme:</label>
-                <select id="theme" style="padding: 8px; width: 316px;">
-                  <option value="light" ${theme === 'light' ? 'selected' : ''}>Light</option>
-                  <option value="dark" ${theme === 'dark' ? 'selected' : ''}>Dark</option>
-                  <option value="auto" ${theme === 'auto' ? 'selected' : ''}>Auto</option>
-                </select>
-              </div>
-              
-              <div style="margin-bottom: 15px;">
-                <label>
-                  <input 
-                    type="checkbox" 
-                    id="notifications"
-                    ${notificationsEnabled ? 'checked' : ''}
-                  />
-                  Enable Notifications
-                </label>
-              </div>
-              
-              <button 
-                type="submit"
-                style="padding: 10px 20px; margin-right: 10px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 3px;">
-                Save Preferences
-              </button>
-              
-              <button 
-                type="button"
-                onclick="clearPreferences()"
-                style="padding: 10px 20px; cursor: pointer; background-color: #dc3545; color: white; border: none; border-radius: 3px;">
-                Clear All
-              </button>
-            </form>
-            
-            <div id="prefs-result" style="margin-top: 10px;"></div>
-          </div>
+            domText.createPText([
+              domText.createStrongText("Notifications:"),
+              ` ${notificationsEnabled ? "Enabled" : "Disabled"}`
+            ].join(''), { style: { marginBottom: '10px' } })
+          ]),
           
-          <!-- Temporary Data Section -->
-          <div style="margin-top: 20px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;">
-            <h3>Session Data (StoreDefault)</h3>
-            <p style="font-size: 12px; color: #666; margin-bottom: 15px;">
-              This data is stored in memory and cleared when the application restarts.
-            </p>
+          // Preferences form
+          domNested.createForm([
+            // Username input
+            domNested.createBlockDiv([
+              domText.createLabelText("User Name:", "userName", {
+                style: { display: 'block', marginBottom: '5px' }
+              }),
+              new DOMInput("userName", {
+                style: { padding: '8px', width: '300px' }
+              }).createInput("text")
+            ], { style: { marginBottom: '10px' } }),
             
-            <div style="margin-bottom: 10px;">
-              <strong>Visit Count:</strong> ${visitCount}
-            </div>
-            <div style="margin-bottom: 10px;">
-              <strong>Session Started:</strong> ${sessionStart ? new Date(sessionStart).toLocaleString() : 'N/A'}
-            </div>
-            <div style="margin-bottom: 15px;">
-              <strong>Last Action:</strong> 
-              ${lastAction ? `${lastAction.action} at ${new Date(lastAction.timestamp).toLocaleTimeString()}` : 'None'}
-            </div>
+            // Theme select
+            domNested.createBlockDiv([
+              domText.createLabelText("Theme:", "theme", {
+                style: { display: 'block', marginBottom: '5px' }
+              }),
+              new DOMInput("theme", {
+                style: { padding: '8px', width: '316px' }
+              }).createSelect([
+                domInput.createOption("Light", "light", theme === 'light'),
+                domInput.createOption("Dark", "dark", theme === 'dark'),
+                domInput.createOption("Auto", "auto", theme === 'auto')
+              ])
+            ], { style: { marginBottom: '10px' } }),
             
-            <button 
-              onclick="recordAction('Button Click')"
-              style="padding: 10px 20px; cursor: pointer;">
-              Record Action
-            </button>
-          </div>
+            // Notifications checkbox
+            domNested.createBlockDiv([
+              domText.createLabelText([
+                new DOMInput("notifications", {}).createInput("checkbox"),
+                " Enable Notifications"
+              ].join(''), "notifications")
+            ], { style: { marginBottom: '15px' } }),
+            
+            // Form buttons
+            domNested.createBlockDiv([
+              domButton.createButton("Save Preferences", 
+                () => {
+                  const form = document.querySelector('form');
+                  if (form) form.dispatchEvent(new Event('submit'));
+                },
+                {
+                  style: {
+                    padding: '10px 20px',
+                    marginRight: '10px',
+                    cursor: 'pointer',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px'
+                  }
+                }
+              ),
+              
+              domButton.createButton("Clear All",
+                () => window.fdoSDK.sendMessage('clearPreferences', {}),
+                {
+                  style: {
+                    padding: '10px 20px',
+                    cursor: 'pointer',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px'
+                  }
+                }
+              )
+            ])
+          ], {
+            customAttributes: {
+              onsubmit: 'event.preventDefault(); savePreferences();'
+            },
+            style: { marginTop: '15px' }
+          }),
           
-          <!-- Key Concepts Section -->
-          <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-radius: 5px;">
-            <h3>Storage Concepts</h3>
-            <ul>
-              <li><strong>StoreDefault:</strong> In-memory storage, data cleared on restart</li>
-              <li><strong>StoreJson:</strong> File-based storage, data persists across restarts</li>
-              <li><strong>Key Naming:</strong> Use namespaced keys (pluginName:category:key)</li>
-              <li><strong>Error Handling:</strong> Always wrap storage operations in try-catch</li>
-              <li><strong>Data Types:</strong> Stores support strings, numbers, booleans, objects, arrays</li>
-            </ul>
-          </div>
+          // Result area
+          domNested.createBlockDiv([], {
+            customAttributes: { id: 'prefs-result' },
+            style: { marginTop: '10px' }
+          })
+        ], {
+          style: {
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#e8f4f8',
+            borderRadius: '5px'
+          }
+        }),
+        
+        // Temporary Data Section
+        domNested.createBlockDiv([
+          domText.createHText(3, "Session Data (StoreDefault)"),
+          domText.createPText("This data is stored in memory and cleared when the application restarts.", {
+            style: {
+              fontSize: '12px',
+              color: '#666',
+              marginBottom: '15px'
+            }
+          }),
           
-          <!-- JavaScript -->
+          domNested.createBlockDiv([
+            domText.createPText([
+              domText.createStrongText("Visit Count:"),
+              ` ${visitCount}`
+            ].join(''), { style: { marginBottom: '10px' } }),
+            
+            domText.createPText([
+              domText.createStrongText("Session Started:"),
+              ` ${sessionStart ? new Date(sessionStart).toLocaleString() : 'N/A'}`
+            ].join(''), { style: { marginBottom: '10px' } }),
+            
+            domText.createPText([
+              domText.createStrongText("Last Action:"),
+              ` ${lastAction ? `${lastAction.action} at ${new Date(lastAction.timestamp).toLocaleTimeString()}` : 'None'}`
+            ].join(''), { style: { marginBottom: '15px' } })
+          ]),
+          
+          domButton.createButton("Record Action",
+            () => window.fdoSDK.sendMessage('recordAction', { action: 'Button Click' }),
+            {
+              style: {
+                padding: '10px 20px',
+                cursor: 'pointer'
+              }
+            }
+          )
+        ], {
+          style: {
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#f0f0f0',
+            borderRadius: '5px'
+          }
+        }),
+        
+        // Key Concepts Section
+        domNested.createBlockDiv([
+          domText.createHText(3, "Storage Concepts"),
+          domNested.createList([
+            domNested.createListItem([
+              domText.createStrongText("StoreDefault:"),
+              " In-memory storage, data cleared on restart"
+            ]),
+            domNested.createListItem([
+              domText.createStrongText("StoreJson:"),
+              " File-based storage, data persists across restarts"
+            ]),
+            domNested.createListItem([
+              domText.createStrongText("Key Naming:"),
+              " Use namespaced keys (pluginName:category:key)"
+            ]),
+            domNested.createListItem([
+              domText.createStrongText("Error Handling:"),
+              " Always wrap storage operations in try-catch"
+            ]),
+            domNested.createListItem([
+              domText.createStrongText("Data Types:"),
+              " Stores support strings, numbers, booleans, objects, arrays"
+            ])
+          ])
+        ], {
+          style: {
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#fff3cd',
+            borderRadius: '5px'
+          }
+        }),
+        
+        // JavaScript for handling preferences
+        domText.createText(`
           <script>
             async function savePreferences() {
               const userName = document.getElementById('userName').value;
@@ -373,7 +483,9 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
               const notificationsEnabled = document.getElementById('notifications').checked;
               const resultDiv = document.getElementById('prefs-result');
               
-              resultDiv.innerHTML = '<p style="color: #666;">Saving...</p>';
+              resultDiv.innerHTML = ${JSON.stringify(
+                domText.createPText("Saving...", { style: { color: '#666' } })
+              )};
               
               try {
                 const result = await window.fdoSDK.sendMessage('savePreferences', {
@@ -383,53 +495,32 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
                 });
                 
                 if (result.success) {
-                  resultDiv.innerHTML = '<p style="color: green;">' + result.message + '</p>';
+                  resultDiv.innerHTML = ${JSON.stringify(
+                    domText.createPText("${result.message}", { style: { color: 'green' } })
+                  )};
                   setTimeout(() => location.reload(), 1000);
                 } else {
-                  resultDiv.innerHTML = '<p style="color: red;">Error: ' + result.error + '</p>';
+                  resultDiv.innerHTML = ${JSON.stringify(
+                    domText.createPText("Error: ${result.error}", { style: { color: 'red' } })
+                  )};
                 }
               } catch (error) {
-                resultDiv.innerHTML = '<p style="color: red;">An error occurred. Check the console.</p>';
+                resultDiv.innerHTML = ${JSON.stringify(
+                  domText.createPText("An error occurred. Check the console.", { style: { color: 'red' } })
+                )};
                 console.error('Save error:', error);
               }
             }
-            
-            async function clearPreferences() {
-              if (!confirm('Are you sure you want to clear all preferences?')) {
-                return;
-              }
-              
-              const resultDiv = document.getElementById('prefs-result');
-              resultDiv.innerHTML = '<p style="color: #666;">Clearing...</p>';
-              
-              try {
-                const result = await window.fdoSDK.sendMessage('clearPreferences', {});
-                
-                if (result.success) {
-                  resultDiv.innerHTML = '<p style="color: green;">' + result.message + '</p>';
-                  setTimeout(() => location.reload(), 1000);
-                } else {
-                  resultDiv.innerHTML = '<p style="color: red;">Error: ' + result.error + '</p>';
-                }
-              } catch (error) {
-                resultDiv.innerHTML = '<p style="color: red;">An error occurred. Check the console.</p>';
-                console.error('Clear error:', error);
-              }
-            }
-            
-            async function recordAction(action) {
-              try {
-                await window.fdoSDK.sendMessage('recordAction', { action });
-                location.reload();
-              } catch (error) {
-                console.error('Record action error:', error);
-              }
-            }
           </script>
-        </div>
-      `;
+        `)
+      ], {
+        style: {
+          padding: '20px',
+          fontFamily: 'Arial, sans-serif'
+        }
+      });
       
-      return html;
+      return mainContent;
       
     } catch (error) {
       this.error(error as Error);

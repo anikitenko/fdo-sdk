@@ -19,7 +19,7 @@
  * 3. Show a brief description of what the plugin does
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata } from "@anikitenko/fdo-sdk";
+import { FDO_SDK, FDOInterface, PluginMetadata, DOMText, DOMNested } from "../src";
 
 /**
  * BasicPlugin demonstrates the minimal plugin structure.
@@ -96,28 +96,49 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
    */
   render(): string {
     try {
+      const domText = new DOMText();
+      const domNested = new DOMNested();
       
-      const html = `
-        <div style="padding: 20px; font-family: Arial, sans-serif;">
-          <h1>Welcome to ${this._metadata.name}</h1>
-          <p><strong>Version:</strong> ${this._metadata.version}</p>
-          <p><strong>Author:</strong> ${this._metadata.author}</p>
-          <p>${this._metadata.description}</p>
-          
-          <div style="margin-top: 20px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;">
-            <h3>What's Next?</h3>
-            <p>This is a basic plugin example. To learn more advanced features:</p>
-            <ul>
-              <li>See example 02 for interactive UI with buttons and forms</li>
-              <li>See example 03 for data persistence</li>
-              <li>See example 04 for UI extensions (quick actions and side panels)</li>
-              <li>See example 05 for advanced DOM generation and styling</li>
-            </ul>
-          </div>
-        </div>
-      `;
+      // Create main container
+      const mainContent = domNested.createBlockDiv([
+        // Header section
+        domText.createHText(1, `Welcome to ${this._metadata.name}`),
+        domText.createPText([
+          domText.createStrongText('Version:'),
+          ` ${this._metadata.version}`
+        ].join('')),
+        domText.createPText([
+          domText.createStrongText('Author:'),
+          ` ${this._metadata.author}`
+        ].join('')),
+        domText.createPText(this._metadata.description),
+        
+        // What's Next section
+        domNested.createBlockDiv([
+          domText.createHText(3, 'What\'s Next?'),
+          domText.createPText('This is a basic plugin example. To learn more advanced features:'),
+          domNested.createList([
+            domNested.createListItem(['See example 02 for interactive UI with buttons and forms']),
+            domNested.createListItem(['See example 03 for data persistence']),
+            domNested.createListItem(['See example 04 for UI extensions (quick actions and side panels)']),
+            domNested.createListItem(['See example 05 for advanced DOM generation and styling'])
+          ])
+        ], { 
+          style: {
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#f0f0f0',
+            borderRadius: '5px'
+          }
+        })
+      ], {
+        style: {
+          padding: '20px',
+          fontFamily: 'Arial, sans-serif'
+        }
+      });
       
-      return html;
+      return mainContent;
       
     } catch (error) {
       this.error(error as Error);

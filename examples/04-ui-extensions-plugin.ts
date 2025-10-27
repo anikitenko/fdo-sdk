@@ -31,8 +31,13 @@ import {
   QuickActionMixin,
   SidePanelMixin,
   QuickAction,
-  SidePanelConfig
-} from "@anikitenko/fdo-sdk";
+  SidePanelConfig,
+  DOMText,
+  DOMNested,
+  DOMButton,
+  DOMInput,
+  DOMLink
+} from "../src";
 
 /**
  * UIExtensionsPlugin demonstrates UI extension capabilities.
@@ -352,65 +357,89 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    */
   render(): string {
     try {
-      let contentHtml = "";
+      const domText = new DOMText();
+      const domNested = new DOMNested();
 
-      switch (this.currentView) {
-        case "search":
-          contentHtml = this.renderSearchView();
-          break;
-        case "create":
-          contentHtml = this.renderCreateView();
-          break;
-        case "dashboard":
-          contentHtml = this.renderDashboardView();
-          break;
-        case "reports":
-          contentHtml = this.renderReportsView();
-          break;
-        case "settings":
-          contentHtml = this.renderSettingsView();
-          break;
-        default:
-          contentHtml = this.renderDefaultView();
-      }
+      // Main container
+      const mainContent = domNested.createBlockDiv([
+        domText.createHText(1, this._metadata.name),
+        domText.createPText(this._metadata.description),
 
-      const html = `
-        <div style="padding: 20px; font-family: Arial, sans-serif;">
-          <h1>${this._metadata.name}</h1>
-          <p>${this._metadata.description}</p>
-          
-          ${contentHtml}
-          
-          <!-- UI Extensions Info -->
-          <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-radius: 5px;">
-            <h3>UI Extensions</h3>
-            <p><strong>Quick Actions:</strong> Access quick actions from the FDO application's quick action menu</p>
-            <ul>
-              <li>Search Plugin Data</li>
-              <li>Create New Item</li>
-              <li>Plugin Settings</li>
-            </ul>
-            
-            <p style="margin-top: 15px;"><strong>Side Panel:</strong> Access features from the side panel menu</p>
-            <ul>
-              <li>Dashboard</li>
-              <li>Reports</li>
-              <li>Settings</li>
-            </ul>
-          </div>
-        </div>
-      `;
-      
-      return html;
-      
+        // Dynamic content based on current view
+        this.renderCurrentView(),
+
+        // UI Extensions Info
+        domNested.createBlockDiv([
+          domText.createHText(3, "UI Extensions"),
+          domText.createPText([
+            domText.createStrongText("Quick Actions:"),
+            " Access quick actions from the FDO application's quick action menu"
+          ].join('')),
+          domNested.createList([
+            "Search Plugin Data",
+            "Create New Item",
+            "Plugin Settings"
+          ]),
+
+          domText.createPText([
+            domText.createStrongText("Side Panel:"),
+            " Access features from the side panel menu"
+          ].join(''), { style: { marginTop: '15px' } }),
+          domNested.createList([
+            "Dashboard",
+            "Reports",
+            "Settings"
+          ])
+        ], {
+          style: {
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#fff3cd',
+            borderRadius: '5px'
+          }
+        })
+      ], {
+        style: {
+          padding: '20px',
+          fontFamily: 'Arial, sans-serif'
+        }
+      });
+
+      return mainContent;
+
     } catch (error) {
       this.error(error as Error);
-      return `
-        <div style="padding: 20px; color: red;">
-          <h2>Error rendering plugin</h2>
-          <p>An error occurred while rendering the plugin UI. Check the console for details.</p>
-        </div>
-      `;
+      const errorDomText = new DOMText();
+      const errorDomNested = new DOMNested();
+      return errorDomNested.createBlockDiv([
+        errorDomText.createHText(2, "Error rendering plugin"),
+        errorDomText.createPText("An error occurred while rendering the plugin UI. Check the console for details.")
+      ], {
+        style: {
+          padding: '20px',
+          color: 'red'
+        }
+      });
+    }
+  }
+
+  /**
+   * Render the current view based on the view state
+   */
+  private renderCurrentView(): string {
+    switch (this.currentView) {
+      case "search":
+        return this.renderSearchView();
+      case "create":
+        return this.renderCreateView();
+      case "dashboard":
+        return this.renderDashboardView();
+      case "reports":
+        return this.renderReportsView();
+      case "settings":
+        return this.renderSettingsView();
+      default:
+        return this.renderDefaultView();
     }
   }
 
@@ -418,128 +447,265 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * Render the default view.
    */
   private renderDefaultView(): string {
-    return `
-      <div style="margin-top: 20px; padding: 15px; background-color: #f0f0f0; border-radius: 5px;">
-        <h3>Welcome to UI Extensions Example</h3>
-        <p>This plugin demonstrates quick actions and side panel integration.</p>
-        <p>Try the following:</p>
-        <ul>
-          <li>Use the quick action menu to trigger quick actions</li>
-          <li>Use the side panel to navigate between views</li>
-          <li>See how different views are rendered based on UI extension triggers</li>
-        </ul>
-      </div>
-    `;
+    const domText = new DOMText();
+    const domNested = new DOMNested();
+
+    return domNested.createBlockDiv([
+      domText.createHText(3, "Welcome to UI Extensions Example"),
+      domText.createPText("This plugin demonstrates quick actions and side panel integration."),
+      domText.createPText("Try the following:"),
+      domNested.createList([
+        "Use the quick action menu to trigger quick actions",
+        "Use the side panel to navigate between views",
+        "See how different views are rendered based on UI extension triggers"
+      ])
+    ], {
+      style: {
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#f0f0f0',
+        borderRadius: '5px'
+      }
+    });
   }
 
   /**
    * Render the search view.
    */
   private renderSearchView(): string {
-    return `
-      <div style="margin-top: 20px; padding: 15px; background-color: #e8f4f8; border-radius: 5px;">
-        <h3>Search View</h3>
-        <p>This view was triggered by the "Search Plugin Data" quick action.</p>
-        <input 
-          type="text" 
-          placeholder="Search..." 
-          style="padding: 10px; width: 400px; margin-top: 10px;"
-        />
-        <button style="padding: 10px 20px; margin-left: 10px; cursor: pointer;">Search</button>
-      </div>
-    `;
+    const domText = new DOMText();
+    const domNested = new DOMNested();
+    const domInput = new DOMInput("search", {
+      style: {
+        padding: '10px',
+        width: '400px',
+        marginTop: '10px'
+      }
+    });
+    const domButton = new DOMButton();
+
+    return domNested.createBlockDiv([
+      domText.createHText(3, "Search View"),
+      domText.createPText("This view was triggered by the \"Search Plugin Data\" quick action."),
+      domNested.createBlockDiv([
+        domInput.createInput("text"),
+        domButton.createButton("Search", () => {}, {
+          style: {
+            padding: '10px 20px',
+            marginLeft: '10px',
+            cursor: 'pointer'
+          }
+        })
+      ], {
+        style: {
+          display: 'flex',
+          alignItems: 'center'
+        }
+      })
+    ], {
+      style: {
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#e8f4f8',
+        borderRadius: '5px'
+      }
+    });
   }
 
   /**
    * Render the create view.
    */
   private renderCreateView(): string {
-    return `
-      <div style="margin-top: 20px; padding: 15px; background-color: #d4edda; border-radius: 5px;">
-        <h3>Create View</h3>
-        <p>This view was triggered by the "Create New Item" quick action.</p>
-        <form style="margin-top: 10px;">
-          <input 
-            type="text" 
-            placeholder="Item name" 
-            style="padding: 10px; width: 400px; display: block; margin-bottom: 10px;"
-          />
-          <textarea 
-            placeholder="Description" 
-            style="padding: 10px; width: 400px; height: 100px; display: block; margin-bottom: 10px;"
-          ></textarea>
-          <button type="submit" style="padding: 10px 20px; cursor: pointer;">Create</button>
-        </form>
-      </div>
-    `;
+    const domText = new DOMText();
+    const domNested = new DOMNested();
+    const domInput = new DOMInput("create", {
+      style: {
+        padding: '10px',
+        width: '400px',
+        marginBottom: '10px'
+      }
+    });
+    const domButton = new DOMButton();
+
+    return domNested.createBlockDiv([
+      domText.createHText(3, "Create View"),
+      domText.createPText("This view was triggered by the \"Create New Item\" quick action."),
+      domNested.createForm([
+        domNested.createBlockDiv([
+          domInput.createInput("text")
+        ], {
+          style: {
+            marginBottom: '10px'
+          }
+        }),
+        domNested.createBlockDiv([
+          domInput.createTextarea()
+        ], {
+          style: {
+            marginBottom: '10px'
+          }
+        }),
+        domButton.createButton("Create", () => {}, {
+          style: {
+            padding: '10px 20px',
+            cursor: 'pointer'
+          }
+        })
+      ], {
+        style: { marginTop: '10px' }
+      })
+    ], {
+      style: {
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#d4edda',
+        borderRadius: '5px'
+      }
+    });
   }
 
   /**
    * Render the dashboard view.
    */
   private renderDashboardView(): string {
-    return `
-      <div style="margin-top: 20px; padding: 15px; background-color: #cfe2ff; border-radius: 5px;">
-        <h3>Dashboard View</h3>
-        <p>This view was triggered from the side panel "Dashboard" menu item.</p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
-          <div style="padding: 15px; background-color: white; border-radius: 5px;">
-            <h4>Metric 1</h4>
-            <p style="font-size: 24px; font-weight: bold;">42</p>
-          </div>
-          <div style="padding: 15px; background-color: white; border-radius: 5px;">
-            <h4>Metric 2</h4>
-            <p style="font-size: 24px; font-weight: bold;">87%</p>
-          </div>
-        </div>
-      </div>
-    `;
+    const domText = new DOMText();
+    const domNested = new DOMNested();
+
+    const createMetricBlock = (title: string, value: string) => {
+      return domNested.createBlockDiv([
+        domText.createHText(4, title),
+        domText.createPText(value, {
+          style: {
+            fontSize: '24px',
+            fontWeight: 'bold'
+          }
+        })
+      ], {
+        style: {
+          padding: '15px',
+          backgroundColor: 'white',
+          borderRadius: '5px'
+        }
+      });
+    };
+
+    return domNested.createBlockDiv([
+      domText.createHText(3, "Dashboard View"),
+      domText.createPText("This view was triggered from the side panel \"Dashboard\" menu item."),
+      domNested.createBlockDiv([
+        createMetricBlock("Metric 1", "42"),
+        createMetricBlock("Metric 2", "87%")
+      ], {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '15px',
+          marginTop: '15px'
+        }
+      })
+    ], {
+      style: {
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#cfe2ff',
+        borderRadius: '5px'
+      }
+    });
   }
 
   /**
    * Render the reports view.
    */
   private renderReportsView(): string {
-    return `
-      <div style="margin-top: 20px; padding: 15px; background-color: #f8d7da; border-radius: 5px;">
-        <h3>Reports View</h3>
-        <p>This view was triggered from the side panel "Reports" menu item.</p>
-        <ul style="margin-top: 10px;">
-          <li>Monthly Report - <a href="#" style="color: #007bff;">View</a></li>
-          <li>Quarterly Report - <a href="#" style="color: #007bff;">View</a></li>
-          <li>Annual Report - <a href="#" style="color: #007bff;">View</a></li>
-        </ul>
-      </div>
-    `;
+    const domText = new DOMText();
+    const domNested = new DOMNested();
+    const domLink = new DOMLink("reports", {
+      style: { color: '#007bff' }
+    });
+
+    const createReportItem = (title: string) => {
+      return domNested.createBlockDiv([
+        domText.createText(`${title} - `),
+        domText.createText(domLink.createLink("#", "View"))
+      ]);
+    };
+
+    return domNested.createBlockDiv([
+      domText.createHText(3, "Reports View"),
+      domText.createPText("This view was triggered from the side panel \"Reports\" menu item."),
+      domNested.createList([
+        createReportItem("Monthly Report"),
+        createReportItem("Quarterly Report"),
+        createReportItem("Annual Report")
+      ], {
+        style: { marginTop: '10px' }
+      })
+    ], {
+      style: {
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#f8d7da',
+        borderRadius: '5px'
+      }
+    });
   }
 
   /**
    * Render the settings view.
    */
   private renderSettingsView(): string {
-    return `
-      <div style="margin-top: 20px; padding: 15px; background-color: #e2e3e5; border-radius: 5px;">
-        <h3>Settings View</h3>
-        <p>This view can be triggered from either the quick action or side panel.</p>
-        <form style="margin-top: 10px;">
-          <label style="display: block; margin-bottom: 10px;">
-            <input type="checkbox" checked /> Enable notifications
-          </label>
-          <label style="display: block; margin-bottom: 10px;">
-            <input type="checkbox" /> Auto-save
-          </label>
-          <label style="display: block; margin-bottom: 10px;">
-            Theme: 
-            <select style="margin-left: 10px; padding: 5px;">
-              <option>Light</option>
-              <option>Dark</option>
-              <option>Auto</option>
-            </select>
-          </label>
-          <button type="submit" style="padding: 10px 20px; margin-top: 10px; cursor: pointer;">Save Settings</button>
-        </form>
-      </div>
-    `;
+    const domText = new DOMText();
+    const domNested = new DOMNested();
+    const domInput = new DOMInput("settings", {});
+    const domButton = new DOMButton();
+
+    const createCheckboxOption = (label: string, checked: boolean = false) => {
+      return domNested.createBlockDiv([
+        domText.createLabelText(label, "settings-" + label.toLowerCase().replace(/\s+/g, '-'), {
+          style: { display: 'block', marginBottom: '10px' }
+        }),
+        domInput.createInput(checked ? "checkbox" : "checkbox")
+      ]);
+    };
+
+    return domNested.createBlockDiv([
+      domText.createHText(3, "Settings View"),
+      domText.createPText("This view can be triggered from either the quick action or side panel."),
+      domNested.createForm([
+        createCheckboxOption("Enable notifications", true),
+        createCheckboxOption("Auto-save"),
+        
+        domNested.createBlockDiv([
+          domText.createLabelText("Theme:", "settings-theme", {
+            style: { marginRight: '10px' }
+          }),
+          domInput.createSelect([
+            "Light",
+            "Dark",
+            "Auto"
+          ])
+        ], {
+          style: { marginBottom: '10px' }
+        }),
+        
+        domButton.createButton("Save Settings", () => {}, {
+          style: {
+            padding: '10px 20px',
+            marginTop: '10px',
+            cursor: 'pointer'
+          }
+        })
+      ], {
+        style: { marginTop: '10px' }
+      })
+    ], {
+      style: {
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#e2e3e5',
+        borderRadius: '5px'
+      }
+    });
   }
 }
 
