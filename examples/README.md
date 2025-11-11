@@ -15,6 +15,24 @@ The examples are numbered to indicate learning progression:
 3. **03-persistence-plugin.ts** - Data persistence with storage backends
 4. **04-ui-extensions-plugin.ts** - Quick actions and side panel integration
 5. **05-advanced-dom-plugin.ts** - Advanced DOM generation with styling
+6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
+7. **07-injected-libraries-demo.ts** - Demonstrates all automatically injected libraries and helper functions
+
+## Additional Examples
+
+- **dom_elements_plugin.ts** - Comprehensive examples of DOM element creation
+- **example_plugin.ts** - Legacy example plugin (deprecated, use numbered examples instead)
+- **metadata-template.ts** - Template for plugin metadata structure
+
+## Injected Libraries
+
+The FDO application automatically injects several popular libraries that you can use without additional imports:
+
+- **CSS Frameworks**: Pure CSS, Notyf, Highlight.js
+- **JavaScript Libraries**: FontAwesome, Split Grid, Highlight.js, Notyf, ACE Editor
+- **Window Helpers**: `createBackendReq`, `waitForElement`, `executeInjectedScript`, and more
+
+For complete documentation, see [Injected Libraries Documentation](../docs/INJECTED_LIBRARIES.md).
 
 ## Usage
 

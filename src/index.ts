@@ -134,6 +134,138 @@ declare global {
     }
 
     function Split(options: SplitOptions): SplitInstance;
+
+    /**
+     * Notyf notification library types
+     * A simple, lightweight toast notification library
+     */
+    interface NotyfNotification {
+        triggerDismiss: () => void;
+    }
+
+    interface NotyfPosition {
+        x: 'left' | 'center' | 'right';
+        y: 'top' | 'center' | 'bottom';
+    }
+
+    interface NotyfOptions {
+        duration?: number;
+        ripple?: boolean;
+        position?: NotyfPosition;
+        dismissible?: boolean;
+    }
+
+    interface NotyfNotificationOptions extends NotyfOptions {
+        type?: string;
+        message?: string;
+        icon?: string | boolean;
+        background?: string;
+        className?: string;
+    }
+
+    interface Notyf {
+        success(message: string | NotyfNotificationOptions): NotyfNotification;
+        error(message: string | NotyfNotificationOptions): NotyfNotification;
+        open(options: NotyfNotificationOptions): NotyfNotification;
+        dismissAll(): void;
+    }
+
+    interface NotyfConstructor {
+        new(options?: NotyfOptions): Notyf;
+    }
+
+    /**
+     * Highlight.js types
+     * Syntax highlighting library
+     */
+    interface HighlightResult {
+        value: string;
+        language?: string;
+        relevance: number;
+        illegal: boolean;
+        errorRaised?: Error;
+        second_best?: Omit<HighlightResult, 'second_best'>;
+    }
+
+    interface HighlightJS {
+        highlight(code: string, options: { language: string; ignoreIllegals?: boolean }): HighlightResult;
+        highlightAuto(code: string, languageSubset?: string[]): HighlightResult;
+        highlightElement(element: HTMLElement): void;
+        highlightAll(): void;
+        registerLanguage(languageName: string, languageDefinition: any): void;
+        getLanguage(languageName: string): any;
+        listLanguages(): string[];
+    }
+
+    /**
+     * ACE Editor types
+     * Advanced code editor
+     */
+    namespace AceAjax {
+        interface Editor {
+            setValue(value: string, cursorPos?: number): string;
+            getValue(): string;
+            setTheme(theme: string): void;
+            setShowPrintMargin(show: boolean): void;
+            setOption(name: string, value: any): void;
+            setOptions(options: Partial<EditorOptions>): void;
+            getSession(): EditSession;
+            resize(force?: boolean): void;
+            destroy(): void;
+            on(event: string, callback: Function): void;
+            off(event: string, callback: Function): void;
+        }
+
+        interface EditSession {
+            setMode(mode: string): void;
+            setValue(text: string): void;
+            getValue(): string;
+            setUseWrapMode(useWrapMode: boolean): void;
+            setTabSize(tabSize: number): void;
+            setUseSoftTabs(useSoftTabs: boolean): void;
+        }
+
+        interface EditorOptions {
+            selectionStyle?: string;
+            highlightActiveLine?: boolean;
+            highlightSelectedWord?: boolean;
+            readOnly?: boolean;
+            cursorStyle?: string;
+            mergeUndoDeltas?: boolean | string;
+            behavioursEnabled?: boolean;
+            wrapBehavioursEnabled?: boolean;
+            autoScrollEditorIntoView?: boolean;
+            copyWithEmptySelection?: boolean;
+            useSoftTabs?: boolean;
+            navigateWithinSoftTabs?: boolean;
+            enableMultiselect?: boolean;
+        }
+
+        interface Ace {
+            edit(el: string | HTMLElement, options?: Partial<EditorOptions>): Editor;
+            createEditSession(text: string, mode: string): EditSession;
+        }
+    }
+
+    interface Window {
+        /**
+         * Notyf - Toast notification library
+         * @see https://github.com/caroso1222/notyf
+         */
+        Notyf: NotyfConstructor;
+
+        /**
+         * Highlight.js - Syntax highlighting library
+         * @see https://highlightjs.org/
+         */
+        hljs: HighlightJS;
+
+        /**
+         * ACE Editor - Code editor
+         * @see https://ace.c9.io/
+         */
+        ace: AceAjax.Ace;
+    }
 }
 
 export class FDO_SDK {
