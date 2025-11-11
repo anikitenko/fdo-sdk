@@ -23,7 +23,7 @@
  * 5. Log all user interactions to the console
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry, DOMText, DOMNested, DOMButton, DOMInput } from "../src";
+import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry, DOMText, DOMNested, DOMButton, DOMInput } from "@anikitenko/fdo-sdk";
 
 declare global {
   interface Window {

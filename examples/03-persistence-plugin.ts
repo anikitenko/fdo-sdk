@@ -23,7 +23,7 @@
  * 5. Clear temporary data on each session
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry, DOMText, DOMNested, DOMButton, DOMInput } from "../src";
+import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry, DOMText, DOMNested, DOMButton, DOMInput } from "@anikitenko/fdo-sdk";
 
 declare global {
   interface Window {

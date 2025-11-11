@@ -19,7 +19,7 @@
  * 3. Show a brief description of what the plugin does
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, DOMText, DOMNested } from "../src";
+import { FDO_SDK, FDOInterface, PluginMetadata, DOMText, DOMNested } from "@anikitenko/fdo-sdk";
 
 /**
  * BasicPlugin demonstrates the minimal plugin structure.

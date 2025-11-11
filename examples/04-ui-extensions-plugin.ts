@@ -37,7 +37,7 @@ import {
   DOMButton,
   DOMInput,
   DOMLink
-} from "../src";
+} from "@anikitenko/fdo-sdk";
 
 /**
  * UIExtensionsPlugin demonstrates UI extension capabilities.

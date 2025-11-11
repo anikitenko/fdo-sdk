@@ -209,3 +209,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# npm audit files
+.*-audit.json
+

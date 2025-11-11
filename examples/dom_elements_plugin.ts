@@ -1,4 +1,4 @@
-import { FDO_SDK, FDOInterface, PluginMetadata, DOMTable, DOMMedia, DOMSemantic, DOMNested, DOMInput } from "../src";
+import { FDO_SDK, FDOInterface, PluginMetadata, DOMTable, DOMMedia, DOMSemantic, DOMNested, DOMInput } from "@anikitenko/fdo-sdk";
 
 /**
  * Example plugin demonstrating the new DOM element creation capabilities.
