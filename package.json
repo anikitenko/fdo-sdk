@@ -22,6 +22,10 @@
   ],
   "author": "anikitenko",
   "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "homepage": "https://plugins.fdo.alexvwan.me",
   "bugs": {
     "url": "https://github.com/anikitenko/fdo-sdk/issues"

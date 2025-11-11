@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced package.json with improved keywords for better npm discoverability
 - Added `prebuild` script to automatically generate TypeScript declarations before building
 - Added `prepublishOnly` script to ensure tests pass and build succeeds before publishing
+- Added Node.js and npm engine requirements (Node >=18.0.0, npm >=9.0.0) for compatibility clarity
 
 ### Documentation
 
