@@ -34,6 +34,16 @@ All DOM classes support:
 - **Data Persistence**: Multiple storage backends (in-memory, JSON file-based)
 - **System Integration**: Logging, file operations, and privilege elevation
 
+### Injected Libraries
+
+The FDO application automatically injects several popular libraries and helper functions into your plugin environment:
+
+- **CSS Frameworks**: Pure CSS, Notyf notifications, Highlight.js themes
+- **JavaScript Libraries**: FontAwesome icons, Split Grid, Highlight.js, Notyf, ACE Editor, Goober (CSS-in-JS)
+- **Helper Functions**: Backend communication, DOM utilities, event management
+
+For complete documentation on available libraries and usage examples, see [Injected Libraries Documentation](./docs/INJECTED_LIBRARIES.md).
+
 ## Getting Started
 
 ### Installation
