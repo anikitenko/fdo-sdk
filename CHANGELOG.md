@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.19] - 2025-11-11
+
+### Changed
+
+- Updated electron dependency from 35.1.0 to 35.7.5 to fix security vulnerability (GHSA-vmqv-hx8q-j7mg)
+- Updated brace-expansion dependency to fix Regular Expression Denial of Service vulnerability
+- Fixed trailing commas in tsconfig.json for better JSON compliance
+
+## [1.0.18] - 2025-11-11
+
 ### Added
 
 - **DOMTable class** for creating HTML table structures
