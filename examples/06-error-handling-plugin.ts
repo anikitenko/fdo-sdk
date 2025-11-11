@@ -20,9 +20,7 @@
  * 4. Log all errors automatically to console
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, DOMText, DOMNested, DOMButton } from "../src";
-import { handleError } from "../src/decorators/ErrorHandler";
-import { PluginRegistry } from "../src/PluginRegistry";
+import { FDO_SDK, FDOInterface, PluginMetadata, DOMText, DOMNested, DOMButton, handleError, PluginRegistry } from "@anikitenko/fdo-sdk";
 
 /**
  * ErrorHandlingPlugin demonstrates the @handleError decorator usage.

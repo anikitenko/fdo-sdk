@@ -23,6 +23,7 @@ export * from "./DOMMisc";
 export * from "./DOMTable";
 export * from "./DOMMedia";
 export * from "./DOMSemantic";
+export * from "./decorators/ErrorHandler";
 
 declare global {
     interface Window {
