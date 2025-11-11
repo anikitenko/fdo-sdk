@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated electron dependency from 35.1.0 to 35.7.5 to fix security vulnerability (GHSA-vmqv-hx8q-j7mg)
 - Updated brace-expansion dependency to fix Regular Expression Denial of Service vulnerability
 - Fixed trailing commas in tsconfig.json for better JSON compliance
+- Enhanced package.json with improved keywords for better npm discoverability
+- Added `prebuild` script to automatically generate TypeScript declarations before building
+- Added `prepublishOnly` script to ensure tests pass and build succeeds before publishing
+
+### Documentation
+
+- Updated README.md with comprehensive development workflow documentation
+- Added documentation for all npm scripts including coverage and publishing workflows
 
 ## [1.0.18] - 2025-11-11
 

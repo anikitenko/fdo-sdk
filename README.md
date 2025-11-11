@@ -91,15 +91,21 @@ See `examples/dom_elements_plugin.ts` for comprehensive examples of using the ne
 ### Building
 
 ```bash
-npm run build        # Build webpack bundle
-npm run build:types  # Generate TypeScript declarations
+npm run build        # Build webpack bundle (automatically runs build:types first)
+npm run build:types  # Generate TypeScript declarations only
 ```
 
 ### Testing
 
 ```bash
-npm test            # Run Jest tests
+npm test             # Run Jest tests
+npm run test:coverage # Run tests with coverage report
+npm run coverage:open # Open coverage report in browser
 ```
+
+### Publishing
+
+The package includes a `prepublishOnly` script that automatically runs tests and builds before publishing to ensure quality.
 
 ## Documentation
 

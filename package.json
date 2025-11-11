@@ -12,7 +12,13 @@
     "devops",
     "flexdevops",
     "sdk",
-    "fdo-sdk"
+    "fdo-sdk",
+    "plugin",
+    "plugin-framework",
+    "electron",
+    "desktop-app",
+    "dom-builder",
+    "typescript"
   ],
   "author": "anikitenko",
   "license": "ISC",
@@ -30,9 +36,11 @@
   "scripts": {
     "build": "webpack --config webpack.config.cjs",
     "build:types": "tsc --emitDeclarationOnly",
+    "prebuild": "npm run build:types",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "coverage:open": "npx opn coverage/lcov-report/index.html || true"
+    "coverage:open": "npx opn coverage/lcov-report/index.html || true",
+    "prepublishOnly": "npm test && npm run build"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
