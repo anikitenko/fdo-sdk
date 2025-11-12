@@ -11,9 +11,9 @@
     "outDir": "dist/@types",
     "sourceMap": true,
     "declaration": true,
-    "declarationMap": false,
+    "declarationMap": false
   },
   "include": [
     "src/**/*"
-  ],
+  ]
 }

@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/anikitenko/fdo-sdk.git"
   },
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "SDK for FlexDevOPs (FDO) application modules",
   "keywords": [
     "fdo",
@@ -12,10 +12,20 @@
     "devops",
     "flexdevops",
     "sdk",
-    "fdo-sdk"
+    "fdo-sdk",
+    "plugin",
+    "plugin-framework",
+    "electron",
+    "desktop-app",
+    "dom-builder",
+    "typescript"
   ],
   "author": "anikitenko",
   "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "homepage": "https://plugins.fdo.alexvwan.me",
   "bugs": {
     "url": "https://github.com/anikitenko/fdo-sdk/issues"
@@ -30,9 +40,11 @@
   "scripts": {
     "build": "webpack --config webpack.config.cjs",
     "build:types": "tsc --emitDeclarationOnly",
+    "prebuild": "npm run build:types",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "coverage:open": "npx opn coverage/lcov-report/index.html || true"
+    "coverage:open": "npx opn coverage/lcov-report/index.html || true",
+    "prepublishOnly": "npm test && npm run build"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
