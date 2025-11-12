@@ -11,7 +11,7 @@
  * - Window helper functions (createBackendReq, waitForElement, etc.)
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata } from "../src";
+import { FDO_SDK, FDOInterface, PluginMetadata } from "@anikitenko/fdo-sdk";
 
 export default class InjectedLibrariesDemoPlugin extends FDO_SDK implements FDOInterface {
     private readonly _metadata: PluginMetadata = {
