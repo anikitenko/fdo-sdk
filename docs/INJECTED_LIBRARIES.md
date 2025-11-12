@@ -1,6 +1,14 @@
-# Injected Libraries and Helpers
+# Injected Libraries and Helpers - Comprehensive AI-Ready Documentation
 
-This document describes all the libraries, CSS frameworks, and helper functions that are automatically available in your FDO plugins. These are injected by the FDO application host and can be used without any additional imports.
+This document provides comprehensive information about all libraries, CSS frameworks, and helper functions that are automatically injected and available in FDO plugins. These resources are provided by the FDO application host environment and require **no imports or installations** - they are ready to use immediately in your plugin's render() output.
+
+## Important Notes for AI Assistants
+
+- **No imports needed**: All libraries listed here are pre-loaded in the browser environment
+- **Usage context**: These are available in HTML/JavaScript rendered by your plugin's `render()` method
+- **TypeScript support**: Type definitions are included in the SDK for `window.Notyf`, `window.hljs`, `window.ace`, and `window.Split`
+- **Window object**: Helper functions are available on the global `window` object
+- **Backend communication**: Use `PluginRegistry.registerHandler()` in `init()` and `window.createBackendReq()` in frontend code
 
 ## Table of Contents
 
@@ -128,22 +136,69 @@ editor.session.setMode("ace/mode/javascript");
 
 ## Window Helper Functions
 
-These helper functions are automatically injected into the `window` object and are available for use in your plugins.
+These helper functions are automatically injected into the `window` object and are available for use in your plugins' frontend JavaScript code (within `<script>` tags in your `render()` output).
+
+### Communication Pattern
+
+**Backend (Plugin Class):**
+```typescript
+import { PluginRegistry } from "@anikitenko/fdo-sdk";
+
+class MyPlugin extends FDO_SDK {
+    init(): void {
+        // Register handlers in init(), NOT in render()
+        PluginRegistry.registerHandler('handlerName', async (data) => {
+            // Process data
+            return { result: 'success', data: processedData };
+        });
+    }
+}
+```
+
+**Frontend (In render() output):**
+```html
+<script>
+    async function callBackend() {
+        const result = await window.createBackendReq('handlerName', { 
+            param: 'value' 
+        });
+        console.log(result); // { result: 'success', data: ... }
+    }
+</script>
+```
 
 ### `createBackendReq(type, data)`
 
-Creates a request to your plugin's backend handler.
+Creates a request to your plugin's backend handler. This is the primary mechanism for frontend-backend communication.
+
+**Signature:**
+```typescript
+window.createBackendReq: (type: string, data?: any) => Promise<any>
+```
 
 **Parameters:**
-- `type` (string): The function name to call on the backend
-- `data` (any, optional): The data to send to the backend
+- `type` (string, required): The handler name registered via `PluginRegistry.registerHandler()`
+- `data` (any, optional): The data to send to the backend handler
 
-**Returns:** `Promise<any>` - The response from the backend
+**Returns:** `Promise<any>` - The value returned by the backend handler
+
+**Important Notes:**
+- Handlers must be registered in `init()` using `PluginRegistry.registerHandler(name, handler)`
+- The handler name must exactly match the `type` parameter
+- Handlers should be async functions or return Promises for async operations
+- Always wrap in try-catch for error handling
 
 **Example:**
 ```javascript
-const result = await window.createBackendReq('getUserData', { userId: 123 });
-console.log(result);
+// Frontend call
+try {
+    const result = await window.createBackendReq('getUserData', { 
+        userId: 123 
+    });
+    console.log(result.user); // Use the returned data
+} catch (error) {
+    console.error('Backend request failed:', error);
+}
 ```
 
 ### `waitForElement(selector, callback, timeout)`
@@ -384,3 +439,338 @@ export default class SplitPanelPlugin extends FDO_SDK {
 - [FontAwesome Icons](https://fontawesome.com/icons)
 - [Split Grid Documentation](https://github.com/nathancahill/split/tree/master/packages/splitjs)
 - [ACE Editor Documentation](https://ace.c9.io/)
+
+## SDK Core Patterns for AI Assistants
+
+### Complete Plugin Structure
+
+```typescript
+import { 
+    FDO_SDK, 
+    FDOInterface, 
+    PluginMetadata,
+    PluginRegistry,
+    DOMTable,
+    DOMText,
+    // ... other DOM helpers as needed
+} from "@anikitenko/fdo-sdk";
+
+export default class MyPlugin extends FDO_SDK implements FDOInterface {
+    // 1. METADATA: Required, defines plugin information
+    private readonly _metadata: PluginMetadata = {
+        name: "My Plugin",
+        version: "1.0.0",
+        author: "Your Name",
+        description: "Plugin description",
+        icon: "🚀" // Can be emoji, path to image, or FA icon class
+    };
+
+    // 2. METADATA GETTER: Required
+    get metadata(): PluginMetadata {
+        return this._metadata;
+    }
+
+    // 3. INIT METHOD: Required - called once when plugin loads
+    // NO PARAMETERS - the FDOInterface signature is init(): void
+    init(): void {
+        this.log("Plugin initialized!");
+        
+        // Register ALL backend handlers here
+        PluginRegistry.registerHandler('handlerName', async (data) => {
+            try {
+                // Handle the request
+                const result = await this.someBackendMethod(data);
+                return { success: true, data: result };
+            } catch (error) {
+                this.error(error as Error);
+                return { success: false, error: error.message };
+            }
+        });
+    }
+
+    // 4. RENDER METHOD: Required - returns HTML string
+    render(): string {
+        // Can use DOM helpers for type-safe HTML generation
+        const domText = new DOMText();
+        const heading = domText.createHeading("Hello World", 1);
+        
+        // Or return raw HTML
+        return `
+            <div class="my-plugin">
+                ${heading}
+                <button onclick="callBackend()">Click Me</button>
+            </div>
+            <script>
+                async function callBackend() {
+                    const result = await window.createBackendReq('handlerName', {
+                        action: 'test'
+                    });
+                    console.log(result);
+                }
+            </script>
+        `;
+    }
+
+    // 5. OPTIONAL: renderOnLoad() - returns JavaScript function as string
+    // This function runs after the DOM is fully loaded
+    renderOnLoad(): string {
+        return `() => {
+            console.log('Plugin UI loaded');
+            // Initialization code here
+        }`;
+    }
+
+    // 6. HELPER METHODS: Private methods for backend logic
+    private async someBackendMethod(data: any): Promise<any> {
+        // Backend logic here
+        return { processed: data };
+    }
+}
+```
+
+### Handler Registration Pattern
+
+**CORRECT:**
+```typescript
+init(): void {
+    // Register in init()
+    PluginRegistry.registerHandler('myHandler', async (data) => {
+        return { result: 'processed' };
+    });
+}
+```
+
+**INCORRECT:**
+```typescript
+render(): string {
+    // ❌ NEVER register handlers in render()
+    PluginRegistry.registerHandler('myHandler', ...);
+    return '<div>...</div>';
+}
+```
+
+### Storage Patterns
+
+```typescript
+import { PluginRegistry, StoreType } from "@anikitenko/fdo-sdk";
+
+// In init() or handler
+init(): void {
+    // Get storage backend (default: in-memory, or 'json' for file-based)
+    const store: StoreType = PluginRegistry.useStore('json');
+    
+    // Store operations
+    store.set('myKey', { data: 'value' });
+    const data = store.get('myKey');
+    store.remove('myKey');
+    store.clear();
+    
+    // Check existence
+    if (store.has('myKey')) {
+        console.log('Key exists');
+    }
+    
+    // Get all keys
+    const keys = store.keys();
+}
+```
+
+### DOM Helper Usage
+
+```typescript
+import { 
+    DOMTable, 
+    DOMText, 
+    DOMButton, 
+    DOMInput, 
+    DOMLink,
+    DOMMedia,
+    DOMSemantic,
+    DOMNested,
+    DOMMisc
+} from "@anikitenko/fdo-sdk";
+
+render(): string {
+    const domText = new DOMText();
+    const domButton = new DOMButton("btn-id", {});
+    const domTable = new DOMTable();
+    
+    // Create elements
+    const heading = domText.createHeading("Title", 1, {
+        classes: ['main-title'],
+        style: { color: 'blue' }
+    });
+    
+    const button = domButton.createButton(
+        "Click Me",
+        () => { console.log('clicked'); },
+        { classes: ['pure-button', 'pure-button-primary'] }
+    );
+    
+    // Table creation
+    const headerRow = domTable.createTableRow([
+        domTable.createTableHeader(["Name"]),
+        domTable.createTableHeader(["Value"])
+    ]);
+    const thead = domTable.createTableHead([headerRow]);
+    
+    const dataRow = domTable.createTableRow([
+        domTable.createTableCell(["Data 1"]),
+        domTable.createTableCell(["Value 1"])
+    ]);
+    const tbody = domTable.createTableBody([dataRow]);
+    
+    const table = domTable.createTable([thead, tbody], {
+        classes: ['pure-table', 'pure-table-bordered']
+    });
+    
+    return `
+        ${heading}
+        ${button}
+        ${table}
+    `;
+}
+```
+
+### Quick Actions and Side Panel (Mixins)
+
+```typescript
+import { 
+    FDO_SDK, 
+    FDOInterface,
+    QuickActionMixin,
+    SidePanelMixin,
+    QuickAction,
+    SidePanelConfig,
+    PluginRegistry
+} from "@anikitenko/fdo-sdk";
+
+// Apply mixins using type intersection
+interface MyPlugin extends QuickActionMixin, SidePanelMixin {}
+
+class MyPlugin extends FDO_SDK implements FDOInterface {
+    // Apply mixins
+    constructor() {
+        super();
+        Object.assign(this, QuickActionMixin);
+        Object.assign(this, SidePanelMixin);
+    }
+
+    init(): void {
+        // Register handlers for quick actions
+        PluginRegistry.registerHandler('quickAction1', async () => {
+            return { message: 'Quick action executed' };
+        });
+    }
+
+    // Define quick actions
+    defineQuickActions(): QuickAction[] {
+        return [
+            {
+                name: "Quick Action 1",
+                message_type: "quickAction1",
+                subtitle: "Does something quickly",
+                icon: "⚡"
+            }
+        ];
+    }
+
+    // Define side panel
+    defineSidePanel(): SidePanelConfig {
+        return {
+            icon: "📋",
+            label: "My Plugin",
+            submenu_list: [
+                {
+                    id: "item1",
+                    name: "Menu Item 1",
+                    message_type: "menuAction1"
+                }
+            ]
+        };
+    }
+
+    render(): string {
+        return '<div>Plugin content</div>';
+    }
+}
+```
+
+### Error Handling Pattern
+
+```typescript
+import { ErrorHandler } from "@anikitenko/fdo-sdk";
+
+class MyPlugin extends FDO_SDK {
+    init(): void {
+        PluginRegistry.registerHandler('riskyOperation', async (data) => {
+            try {
+                const result = await this.performRiskyOperation(data);
+                return { success: true, result };
+            } catch (error) {
+                // Log error using SDK logger
+                this.error(error as Error);
+                
+                // Return error response
+                return { 
+                    success: false, 
+                    error: error instanceof Error ? error.message : 'Unknown error' 
+                };
+            }
+        });
+    }
+
+    // Use @ErrorHandler decorator for automatic error handling
+    @ErrorHandler()
+    private async performRiskyOperation(data: any): Promise<any> {
+        // This method is wrapped with error handling
+        // Errors are automatically logged
+        throw new Error('Something went wrong');
+    }
+}
+```
+
+### Common Patterns Summary
+
+1. **Plugin Structure**: Class extends `FDO_SDK` and implements `FDOInterface`
+2. **Metadata**: Required `_metadata` property and `metadata` getter
+3. **Lifecycle**: `init()` with no parameters, `render()` returns HTML string
+4. **Handlers**: Register in `init()` with `PluginRegistry.registerHandler(name, handler)`
+5. **Frontend-Backend**: Use `window.createBackendReq(handlerName, data)` in rendered JS
+6. **Storage**: Use `PluginRegistry.useStore('json')` for persistence
+7. **DOM Creation**: Use DOM helper classes for type-safe HTML generation
+8. **Styling**: Use Pure CSS classes, goober CSS-in-JS, or inline styles
+9. **Notifications**: Use `new Notyf()` in rendered JavaScript
+10. **Code Display**: Use `hljs.highlightAll()` or `ace.edit()` for code
+
+### TypeScript Configuration for Plugins
+
+When developing plugins, use this tsconfig.json:
+
+```json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM"],
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
+## Updated Additional Resources
+
+- [Pure CSS Documentation](https://purecss.io/)
+- [Highlight.js Documentation](https://highlightjs.org/)
+- [Notyf Documentation](https://github.com/caroso1622/notyf)
+- [FontAwesome Icons](https://fontawesome.com/icons)
+- [Split Grid Documentation](https://github.com/nathancahill/split/tree/master/packages/splitjs)
+- [ACE Editor Documentation](https://ace.c9.io/)
+- [FDO SDK GitHub Repository](https://github.com/anikitenko/fdo-sdk)
+- [FDO SDK Homepage](https://plugins.fdo.alexvwan.me)
