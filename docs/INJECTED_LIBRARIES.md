@@ -1,3 +1,87 @@
+## Injected Libraries and Host-provided Helpers
+
+This SDK renders HTML strings server-side. The FDO host application injects several libraries and helper functions into the client-side runtime (the WebView/UI where your rendered HTML runs). You can access them via `window.*` in event handlers or your `renderOnLoad()` script.
+
+### Availability
+- The following globals exist only in the UI context (browser/WebView), not during server-side render.
+- Use them inside DOM event handlers (e.g., `onClick`) or code returned by `renderOnLoad()`.
+
+### JavaScript Libraries
+- Notyf (toast notifications): `window.Notyf`
+- Highlight.js (syntax highlighting): `window.hljs`
+- ACE Editor: `window.ace`
+- Split Grid (resizable CSS grid gutters): `window.Split(options)`
+- FontAwesome (icons) is available via injected styles. Use standard `<i class="fa ...">`.
+
+Goober (CSS-in-JS) is used by the SDK during server-side rendering and is not exposed on `window`.
+
+### Host Helper APIs on window
+The host injects these helpers for plugin UI code:
+- `window.createBackendReq(type: string, data?: any): Promise<any>`
+- `window.addGlobalEventListener(eventType: keyof WindowEventMap, callback: (event: Event) => void): void`
+- `window.removeGlobalEventListener(eventType: keyof WindowEventMap, callback: (event: Event) => void): void`
+- `window.waitForElement(selector: string, callback: (element: Element) => void, timeout?: number): void`
+- `window.executeInjectedScript(scriptContent: string): void`
+- `window.applyClassToSelector(className: string, selector: string): void`
+
+### Quick usage examples
+
+Notifications (Notyf):
+```javascript
+const notyf = new window.Notyf({ duration: 2500, dismissible: true });
+notyf.success("Saved!");
+notyf.error({ message: "Something went wrong", className: "my-error" });
+```
+
+Syntax highlighting (Highlight.js):
+```javascript
+window.hljs.highlightAll(); // after you insert code blocks into the DOM
+```
+
+ACE Editor:
+```javascript
+const editor = window.ace.edit("editor", { theme: "ace/theme/monokai" });
+editor.getSession().setMode("ace/mode/json");
+editor.setValue("{\n  \"hello\": \"world\"\n}", -1);
+```
+
+Split Grid:
+```javascript
+const instance = window.Split({
+  columnGutters: [{ element: document.querySelector(".gutter-col-1"), track: 1 }],
+  minSize: 100,
+  onDrag: (_dir, _track, css) => console.log(css),
+});
+// instance.addColumnGutter(el, 2); instance.destroy();
+```
+
+Backend requests from UI:
+```javascript
+async function loadData() {
+  const res = await window.createBackendReq("fetchSomething", { id: 42 });
+  console.log("Backend response:", res);
+}
+```
+
+Global listeners and DOM helpers:
+```javascript
+function onResize(e) { console.log("resized", e); }
+window.addGlobalEventListener("resize", onResize);
+window.waitForElement("#mount", (el) => el.classList.add("ready"));
+window.applyClassToSelector("highlight", "pre code");
+```
+
+Execute dynamic script in page:
+```javascript
+window.executeInjectedScript(`
+  console.log("Hello from injected script");
+`);
+```
+
+### Notes
+- Treat these as ambient globals provided by the host. You do not need to import them.
+- Prefer calling them from `renderOnLoad()` or event handlers returned by your DOM builders (`onClick`, `onChange`, etc.).
+
 # Injected Libraries and Helpers
 
 This document describes all the libraries, CSS frameworks, and helper functions that are automatically available in your FDO plugins. These are injected by the FDO application host and can be used without any additional imports.
@@ -12,6 +96,81 @@ This document describes all the libraries, CSS frameworks, and helper functions 
 ## CSS Libraries
 
 The following CSS libraries are automatically loaded in your plugin environment:
+
+### CSS Modules / Importing CSS as Objects (host-dependent)
+
+If the host UI build enables CSS Modules (or CSS imports), you can import styles and reference class names programmatically:
+
+```javascript
+// Example (host must have a CSS loader or equivalent compile-time hook)
+import styles from "./panel.css"; // default export of an object produced by the host
+
+function renderPanel() {
+  return `
+    <div class="${styles.container}">
+      <button class="${styles.button}">Click</button>
+    </div>
+  `;
+}
+```
+
+Notes and limitations:
+- Availability depends on the host build tooling, not the SDK. This SDK’s webpack config does not process `.css` files. The host transforms CSS to a JSON-like JS object (`export default {...}`).
+- The imported object maps selectors to nested style objects (SCSS-like) that can be passed into the SDK’s goober wrapper via `DOM.createClassFromStyle(...)`.
+- SCSS syntax is not parsed; instead, plain CSS is converted into an object with limited SCSS-like nesting semantics (see below).
+- Since plugins render HTML strings server-side, the generated class from `createClassFromStyle()` will inject CSS at render time. If you rely on host-provided global CSS, you can still use className strings directly.
+
+#### Supported CSS in imports (host transformation)
+The host’s CSS transformer (based on MDN property metadata and HTML tag lists) converts plain CSS into a nested object with SCSS-like semantics:
+
+- Top-level class selectors:
+  - `.button { color: red; }` → `styles.button = { color: 'red' }`
+- Class composition:
+  - `.button.primary { ... }` → merged under base: `styles.button['&.primary'] = { ... }`
+- Pseudo-classes/elements:
+  - `.button:hover { ... }` → `styles.button[':hover'] = { ... }`
+  - `.toggle::before { ... }` → `styles.toggle['::before'] = { ... }`
+- Attribute selectors and combinators:
+  - `.toggle:checked + .label { ... }` → `styles.toggle[':checked + .label'] = { ... }`
+  - `.item > .icon { ... }` will be preserved; depending on structure it may appear as a standalone key if it cannot be merged safely into a base.
+- Nested-looking rules are inferred:
+  - Keys that look like class names inside an object get prefixed as variants: `styles.base['&.modifier'] = {...}`
+- `@import` is supported and resolved/merged by the host before export.
+- Comments are stripped, whitespace normalized, and missing `;` before `}` is auto-fixed for compressed inputs.
+
+Limitations:
+- Media queries, keyframes, and at-rules:
+  - `@media`, `@keyframes`, and other `@...` blocks are preserved as top-level entries and are not deeply merged into base classes. Programmatic consumption may be awkward; prefer static/global CSS for complex responsive rules or define variants via goober.
+- Comma-separated selectors:
+  - Rules like `.a, .b { ... }` are not split; they may appear as a single combined key. Prefer one selector per block for predictable structure.
+- Non-class bases:
+  - ID and tag selectors are preserved but merging behavior focuses on class-based bases; nested heuristics prioritize class selectors.
+- This is not a full CSS/SCSS parser:
+  - The object format aims to be ergonomic for goober, not a perfect AST. Avoid exotic selector tricks when you plan to consume styles programmatically.
+
+#### Consuming imported CSS with the SDK
+You can pass the imported style object (or any nested variant) directly to the SDK’s goober wrapper to obtain a runtime class:
+
+```typescript
+import styles from "./toggle.css";
+import { DOM, DOMNested } from "@anikitenko/fdo-sdk";
+
+const dom = new DOM();
+const boxClass = dom.createClassFromStyle(styles.toggle);             // base
+const boxChecked = dom.createClassFromStyle({                         // base + pseudo
+  ...styles.toggle,
+  ...styles.toggle[":checked"], // example if exists
+});
+
+const container = new DOMNested().createBlockDiv(
+  [
+    // ...
+  ],
+  {
+    classes: [boxClass], // apply generated class
+  }
+);
+```
 
 ### Pure CSS (purecss.io)
 
@@ -370,11 +529,33 @@ export default class SplitPanelPlugin extends FDO_SDK {
 
 ## Best Practices
 
-1. **Use TypeScript types:** The SDK provides TypeScript definitions for all window helper functions
-2. **Error handling:** Always wrap backend requests in try-catch blocks
-3. **Element waiting:** Use `waitForElement` instead of `setTimeout` for DOM-dependent code
-4. **Cleanup:** Remove event listeners when they're no longer needed
-5. **CSP Compliance:** Be aware of Content Security Policy restrictions in the plugin environment
+- **Separate SSR from UI code**: The SDK builds HTML on the server. Only reference `window.*` from event handlers or `renderOnLoad()`, never from `render()`.
+- **Prefer renderOnLoad for orchestration**: Keep inline handlers small; do heavier client logic in `renderOnLoad()` and call it from handlers.
+- **Use backend IPC for side effects**: From the UI, prefer `createBackendReq("action", payload)` for filesystem/process work. Always `try/catch` and show a toast on error.
+- **Debounce/throttle listeners**: When attaching global listeners (e.g., resize/scroll), debounce to avoid heavy UI work.
+- **Highlight.js after DOM updates**: Call `hljs.highlightAll()` once your code blocks are inserted or changed.
+- **ACE editor sizing**: Ensure the editor container has an explicit height and call `editor.resize()` if the container resizes.
+- **Split grid lifecycle**: Create a single `Split(...)` instance per view and call `instance.destroy()` when replacing the layout.
+- **Accessibility first**:
+  - Always provide `alt` for images.
+  - Use semantic tags (`main`, `nav`, `header`, `footer`) from `DOMSemantic`.
+  - Use labels and `aria-*` attributes for inputs and interactive controls.
+- **Sanitize dynamic HTML**: Children passed to DOM builders are inserted as-is. Sanitize or escape any user-generated content before injecting.
+- **Prefer classes over inline styles**: Use the SDK’s goober integration (`style` -> class) rather than large inline `style` strings for better reuse and readability.
+- **Deterministic selectors**: Use stable `id`/`className` if your `renderOnLoad()` or handlers query elements later; avoid random IDs when you need to re-select.
+- **Storage**:
+  - Use `PluginRegistry.useStore("default" | "json")` for simple persistence.
+  - Do not store secrets in the JSON store; keep sensitive data in memory only.
+- **Error handling pattern**:
+  - Wrap UI `await` calls with `try/catch` and notify via Notyf.
+  - On the server side, use the `@handleError` decorator to standardize responses and error UIs.
+- **IPC handlers**:
+  - Keep handlers fast and return structured results `{ success, result | error }`.
+  - Offload long-running work, stream progress if needed via additional messages.
+- **Security**:
+  - Never pass untrusted code to `executeInjectedScript`.
+  - Don’t interpolate unsanitized strings into `<script>` blocks or event handlers.
+- **CSS extraction note**: `DOM.renderHTML()` injects extracted CSS. Ensure your host interprets it as a normal `<style>` block; avoid exotic templating in style tags.
 
 ## Additional Resources
 
