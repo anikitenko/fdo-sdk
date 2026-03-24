@@ -65,7 +65,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
     version: "1.0.0",
     author: "FDO SDK Team",
     description: "Demonstrates quick actions and side panel integration using mixins",
-    icon: "icon.png"
+    icon: "panel-table"
   };
 
   /**

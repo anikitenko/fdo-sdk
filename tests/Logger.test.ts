@@ -1,5 +1,6 @@
 import { Logger } from "../src/Logger";
 import * as winston from "winston";
+import DailyRotateFile from "winston-daily-rotate-file";
 
 jest.mock("winston", () => {
     const logMethods = {
@@ -27,6 +28,10 @@ jest.mock("winston", () => {
     };
 });
 
+jest.mock("winston-daily-rotate-file", () => {
+    return jest.fn().mockImplementation((options: unknown) => options);
+});
+
 describe("Logger", () => {
     let logger: Logger;
     let winstonLoggerMock: any;
@@ -46,6 +51,8 @@ describe("Logger", () => {
 
     afterEach(() => {
         delete process.env.LOG_LEVEL;
+        delete process.env.FDO_SDK_LOG_ROOT;
+        delete process.env.FDO_SDK_SESSION_ID;
         setPlatform(originalPlatform);
         jest.resetModules();
         jest.clearAllMocks();
@@ -110,5 +117,46 @@ describe("Logger", () => {
     test("should log silly messages", () => {
         logger.silly("Silly Message");
         expect(winstonLoggerMock.silly).toHaveBeenCalledWith("Silly Message");
+    });
+
+    test("should derive log root from environment", () => {
+        process.env.FDO_SDK_LOG_ROOT = "/tmp/fdo-sdk-logs";
+        new Logger({ context: { pluginId: "test-plugin" } });
+
+        expect(DailyRotateFile).toHaveBeenCalledWith(
+            expect.objectContaining({
+                dirname: "/tmp/fdo-sdk-logs/test-plugin",
+            })
+        );
+    });
+
+    test("should create child logger with merged context", () => {
+        const parent = new Logger({
+            logRoot: "/tmp/fdo-sdk-logs",
+            context: { pluginId: "parent-plugin", component: "parent-component", sessionId: "parent-session" },
+        });
+
+        parent.withContext({ component: "child-component" });
+
+        expect(DailyRotateFile).toHaveBeenCalledWith(
+            expect.objectContaining({
+                dirname: "/tmp/fdo-sdk-logs/parent-plugin",
+            })
+        );
+    });
+
+    test("should write structured events and return correlation id", () => {
+        const correlationId = logger.event("plugin.init.start", { source: "unit-test" });
+
+        expect(typeof correlationId).toBe("string");
+        expect(winstonLoggerMock.log).toHaveBeenCalledWith(
+            "info",
+            "plugin.init.start",
+            expect.objectContaining({
+                event: "plugin.init.start",
+                source: "unit-test",
+                correlationId,
+            })
+        );
     });
 });

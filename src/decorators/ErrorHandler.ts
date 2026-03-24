@@ -40,75 +40,82 @@ export function handleError(config: ErrorHandlerConfig = {}) {
   ): TypedPropertyDescriptor<any> {
     // Store the original method
     const originalMethod = descriptor.value;
-    
-    // Create new method wrapper
-    descriptor.value = async function (this: FDO_SDK, ...args: any[]) {
-      try {
-        // Execute original method
-        const result = await originalMethod.apply(this, args);
-        
-        // For render methods, return as is
-        if (propertyKey === "render") {
-          return result;
-        }
-        
-        // For other methods, wrap in success response
-        return {
-          success: true,
-          result
-        };
-        
-      } catch (error) {
-        // Get error details
-        const errorObj = error as Error;
-        const errorMessage = config.errorMessage || errorObj.message;
-        
-        // Log error using SDK's error method
-        this.error(errorObj);
-        
-        // Add to notification manager
-        const notification = NotificationManager.getInstance().addNotification(
-          errorMessage,
-          'error',
-          {
-            stack: errorObj.stack,
-            context: config.context,
-            method: propertyKey.toString(),
-            args: args
-          }
-        );
 
-        // Show VS Code notification if configured
-        if (config.showNotifications !== false) {
-          // Using the existing error method which integrates with VS Code
-          this.error(new Error(errorMessage));
+    const buildSuccessResult = (result: any) => {
+      if (propertyKey === "render") {
+        return result;
+      }
+
+      return {
+        success: true,
+        result
+      };
+    };
+
+    const buildErrorResult = function (this: FDO_SDK, error: unknown, args: any[]) {
+      const errorObj = error as Error;
+      const errorMessage = config.errorMessage || errorObj.message;
+
+      this.error(errorObj);
+
+      const notification = NotificationManager.getInstance().addNotification(
+        errorMessage,
+        "error",
+        {
+          stack: errorObj.stack,
+          context: config.context,
+          method: propertyKey.toString(),
+          args: args
         }
-        
-        // For render method, return error UI
-        if (propertyKey === "render") {
-          if (config.errorUIRenderer) {
+      );
+
+      if (config.showNotifications !== false) {
+        this.error(new Error(errorMessage));
+      }
+
+      if (propertyKey === "render") {
+        if (config.errorUIRenderer) {
+          try {
             return config.errorUIRenderer(errorObj);
+          } catch (rendererError) {
+            this.error(rendererError as Error);
           }
-          
-          if (config.returnErrorUI !== false) {
-            return `
+        }
+
+        if (config.returnErrorUI !== false) {
+          return `
               <div style="padding: 20px; color: red;">
                 <h2>Error rendering plugin</h2>
                 <p>${errorMessage}</p>
-                ${config.context ? `<pre>${JSON.stringify(config.context, null, 2)}</pre>` : ''}
+                ${config.context ? `<pre>${JSON.stringify(config.context, null, 2)}</pre>` : ""}
               </div>
             `;
-          }
-          
-          throw error; // Re-throw if no error UI handling configured
         }
-        
-        // For other methods, return error result with notification ID
-        return {
-          success: false,
-          error: errorMessage,
-          notificationId: notification.timestamp.toISOString()
-        };
+
+        throw error;
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        notificationId: notification.timestamp.toISOString()
+      };
+    };
+
+    // Create new method wrapper while preserving sync behavior for sync methods.
+    descriptor.value = function (this: FDO_SDK, ...args: any[]) {
+      try {
+        const result = originalMethod.apply(this, args);
+
+        if (result && typeof result.then === "function") {
+          return result
+            .then((resolvedResult: any) => buildSuccessResult(resolvedResult))
+            .catch((error: unknown) => buildErrorResult.call(this, error, args));
+        }
+
+        return buildSuccessResult(result);
+      } catch (error) {
+        return buildErrorResult.call(this, error, args);
       }
     };
     

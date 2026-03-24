@@ -42,7 +42,7 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
     version: "1.0.0",
     author: "FDO SDK Team",
     description: "A minimal example demonstrating basic plugin creation and lifecycle",
-    icon: "icon.png"
+    icon: "cog"
   };
 
   /**
@@ -82,9 +82,10 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
    * Render the plugin UI.
    * 
    * This method is called when the plugin needs to display its user interface.
-   * It should return an HTML string that defines the plugin's UI.
-   * 
-   * The returned HTML will be rendered in the FDO application's plugin container.
+   * It should return a UI string for the FDO iframe host pipeline.
+   *
+   * The SDK and host transport serialize this value separately. Plugin code should
+   * return the UI string directly from render().
    * 
    * CUSTOMIZE HERE: Replace this simple HTML with your own UI
    * 
@@ -92,7 +93,7 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
    * For complex UIs, consider using the DOM helper classes (see example 05)
    * or breaking the UI into smaller components.
    * 
-   * @returns HTML string representing the plugin's user interface
+   * @returns UI string representing the plugin's user interface
    */
   render(): string {
     try {
@@ -159,7 +160,7 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
  * 1. All plugins must extend FDO_SDK and implement FDOInterface
  * 2. The metadata property is required and must include name, version, author, description, and icon
  * 3. The init() method is called once during plugin load - use it for setup
- * 4. The render() method returns HTML that defines the plugin's UI
+ * 4. The render() method returns the UI string for the plugin host pipeline
  * 5. Use this.log() for informational messages and this.error() for error logging
  * 6. Always handle errors in init() and render() to prevent plugin failures
  * 

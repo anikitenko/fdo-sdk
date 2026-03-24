@@ -53,7 +53,7 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
     version: "1.0.0",
     author: "FDO SDK Team",
     description: "Demonstrates data persistence with StoreDefault and StoreJson",
-    icon: "icon.png"
+    icon: "database"
   };
 
   /**

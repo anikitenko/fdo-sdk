@@ -19,7 +19,7 @@ export default class InjectedLibrariesDemoPlugin extends FDO_SDK implements FDOI
         version: "1.0.0",
         author: "FDO SDK",
         description: "Demonstrates the use of automatically injected libraries and helper functions",
-        icon: "💡"
+        icon: "lightbulb"
     };
 
     get metadata(): PluginMetadata {
@@ -251,7 +251,7 @@ export default class MyPlugin extends FDO_SDK implements FDOInterface {
         version: "1.0.0",
         author: "Your Name",
         description: "Plugin description",
-        icon: "🚀"
+        icon: "rocket"
     };
 
     get metadata(): PluginMetadata {

@@ -132,4 +132,52 @@ describe('ErrorHandler Decorator', () => {
         expect(result).toContain('UI error');
         expect(NotificationManager.getInstance().count).toBe(1);
     });
+
+    it('should fall back to default error UI when custom render UI throws', () => {
+        const testError = new Error('Render error');
+        const rendererError = new Error('Renderer failed');
+        const descriptor: PropertyDescriptor = {
+            value: function() {
+                throw testError;
+            }
+        };
+
+        const decoratedDescriptor = handleError({
+            returnErrorUI: true,
+            errorUIRenderer: () => {
+                throw rendererError;
+            }
+        })(
+            mockSDK,
+            'render',
+            descriptor
+        );
+
+        const result = decoratedDescriptor.value.call(mockSDK);
+
+        expect(result).toContain('Error rendering plugin');
+        expect(result).toContain('Render error');
+        expect(mockError).toHaveBeenCalledWith(testError);
+        expect(mockError).toHaveBeenCalledWith(rendererError);
+        expect(NotificationManager.getInstance().count).toBe(1);
+    });
+
+    it('should preserve synchronous render return values', () => {
+        const descriptor: PropertyDescriptor = {
+            value: function() {
+                return '<div>sync</div>';
+            }
+        };
+
+        const decoratedDescriptor = handleError()(
+            mockSDK,
+            'render',
+            descriptor
+        );
+
+        const result = decoratedDescriptor.value.call(mockSDK);
+
+        expect(result).toBe('<div>sync</div>');
+        expect(result).not.toBeInstanceOf(Promise);
+    });
 });

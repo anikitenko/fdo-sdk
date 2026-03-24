@@ -52,7 +52,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
     version: "1.0.0",
     author: "FDO SDK Team",
     description: "Demonstrates interactive UI with buttons, forms, and message handlers",
-    icon: "icon.png"
+    icon: "widget-button"
   };
 
   /**
@@ -275,7 +275,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
             domInput.createInput('text'),
             
             domButton.createButton('Submit', 
-              () => handleFormSubmit(),
+              () => {},
               {
                 style: {
                   padding: '10px 20px',

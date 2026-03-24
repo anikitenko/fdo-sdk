@@ -12,6 +12,11 @@ describe("FDO_SDK", () => {
     let sdk: FDO_SDK;
     let mockLogger: jest.SpyInstance;
     let mockLoggerInfo: jest.SpyInstance;
+    let mockLoggerWarn: jest.SpyInstance;
+    let mockLoggerDebug: jest.SpyInstance;
+    let mockLoggerVerbose: jest.SpyInstance;
+    let mockLoggerSilly: jest.SpyInstance;
+    let mockLoggerEvent: jest.SpyInstance;
 
     beforeEach(() => {
         // Mock process.parentPort to prevent errors
@@ -23,6 +28,11 @@ describe("FDO_SDK", () => {
         // Mock Logger methods
         mockLogger = jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
         mockLoggerInfo = jest.spyOn(Logger.prototype, "info").mockImplementation(() => {});
+        mockLoggerWarn = jest.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+        mockLoggerDebug = jest.spyOn(Logger.prototype, "debug").mockImplementation(() => {});
+        mockLoggerVerbose = jest.spyOn(Logger.prototype, "verbose").mockImplementation(() => {});
+        mockLoggerSilly = jest.spyOn(Logger.prototype, "silly").mockImplementation(() => {});
+        mockLoggerEvent = jest.spyOn(Logger.prototype, "event").mockImplementation(() => "mock-correlation-id");
         jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
 
         // Mock PluginRegistry
@@ -65,11 +75,10 @@ describe("FDO_SDK", () => {
         messageCallback(mockMessage);
     });
 
-    test("should ensure render function is bound and modified to return JSON", () => {
+    test("should keep render implementation on the plugin instance", () => {
         const mockSdk = new MockPlugin();
 
-        // Check if the function is actually reassigned
-        expect(mockSdk.render).not.toBe(MockPlugin.prototype.render);
+        expect(mockSdk.render).toBe(MockPlugin.prototype.render);
     });
 
     test("should log initialization message", () => {
@@ -87,21 +96,26 @@ describe("FDO_SDK", () => {
         expect(logSpy.mock.calls[0][0].message).toBe("Method 'render' must be implemented by plugin.");
     });
 
-    test("should return JSON-stringify output when render is implemented", () => {
+    test("should return raw render output when render is implemented", () => {
         const mockSdk = new MockPlugin();
 
-        // Spy on the original render method
         const renderSpy = jest.spyOn(mockSdk, "render");
-
-        // Call render and capture output
         const result = mockSdk.render();
 
-        // Expected JSON output
-        const expectedOutput = JSON.stringify(`<style>.test{"color": "green"}</style><h1>Hello from plugin!</h1>`);
-
-        // Assertions
         expect(renderSpy).toHaveBeenCalled();
-        expect(result).toBe(expectedOutput);
+        expect(result).toBe(`<style>.test{"color": "green"}</style><h1>Hello from plugin!</h1>`);
+    });
+
+    test("should serialize render output explicitly", () => {
+        const mockSdk = new MockPlugin();
+
+        expect(mockSdk.serializeRender()).toBe(
+            JSON.stringify(`<style>.test{"color": "green"}</style><h1>Hello from plugin!</h1>`)
+        );
+    });
+
+    test("should serialize renderOnLoad output explicitly", () => {
+        expect(sdk.serializeRenderOnLoad()).toBe(JSON.stringify('() => {}'));
     });
 
     test("should log messages using log()", () => {
@@ -113,6 +127,37 @@ describe("FDO_SDK", () => {
         const error = new Error("Test error");
         sdk.error(error);
         expect(Logger.prototype.error).toHaveBeenCalledWith(error);
+    });
+
+    test("should log info messages using info()", () => {
+        sdk.info("Info message", { a: 1 });
+        expect(mockLoggerInfo).toHaveBeenCalledWith("Info message", { a: 1 });
+    });
+
+    test("should log warnings using warn()", () => {
+        sdk.warn("Warn message", { b: 2 });
+        expect(mockLoggerWarn).toHaveBeenCalledWith("Warn message", { b: 2 });
+    });
+
+    test("should log debug messages using debug()", () => {
+        sdk.debug("Debug message", { c: 3 });
+        expect(mockLoggerDebug).toHaveBeenCalledWith("Debug message", { c: 3 });
+    });
+
+    test("should log verbose messages using verbose()", () => {
+        sdk.verbose("Verbose message", { d: 4 });
+        expect(mockLoggerVerbose).toHaveBeenCalledWith("Verbose message", { d: 4 });
+    });
+
+    test("should log silly messages using silly()", () => {
+        sdk.silly("Silly message", { e: 5 });
+        expect(mockLoggerSilly).toHaveBeenCalledWith("Silly message", { e: 5 });
+    });
+
+    test("should emit structured events using event()", () => {
+        const correlationId = sdk.event("plugin.custom.event", { value: 1 });
+        expect(correlationId).toBe("mock-correlation-id");
+        expect(mockLoggerEvent).toHaveBeenCalledWith("plugin.custom.event", { value: 1 });
     });
 
     test('renderOnLoad returns a function as string', () => {

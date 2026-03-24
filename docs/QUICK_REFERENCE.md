@@ -2,6 +2,8 @@
 
 This is a quick reference for developers who want to quickly look up available libraries and their basic usage.
 
+These helpers and libraries are for the iframe UI runtime. Do not assume they exist in backend/bootstrap/plugin-host failure paths.
+
 ## Window Helpers (Always Available)
 
 ```typescript
