@@ -8,6 +8,22 @@ class MockPlugin extends FDO_SDK {
     }
 }
 
+class AsyncRejectRenderPlugin extends FDO_SDK {
+    public render(): any {
+        return Promise.reject(new Error("async-render-failure"));
+    }
+}
+
+class AsyncRejectRenderOnLoadPlugin extends FDO_SDK {
+    public render(): string {
+        return "<div>ok</div>";
+    }
+
+    public renderOnLoad(): any {
+        return Promise.reject(new Error("async-onload-failure"));
+    }
+}
+
 describe("FDO_SDK", () => {
     let sdk: FDO_SDK;
     let mockLogger: jest.SpyInstance;
@@ -165,5 +181,29 @@ describe("FDO_SDK", () => {
 
         expect(typeof result).toBe('string');
         expect(result).toContain('() =>'); // Optional, to verify it's a function
+    });
+
+    test("should reject async render promises at serialization boundary", async () => {
+        const asyncPlugin = new AsyncRejectRenderPlugin();
+        const errorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+
+        expect(() => asyncPlugin.serializeRender()).toThrow(
+            "Method 'render' must return a synchronous string. Async render promises are not supported."
+        );
+
+        await Promise.resolve();
+        expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({ message: "async-render-failure" }));
+    });
+
+    test("should reject async renderOnLoad promises at serialization boundary", async () => {
+        const asyncPlugin = new AsyncRejectRenderOnLoadPlugin();
+        const errorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+
+        expect(() => asyncPlugin.serializeRenderOnLoad()).toThrow(
+            "Method 'renderOnLoad' must return a synchronous string. Async on-load promises are not supported."
+        );
+
+        await Promise.resolve();
+        expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({ message: "async-onload-failure" }));
     });
 });

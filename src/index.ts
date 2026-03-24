@@ -67,7 +67,13 @@ export class FDO_SDK {
      * Plugin implementations should override `render()`, not this method.
      */
     public serializeRender(): string {
-        return JSON.stringify(this.render())
+        const renderOutput = this.render() as unknown;
+        if (this.isThenable(renderOutput)) {
+            void renderOutput.catch((error: unknown) => this.logAsyncLifecycleError("render", error));
+            throw new Error("Method 'render' must return a synchronous string. Async render promises are not supported.");
+        }
+
+        return JSON.stringify(renderOutput)
     }
 
     /**
@@ -75,7 +81,13 @@ export class FDO_SDK {
      * Plugin implementations should override `renderOnLoad()` when needed.
      */
     public serializeRenderOnLoad(): string {
-        return JSON.stringify(this.renderOnLoad())
+        const onLoadOutput = this.renderOnLoad() as unknown;
+        if (this.isThenable(onLoadOutput)) {
+            void onLoadOutput.catch((error: unknown) => this.logAsyncLifecycleError("renderOnLoad", error));
+            throw new Error("Method 'renderOnLoad' must return a synchronous string. Async on-load promises are not supported.");
+        }
+
+        return JSON.stringify(onLoadOutput)
     }
 
     public log(message: string): void {
@@ -108,5 +120,16 @@ export class FDO_SDK {
 
     public event(name: string, payload: Record<string, unknown> = {}): string {
         return this._logger.event(name, payload)
+    }
+
+    private isThenable(value: unknown): value is Promise<unknown> {
+        return Boolean(value) && typeof (value as Promise<unknown>).then === "function";
+    }
+
+    private logAsyncLifecycleError(methodName: "render" | "renderOnLoad", error: unknown): void {
+        const normalizedError = error instanceof Error
+            ? error
+            : new Error(`Async ${methodName} rejection: ${String(error)}`);
+        this._logger.error(normalizedError);
     }
 }
