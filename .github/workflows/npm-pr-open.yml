@@ -8,6 +8,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,10 +19,15 @@ jobs:
           node-version: 23
       - run: npm ci
       - run: npm run test:examples
-      - uses: ArtiomTr/jest-coverage-report-action@v2
+      - if: ${{ github.event.pull_request.head.repo.fork == false }}
+        uses: ArtiomTr/jest-coverage-report-action@v2
+      - if: ${{ github.event.pull_request.head.repo.fork == true }}
+        run: npm test -- --runInBand
 
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
