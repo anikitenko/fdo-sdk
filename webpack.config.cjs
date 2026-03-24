@@ -10,11 +10,9 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'),
         clean: true,
         library: {
-            name: 'fdoSDK',
-            type: 'umd',
+            type: 'commonjs2',
         },
         publicPath: '',
-        globalObject: 'typeof self !== "undefined" ? self : this'
     },
     optimization: {
         minimize: false,

@@ -33,6 +33,7 @@ coverage/
 .nyc_output/
 *.tsbuildinfo
 .eslintcache
+dist/*.map
 
 # Git files
 .git/

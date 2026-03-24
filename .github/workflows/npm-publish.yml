@@ -14,6 +14,7 @@ jobs:
         with:
           node-version: 23
       - run: npm ci
+      - run: npm run test:examples
       - uses: ArtiomTr/jest-coverage-report-action@v2
 
   publish-gpr:
@@ -29,7 +30,10 @@ jobs:
           node-version: 23
           registry-url: 'https://registry.npmjs.org'
       - run: npm ci
+      - run: npm test -- --runInBand
+      - run: npm run test:examples
       - run: npm run build
+      - run: npm run verify:pack
       - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

@@ -3,7 +3,13 @@
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@anikitenko/fdo-sdk": [
+        "../src/index.ts"
+      ]
+    }
   },
   "include": [
     "*.ts"

@@ -6,7 +6,7 @@ class MyPlugin extends FDO_SDK implements FDOInterface {
         version: "1.0.0",
         author: "Oleksandr Nykytenko",
         description: "A sample plugin for FDO",
-        icon: "COG",
+        icon: "cog",
     };
 
     constructor() {
@@ -27,3 +27,4 @@ class MyPlugin extends FDO_SDK implements FDOInterface {
 }
 
 export default MyPlugin
+new MyPlugin()

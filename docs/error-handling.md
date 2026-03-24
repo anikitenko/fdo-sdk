@@ -71,7 +71,7 @@ The `@handleError` decorator accepts these configuration options:
 
 - `errorMessage`: Custom error message to display
 - `returnErrorUI`: Whether to return default error UI for render methods
-- `errorUIRenderer`: Custom function for rendering error UI
+- `errorUIRenderer`: Custom function for rendering error UI. It should be runtime-safe and not depend on browser-only helpers in backend/plugin-host failure paths. If it throws, the SDK falls back to the default error UI.
 - `showNotifications`: Whether to show VS Code notifications
 - `context`: Additional context to include with errors
 
@@ -95,6 +95,14 @@ interface ErrorResult<T> {
 3. Implement custom error UI for better user experience
 4. Monitor error history for debugging
 5. Clear old notifications when appropriate
+
+## Lifecycle Failure Behavior
+
+- `PLUGIN_INIT`: initialization failures are logged and returned to the host as a stable response with empty `quickActions`, `null` `sidePanelActions`, and an `error` message.
+- `PLUGIN_RENDER`: render transport failures are logged and returned as fallback error UI with a no-op `onLoad` payload and an `error` message.
+- `UI_MESSAGE`: invalid payloads and handler failures are logged and returned as `{ error: string }`.
+
+This keeps the plugin host contract stable even when plugin lifecycle code fails.
 
 ## Example Usage
 

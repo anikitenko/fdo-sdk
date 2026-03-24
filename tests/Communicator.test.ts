@@ -14,16 +14,19 @@ jest.mock("../src/Logger", () => ({
     Logger: jest.fn().mockImplementation(() => ({
         log: jest.fn(),
         error: jest.fn(),
+        event: jest.fn().mockReturnValue("mock-correlation-id"),
     })),
 }));
 
 jest.mock("../src/PluginRegistry", () => ({
     PluginRegistry: {
+        DIAGNOSTICS_HANDLER: "__sdk.getDiagnostics",
         callInit: jest.fn(),
         callRenderer: jest.fn().mockReturnValue("mock_rendered_output"),
         callHandler: jest.fn().mockReturnValue("mock_handler_output"),
         getQuickActions: jest.fn().mockReturnValue(["action1", "action2"]),
         getSidePanelConfig: jest.fn().mockReturnValue(["panel1", "panel2"]),
+        getDiagnostics: jest.fn().mockReturnValue({ health: { status: "healthy" } }),
     },
 }));
 
@@ -45,48 +48,39 @@ describe("Communicator", () => {
     });
 
     test("should listen to messages from main process and emit event", () => {
-        const mockEmit = jest.spyOn(communicator, "emit"); // Spy on emit
+        const mockEmit = jest.spyOn(communicator, "emit");
 
         const mockMessage = { data: { message: MESSAGE_TYPE.PLUGIN_READY, content: "test" } };
 
-        // Simulate message event
         const callback = mockOnMessage.mock.calls[0][1];
         callback(mockMessage);
 
-        // Ensure logger logs the message
         expect((communicator as any)._logger.log).toHaveBeenCalledWith("Received from main process: PLUGIN_READY");
-
-        // Ensure emit was called with expected values
         expect(mockEmit).toHaveBeenCalledWith(MESSAGE_TYPE.PLUGIN_READY, "test");
-
-        mockEmit.mockRestore(); // Cleanup after test
+        mockEmit.mockRestore();
     });
 
-    test("should handle unknown message types", () => {
-        const mockEmit = jest.spyOn(communicator, "emit"); // Spy on emit
+    test("should reject invalid host message types", () => {
+        const mockEmit = jest.spyOn(communicator, "emit");
 
         const mockMessage = { data: { message: "UNKNOWN_TYPE", content: "test" } };
 
-        // Simulate message event
         const callback = mockOnMessage.mock.calls[0][1];
         callback(mockMessage);
 
-        // Ensure logger logs the message
-        expect((communicator as any)._logger.log).toHaveBeenCalledWith("Received from main process: UNKNOWN_TYPE");
+        expect((communicator as any)._logger.error).toHaveBeenCalled();
+        expect(mockEmit).not.toHaveBeenCalled();
+        mockEmit.mockRestore();
+    });
 
-        // Ensure emit was called with expected values
-        expect(mockEmit).toHaveBeenCalledWith("UNKNOWN_TYPE", "test");
-
-        mockEmit.mockRestore(); // Cleanup after test
-    })
-
-    test("should handle unknown content", () => {
-        const mockEmit = jest.spyOn(communicator, "emit"); // Spy on emit
-        const mockMessage = { data: { message: "test", undefined } };
+    test("should accept missing content for valid host messages", () => {
+        const mockEmit = jest.spyOn(communicator, "emit");
+        const mockMessage = { data: { message: MESSAGE_TYPE.PLUGIN_READY } };
         const callback = mockOnMessage.mock.calls[0][1];
         callback(mockMessage);
-        expect(mockEmit).toHaveBeenCalledWith("test", undefined);
-    })
+        expect(mockEmit).toHaveBeenCalledWith(MESSAGE_TYPE.PLUGIN_READY, undefined);
+        mockEmit.mockRestore();
+    });
 
     test("should handle PLUGIN_READY event", () => {
         communicator.emit(MESSAGE_TYPE.PLUGIN_READY);
@@ -102,10 +96,46 @@ describe("Communicator", () => {
         });
     });
 
+    test("should return a stable init failure response when plugin init fails", () => {
+        (PluginRegistry.callInit as jest.Mock).mockImplementationOnce(() => {
+            throw new Error("init failed");
+        });
+
+        communicator.emit(MESSAGE_TYPE.PLUGIN_INIT);
+
+        expect((communicator as any)._logger.error).toHaveBeenCalled();
+        expect(mockPostMessage).toHaveBeenCalledWith({
+            type: MESSAGE_TYPE.PLUGIN_INIT,
+            response: {
+                quickActions: [],
+                sidePanelActions: null,
+                error: "init failed",
+            },
+        });
+    });
+
     test("should handle PLUGIN_RENDER event", () => {
         communicator.emit(MESSAGE_TYPE.PLUGIN_RENDER);
         expect(PluginRegistry.callRenderer).toHaveBeenCalled();
         expect(mockPostMessage).toHaveBeenCalledWith({ type: MESSAGE_TYPE.PLUGIN_RENDER, response: "mock_rendered_output" });
+    });
+
+    test("should fall back to default render payload when render preparation fails", () => {
+        (PluginRegistry.callRenderer as jest.Mock).mockImplementationOnce(() => {
+            throw new Error("invalid render payload");
+        });
+
+        communicator.emit(MESSAGE_TYPE.PLUGIN_RENDER);
+
+        expect((communicator as any)._logger.error).toHaveBeenCalled();
+        expect(mockPostMessage).toHaveBeenCalledWith({
+            type: MESSAGE_TYPE.PLUGIN_RENDER,
+            response: {
+                render: JSON.stringify(`<div style="padding: 20px; color: red;"><h2>Error rendering plugin</h2><p>Invalid render payload.</p></div>`),
+                onLoad: JSON.stringify('() => {}'),
+                error: "Invalid render payload.",
+            },
+        });
     });
 
     test("should handle UI_MESSAGE event", async () => {
@@ -114,8 +144,7 @@ describe("Communicator", () => {
             content: "test_data"
         });
 
-        // Wait for next event loop tick or async operation
-        await Promise.resolve(); // or use waitFor or flushPromises if needed
+        await Promise.resolve();
 
         expect(PluginRegistry.callHandler).toHaveBeenCalledWith("customHandler", "test_data");
         expect(mockPostMessage).toHaveBeenCalledWith({
@@ -138,20 +167,34 @@ describe("Communicator", () => {
         });
     });
 
+    test("should return diagnostics through reserved SDK handler", async () => {
+        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
+            handler: "__sdk.getDiagnostics",
+            content: { notificationsLimit: 5 }
+        });
+
+        await Promise.resolve();
+
+        expect(PluginRegistry.callHandler).not.toHaveBeenCalled();
+        expect(PluginRegistry.getDiagnostics).toHaveBeenCalledWith({ notificationsLimit: 5 });
+        expect(mockPostMessage).toHaveBeenCalledWith({
+            type: MESSAGE_TYPE.UI_MESSAGE,
+            response: { health: { status: "healthy" } }
+        });
+    });
+
     it("should handle message with undefined data", () => {
-        const communicator = new Communicator();
         const emitSpy = jest.spyOn(communicator, "emit");
 
-        // simulate parentPort.on listener call
-        const onMock = (process.parentPort.on as jest.Mock).mock.calls[0][1]; // second arg is the callback
+        const onMock = (process.parentPort.on as jest.Mock).mock.calls[0][1];
         onMock({ data: undefined });
 
-        expect(emitSpy).toHaveBeenCalledTimes(0)
+        expect((communicator as any)._logger.error).toHaveBeenCalled();
+        expect(emitSpy).toHaveBeenCalledTimes(0);
     });
 
     describe("Error handling in UI_MESSAGE", () => {
         test("should handle Error objects thrown by handler", async () => {
-            // Setup PluginRegistry.callHandler to throw an Error
             const error = new Error("Test error");
             (PluginRegistry.callHandler as jest.Mock).mockRejectedValueOnce(error);
 
@@ -160,13 +203,9 @@ describe("Communicator", () => {
                 content: "test_data"
             });
 
-            // Wait for async operation to complete
             await Promise.resolve();
 
-            // Verify error was logged
             expect((communicator as any)._logger.error).toHaveBeenCalled();
-
-            // Verify error response was sent
             expect(mockPostMessage).toHaveBeenCalledWith({
                 type: MESSAGE_TYPE.UI_MESSAGE,
                 response: {
@@ -176,7 +215,6 @@ describe("Communicator", () => {
         });
 
         test("should handle non-Error objects thrown by handler", async () => {
-            // Setup PluginRegistry.callHandler to throw a non-Error
             (PluginRegistry.callHandler as jest.Mock).mockRejectedValueOnce("String error");
 
             communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
@@ -184,17 +222,28 @@ describe("Communicator", () => {
                 content: "test_data"
             });
 
-            // Wait for async operation to complete
             await Promise.resolve();
 
-            // Verify error was logged
             expect((communicator as any)._logger.error).toHaveBeenCalled();
-
-            // Verify error response was sent
             expect(mockPostMessage).toHaveBeenCalledWith({
                 type: MESSAGE_TYPE.UI_MESSAGE,
                 response: {
                     error: "Unknown error"
+                }
+            });
+        });
+
+        test("should reject invalid UI_MESSAGE payloads before calling handlers", async () => {
+            communicator.emit(MESSAGE_TYPE.UI_MESSAGE, "invalid_payload" as any);
+
+            await Promise.resolve();
+
+            expect(PluginRegistry.callHandler).not.toHaveBeenCalled();
+            expect((communicator as any)._logger.error).toHaveBeenCalled();
+            expect(mockPostMessage).toHaveBeenCalledWith({
+                type: MESSAGE_TYPE.UI_MESSAGE,
+                response: {
+                    error: "UI message payload must be an object."
                 }
             });
         });
@@ -204,40 +253,31 @@ describe("Communicator", () => {
         test("should handle null message data", () => {
             const emitSpy = jest.spyOn(communicator, "emit");
 
-            // Simulate message event with null data
             const callback = mockOnMessage.mock.calls[0][1];
             callback({ data: null });
 
-            // Should not emit any event
+            expect((communicator as any)._logger.error).toHaveBeenCalled();
             expect(emitSpy).toHaveBeenCalledTimes(0);
         });
 
-        test("should handle message with missing message property", () => {
+        test("should reject message with missing message property", () => {
             const emitSpy = jest.spyOn(communicator, "emit");
 
-            // Simulate message event with data but no message property
             const callback = mockOnMessage.mock.calls[0][1];
             callback({ data: { content: "test" } });
 
-            // Should log with undefined message
-            expect((communicator as any)._logger.log).toHaveBeenCalledWith("Received from main process: undefined");
-
-            // Should emit with undefined message type
-            expect(emitSpy).toHaveBeenCalledWith(undefined, "test");
+            expect((communicator as any)._logger.error).toHaveBeenCalled();
+            expect(emitSpy).not.toHaveBeenCalled();
         });
 
-        test("should handle message with empty object data", () => {
+        test("should reject message with empty object data", () => {
             const emitSpy = jest.spyOn(communicator, "emit");
 
-            // Simulate message event with empty object data
             const callback = mockOnMessage.mock.calls[0][1];
             callback({ data: {} });
 
-            // Should log with undefined message
-            expect((communicator as any)._logger.log).toHaveBeenCalledWith("Received from main process: undefined");
-
-            // Should emit with undefined message type and content
-            expect(emitSpy).toHaveBeenCalledWith(undefined, undefined);
+            expect((communicator as any)._logger.error).toHaveBeenCalled();
+            expect(emitSpy).not.toHaveBeenCalled();
         });
     });
 });

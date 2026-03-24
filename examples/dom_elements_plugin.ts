@@ -11,7 +11,7 @@ export default class DOMElementsExamplePlugin extends FDO_SDK implements FDOInte
         version: "1.0.0",
         author: "FDO SDK Team",
         description: "Example plugin demonstrating new DOM element creation capabilities",
-        icon: "dom-icon.png"
+        icon: "widget"
     };
 
     get metadata(): PluginMetadata {

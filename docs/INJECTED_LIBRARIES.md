@@ -1,6 +1,10 @@
 # Injected Libraries and Helpers
 
-This document describes all the libraries, CSS frameworks, and helper functions that are automatically available in your FDO plugins. These are injected by the FDO application host and can be used without any additional imports.
+This document describes the libraries, CSS frameworks, and helper functions that are automatically available in the FDO iframe UI runtime.
+
+These are injected by the FDO application host for plugin UI code. They should not be assumed to exist in the plugin backend/runtime, bootstrap paths, or backend-side render-error fallbacks unless the current host/runtime explicitly proves that.
+
+For the full backend-vs-iframe runtime contract, see [RENDER_RUNTIME_CONTRACT.md](./RENDER_RUNTIME_CONTRACT.md).
 
 ## Table of Contents
 
@@ -11,7 +15,7 @@ This document describes all the libraries, CSS frameworks, and helper functions 
 
 ## CSS Libraries
 
-The following CSS libraries are automatically loaded in your plugin environment:
+The following CSS libraries are automatically loaded in the iframe UI runtime:
 
 ### Pure CSS (purecss.io)
 
@@ -128,7 +132,7 @@ editor.session.setMode("ace/mode/javascript");
 
 ## Window Helper Functions
 
-These helper functions are automatically injected into the `window` object and are available for use in your plugins.
+These helper functions are injected into the iframe UI runtime `window` object.
 
 ### `createBackendReq(type, data)`
 

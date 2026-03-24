@@ -1,4 +1,4 @@
-export default {
+module.exports = {
     preset: 'ts-jest',
     testEnvironment: 'node',
     // Collect coverage for source files and report in lcov + text formats

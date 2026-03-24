@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/anikitenko/fdo-sdk.git"
   },
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "SDK for FlexDevOPs (FDO) application modules",
   "keywords": [
     "fdo",
@@ -32,19 +32,32 @@
   },
   "main": "dist/fdo-sdk.bundle.js",
   "types": "dist/@types/index.d.ts",
-  "type": "module",
+  "type": "commonjs",
+  "exports": {
+    ".": {
+      "types": "./dist/@types/index.d.ts",
+      "require": "./dist/fdo-sdk.bundle.js",
+      "default": "./dist/fdo-sdk.bundle.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
-    "dist",
+    "dist/**/*.d.ts",
+    "dist/**/*.js",
+    "dist/**/*.json",
     "examples"
   ],
   "scripts": {
     "build": "webpack --config webpack.config.cjs",
     "build:types": "tsc --emitDeclarationOnly",
+    "test:examples": "tsc --project examples/tsconfig.json --noEmit",
+    "verify:pack": "node scripts/verify-pack-dry-run.mjs",
     "prebuild": "npm run build:types",
+    "prepack": "npm run build",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "coverage:open": "npx opn coverage/lcov-report/index.html || true",
-    "prepublishOnly": "npm test && npm run build"
+    "prepublishOnly": "npm test && npm run test:examples && npm run build"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",

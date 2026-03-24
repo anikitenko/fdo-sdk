@@ -1,9 +1,17 @@
 import {Logger} from "./Logger";
 import "electron";
+import "./ambient/fdo-host";
 import {Communicator} from "./Communicator";
 import {PluginRegistry} from "./PluginRegistry";
 
 export { atomicWriteFile, atomicWriteFileSync } from "./utils/atomic";
+export { BLUEPRINT_V6_ICON_NAMES, isBlueprintV6IconName } from "./utils/blueprintIcons";
+export {
+    validateHostMessageEnvelope,
+    validatePluginMetadata,
+    validateSerializedRenderPayload,
+    validateUIMessagePayload,
+} from "./utils/contracts";
 export { pify } from "./utils/pify";
 export { runWithSudo } from "./utils/runWithSudo";
 
@@ -25,270 +33,15 @@ export * from "./DOMMedia";
 export * from "./DOMSemantic";
 export * from "./decorators/ErrorHandler";
 
-declare global {
-    interface Window {
-        /**
-         * Creates a request to plugin's backend.
-         * @param type - The function name to call on the backend
-         * @param data - The data to send to the backend
-         * @returns {Promise<any>} - The response from the backend
-         */
-        createBackendReq: (type: string, data?: any) => Promise<any>;
-        /**
-         * Adds a global event listener.
-         * @param eventType
-         * @param callback
-         */
-        addGlobalEventListener: (eventType: keyof WindowEventMap, callback: (event: Event) => void) => void
-        /**
-         * Removes a global event listener.
-         * @param eventType
-         * @param callback
-         */
-        removeGlobalEventListener: (eventType: keyof WindowEventMap, callback: (event: Event) => void) => void
-        /**
-         * Waits for an element to be available in the DOM.
-         * @param selector
-         * @param callback
-         * @param timeout
-         */
-        waitForElement: (selector: string, callback: (element: Element) => void, timeout?: number) => void
-        /**
-         * Injects a script into the page.
-         * @param scriptContent
-         */
-        executeInjectedScript: (scriptContent: string) => void
-
-        /**
-         * Applies a  class to a selector.
-         * @param className
-         * @param selector
-         */
-        applyClassToSelector: (className: string, selector: string) => void
-    }
-
-    type Gutter = {
-        element: HTMLElement;
-        track: number;
-    };
-    type MinSizes = { [track: number]: number };
-    type Direction = 'row' | 'column';
-    type GridTemplateProperty = 'grid-template-column' | 'grid-template-row';
-
-    interface SplitOptions {
-        // An array of objects, with `element` and `track` keys. `element` is the element in the grid to enable as a draggable gutter. `track` is the grid track the gutter element is positioned on. These must match.
-        columnGutters?: Gutter[];
-        // An array of objects, with `element` and `track` keys. `element` is the element in the grid to enable as a draggable gutter. `track` is the grid track the gutter element is positioned on. These must match.
-        rowGutters?: Gutter[];
-        // The minimum size in pixels for all tracks. Default: `0`
-        minSize?: number;
-        // The minimum size in pixels for all tracks. Default: `options.minSize`
-        columnMinSize?: number;
-        // The minimum size in pixels for all tracks. Default: `options.minSize`
-        rowMinSize?: number;
-        // An object keyed by `track` index, with values set to the minimum size in pixels for the track at that index. Allows individual minSizes to be specified by track. Note this option is plural with an `s`, while the two fallback options are singular. Default: `options.columnMinSize`
-        columnMinSizes?: MinSizes;
-        // An object keyed by `track` index, with values set to the minimum size in pixels for the track at that index. Allows individual minSizes to be specified by track. Note this option is plural with an `s`, while the two fallback options are singular. Default: `options.rowMinSize`
-        rowMinSizes?: MinSizes;
-        // Snap to minimum size at this offset in pixels. Set to `0` to disable snap. Default: `30`
-        snapOffset?: number;
-        // Snap to minimum size at this offset in pixels. Set to `0` to disable snap. Default: `options.snapOffset`
-        columnSnapOffset?: number;
-        // Snap to minimum size at this offset in pixels. Set to `0` to disable snap. Default: `options.snapOffset`
-        rowSnapOffset?: number;
-        // Drag this number of pixels at a time. Defaults to `1` for smooth dragging, but can be set to a pixel value to give more control over the resulting sizes. Default: `1`
-        dragInterval?: number;
-        // Drag this number of pixels at a time. Defaults to `1` for smooth dragging, but can be set to a pixel value to give more control over the resulting sizes. Default: `options.dragInterval`
-        columnDragInterval?: number;
-        // Drag this number of pixels at a time. Defaults to `1` for smooth dragging, but can be set to a pixel value to give more control over the resulting sizes. Default: `options.dragInterval`
-        rowDragInterval?: number;
-        // Cursor to show while dragging. Defaults to `'col-resize'` for column gutters and `'row-resize'` for row gutters.
-        cursor?: string;
-        // Cursor to show while dragging. Default: `'col-resize'`
-        columnCursor?: string;
-        // Cursor to show while dragging. Default: `'row-resize'`
-        rowCursor?: string;
-        // Called continuously on drag. For process intensive code, add a debounce function to rate limit this callback. `gridTemplateStyle` is the computed CSS value for `grid-template-column` or `grid-template-row`, depending on `direction`.
-        onDrag?: (direction: Direction, track: number, gridTemplateStyle: string) => void;
-        // Called on drag start.
-        onDragStart?: (direction: Direction, track: number) => void;
-        // Called on drag end.
-        onDragEnd?: (direction: Direction, track: number) => void;
-        // Called to update the CSS properties of the grid element. Must eventually apply the CSS value to the CSS prop, or the grid will not change. `gridTemplateStyle` is the computed CSS value of CSS rule `gridTemplateProp`.
-        writeStyle?: (grid: HTMLElement, gridTemplateProp: GridTemplateProperty, gridTemplateStyle: string) => void;
-        gridTemplateColumns?: string;
-        gridTemplateRows?: string;
-    }
-
-    interface SplitInstance {
-        // Adds a draggable row gutter. The element must be a direct descendant of the element with grid layout, and positioned in the specified track.
-        addColumnGutter: (element: HTMLElement, track: number) => void;
-        // Adds a draggable row gutter. The element must be a direct descendant of the element with grid layout, and positioned in the specified track.
-        addRowGutter: (element: HTMLElement, track: number) => void;
-        // Removes event listeners from a column gutter by track number. If `immediate = false` is passed, event handlers are removed after dragging ends. If a gutter isn't currently being dragged, it's event handlers are removed immediately.
-        removeColumnGutter: (track: number, immediate?: boolean) => void;
-        // Removes event listeners from a row gutter by track number. If `immediate = false` is passed, event handlers are removed after dragging ends. If a gutter isn't currently being dragged, it's event handlers are removed immediately.
-        removeRowGutter: (track: number, immediate?: boolean) => void;
-        // Destroy the instance by removing the attached event listeners. If `immediate = false` is passed, the instance is destroyed after dragging ends. If a gutter isn't currently being dragged, it's destroyed immediately.
-        destroy: (immediate?: boolean) => void;
-    }
-
-    function Split(options: SplitOptions): SplitInstance;
-
-    /**
-     * Notyf notification library types
-     * A simple, lightweight toast notification library
-     */
-    interface NotyfNotification {
-        triggerDismiss: () => void;
-    }
-
-    interface NotyfPosition {
-        x: 'left' | 'center' | 'right';
-        y: 'top' | 'center' | 'bottom';
-    }
-
-    interface NotyfOptions {
-        duration?: number;
-        ripple?: boolean;
-        position?: NotyfPosition;
-        dismissible?: boolean;
-    }
-
-    interface NotyfNotificationOptions extends NotyfOptions {
-        type?: string;
-        message?: string;
-        icon?: string | boolean;
-        background?: string;
-        className?: string;
-    }
-
-    interface Notyf {
-        success(message: string | NotyfNotificationOptions): NotyfNotification;
-        error(message: string | NotyfNotificationOptions): NotyfNotification;
-        open(options: NotyfNotificationOptions): NotyfNotification;
-        dismissAll(): void;
-    }
-
-    interface NotyfConstructor {
-        new(options?: NotyfOptions): Notyf;
-    }
-
-    /**
-     * Highlight.js types
-     * Syntax highlighting library
-     */
-    interface HighlightResult {
-        value: string;
-        language?: string;
-        relevance: number;
-        illegal: boolean;
-        errorRaised?: Error;
-        second_best?: Omit<HighlightResult, 'second_best'>;
-    }
-
-    interface HighlightJS {
-        highlight(code: string, options: { language: string; ignoreIllegals?: boolean }): HighlightResult;
-        highlightAuto(code: string, languageSubset?: string[]): HighlightResult;
-        highlightElement(element: HTMLElement): void;
-        highlightAll(): void;
-        registerLanguage(languageName: string, languageDefinition: any): void;
-        getLanguage(languageName: string): any;
-        listLanguages(): string[];
-    }
-
-    /**
-     * ACE Editor types
-     * Advanced code editor
-     */
-    namespace AceAjax {
-        interface Editor {
-            setValue(value: string, cursorPos?: number): string;
-            getValue(): string;
-            setTheme(theme: string): void;
-            setShowPrintMargin(show: boolean): void;
-            setOption(name: string, value: any): void;
-            setOptions(options: Partial<EditorOptions>): void;
-            getSession(): EditSession;
-            resize(force?: boolean): void;
-            destroy(): void;
-            on(event: string, callback: Function): void;
-            off(event: string, callback: Function): void;
-        }
-
-        interface EditSession {
-            setMode(mode: string): void;
-            setValue(text: string): void;
-            getValue(): string;
-            setUseWrapMode(useWrapMode: boolean): void;
-            setTabSize(tabSize: number): void;
-            setUseSoftTabs(useSoftTabs: boolean): void;
-        }
-
-        interface EditorOptions {
-            selectionStyle?: string;
-            highlightActiveLine?: boolean;
-            highlightSelectedWord?: boolean;
-            readOnly?: boolean;
-            cursorStyle?: string;
-            mergeUndoDeltas?: boolean | string;
-            behavioursEnabled?: boolean;
-            wrapBehavioursEnabled?: boolean;
-            autoScrollEditorIntoView?: boolean;
-            copyWithEmptySelection?: boolean;
-            useSoftTabs?: boolean;
-            navigateWithinSoftTabs?: boolean;
-            enableMultiselect?: boolean;
-        }
-
-        interface Ace {
-            edit(el: string | HTMLElement, options?: Partial<EditorOptions>): Editor;
-            createEditSession(text: string, mode: string): EditSession;
-        }
-    }
-
-    interface Window {
-        /**
-         * Notyf - Toast notification library
-         * @see https://github.com/caroso1222/notyf
-         */
-        Notyf: NotyfConstructor;
-
-        /**
-         * Highlight.js - Syntax highlighting library
-         * @see https://highlightjs.org/
-         */
-        hljs: HighlightJS;
-
-        /**
-         * ACE Editor - Code editor
-         * @see https://ace.c9.io/
-         */
-        ace: AceAjax.Ace;
-    }
-}
-
 export class FDO_SDK {
     public static readonly API_VERSION: string = "1.0.0"
     static readonly TYPE_TAG = Symbol("FDO_SDK")
-    private readonly _logger: Logger = new Logger()
+    private readonly _logger: Logger = new Logger({ context: { component: "FDO_SDK" } })
     private readonly communicator: Communicator = new Communicator()
 
     constructor() {
         PluginRegistry.registerPlugin(this)
         this.communicator.emit("init", {})
-        if (this.render) {
-            const originalRender = this.render.bind(this);
-            const originalRenderOnLoad = this.renderOnLoad.bind(this);
-            this.render = () => {
-                const result = originalRender();
-                return JSON.stringify(result);
-            };
-            this.renderOnLoad = () => {
-                const result = originalRenderOnLoad();
-                return JSON.stringify(result);
-            };
-        }
         this._logger.log("FDO_SDK initialized!")
     }
 
@@ -309,11 +62,51 @@ export class FDO_SDK {
         return load.toString()
     }
 
+    /**
+     * Serializes the plugin render output for transport to the FDO host.
+     * Plugin implementations should override `render()`, not this method.
+     */
+    public serializeRender(): string {
+        return JSON.stringify(this.render())
+    }
+
+    /**
+     * Serializes the plugin on-load script/function string for host transport.
+     * Plugin implementations should override `renderOnLoad()` when needed.
+     */
+    public serializeRenderOnLoad(): string {
+        return JSON.stringify(this.renderOnLoad())
+    }
+
     public log(message: string): void {
         this._logger.log(message)
     }
 
     public error(error: Error): void {
         this._logger.error(error)
+    }
+
+    public info(message: string, ...meta: unknown[]): void {
+        this._logger.info(message, ...meta)
+    }
+
+    public warn(message: string, ...meta: unknown[]): void {
+        this._logger.warn(message, ...meta)
+    }
+
+    public debug(message: string, ...meta: unknown[]): void {
+        this._logger.debug(message, ...meta)
+    }
+
+    public verbose(message: string, ...meta: unknown[]): void {
+        this._logger.verbose(message, ...meta)
+    }
+
+    public silly(message: string, ...meta: unknown[]): void {
+        this._logger.silly(message, ...meta)
+    }
+
+    public event(name: string, payload: Record<string, unknown> = {}): string {
+        return this._logger.event(name, payload)
     }
 }

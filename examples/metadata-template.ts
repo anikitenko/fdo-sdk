@@ -22,7 +22,7 @@ export const exampleMetadata: PluginMetadata = {
   
   description: "A brief description of what this plugin does",
   
-  icon: "icon.png"
+  icon: "cog"
 };
 
 /**
