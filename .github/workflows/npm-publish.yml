@@ -35,5 +35,3 @@ jobs:
       - run: npm run build
       - run: npm run verify:pack
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
