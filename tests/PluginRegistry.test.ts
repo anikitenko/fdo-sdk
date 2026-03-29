@@ -10,18 +10,18 @@ import { resetCapabilityStateForTests } from "../src/utils/capabilities";
 import { resetDeprecationWarningsForTests } from "../src/utils/deprecation";
 
 describe("PluginRegistry", () => {
-    let mockLogger: jest.SpyInstance;
-    let mockErrorLogger: jest.SpyInstance;
+    let mockLogger: vi.SpyInstance;
+    let mockErrorLogger: vi.SpyInstance;
 
     // Mock process.parentPort to prevent errors in tests
     beforeEach(() => {
         (global as any).process.parentPort = {
-            on: jest.fn(),
-            postMessage: jest.fn(),
+            on: vi.fn(),
+            postMessage: vi.fn(),
         };
         delete process.env.FDO_SDK_STORAGE_ROOT;
-        mockLogger = jest.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
-        mockErrorLogger = jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+        mockLogger = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+        mockErrorLogger = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
         PluginRegistry.clearAllHandlers();
         PluginRegistry.clearAllStoreInstances();
         PluginRegistry.configureStorage({ rootDir: undefined });
@@ -123,9 +123,9 @@ describe("PluginRegistry", () => {
 
     test("callInit and callRenderer with plugin instance", () => {
         const mockPlugin = {
-            init: jest.fn(),
-            serializeRender: jest.fn().mockReturnValue(JSON.stringify("<div>Hello</div>")),
-            serializeRenderOnLoad: jest.fn().mockReturnValue(JSON.stringify("() => console.log('loaded')"))
+            init: vi.fn(),
+            serializeRender: vi.fn().mockReturnValue(JSON.stringify("<div>Hello</div>")),
+            serializeRenderOnLoad: vi.fn().mockReturnValue(JSON.stringify("() => console.log('loaded')"))
         };
 
         PluginRegistry['pluginInstance'] = mockPlugin as any;
@@ -188,7 +188,7 @@ describe("PluginRegistry", () => {
         }
 
         const plugin = new TestPlugin();
-        const initSpy = jest.spyOn(plugin, "init");
+        const initSpy = vi.spyOn(plugin, "init");
 
         PluginRegistry.registerPlugin(plugin);
         PluginRegistry.callInit();
@@ -212,7 +212,7 @@ describe("PluginRegistry", () => {
         }
 
         const plugin = new TestPlugin();
-        const renderSpy = jest.spyOn(plugin, "serializeRender");
+        const renderSpy = vi.spyOn(plugin, "serializeRender");
 
         PluginRegistry.registerPlugin(plugin);
         PluginRegistry.callRenderer();
@@ -288,8 +288,8 @@ describe("PluginRegistry", () => {
 
     test("should validate serialized render payload shape", () => {
         const invalidPlugin = {
-            serializeRender: jest.fn().mockReturnValue(undefined),
-            serializeRenderOnLoad: jest.fn().mockReturnValue(JSON.stringify("() => {}")),
+            serializeRender: vi.fn().mockReturnValue(undefined),
+            serializeRenderOnLoad: vi.fn().mockReturnValue(JSON.stringify("() => {}")),
         };
 
         PluginRegistry["pluginInstance"] = invalidPlugin as any;
@@ -298,14 +298,14 @@ describe("PluginRegistry", () => {
     });
 
     test("should register a handler", () => {
-        const mockHandler = jest.fn();
+        const mockHandler = vi.fn();
         PluginRegistry.registerHandler("testHandler", mockHandler);
 
         expect(PluginRegistry["handlers"]["testHandler"]).toBe(mockHandler);
     });
 
     test("should call a registered handler and return its output", async () => {
-        const mockHandler = jest.fn((data) => `Received: ${data}`);
+        const mockHandler = vi.fn((data) => `Received: ${data}`);
         PluginRegistry.registerHandler("testHandler", mockHandler);
 
         const result = await PluginRegistry.callHandler("testHandler", "Hello");
@@ -328,14 +328,14 @@ describe("PluginRegistry", () => {
     });
 
     test("should clear all handlers", () => {
-        PluginRegistry.registerHandler("testHandler", jest.fn());
+        PluginRegistry.registerHandler("testHandler", vi.fn());
         PluginRegistry.clearAllHandlers();
 
         expect(PluginRegistry["handlers"]).toEqual({});
     });
 
     test("should clear one handler", () => {
-        PluginRegistry.registerHandler("testHandler", jest.fn());
+        PluginRegistry.registerHandler("testHandler", vi.fn());
         PluginRegistry.clearHandler("testHandler");
 
         expect(PluginRegistry["handlers"]["testHandler"]).toBeUndefined();
@@ -577,12 +577,12 @@ describe("PluginRegistry", () => {
         test("should register store factories for plugin-scoped custom stores", () => {
             registerScopedPlugin();
             PluginRegistry.registerStore("factoryStore", ({ pluginId }) => ({
-                get: jest.fn((key: string) => `${pluginId}:${key}`),
-                set: jest.fn(),
-                remove: jest.fn(),
-                clear: jest.fn(),
-                has: jest.fn(),
-                keys: jest.fn(),
+                get: vi.fn((key: string) => `${pluginId}:${key}`),
+                set: vi.fn(),
+                remove: vi.fn(),
+                clear: vi.fn(),
+                has: vi.fn(),
+                keys: vi.fn(),
             }) as any);
 
             const store = PluginRegistry.useStore("factoryStore");
@@ -591,18 +591,18 @@ describe("PluginRegistry", () => {
         });
 
         test("should execute store lifecycle hooks", async () => {
-            const init = jest.fn();
-            const flush = jest.fn().mockResolvedValue(undefined);
-            const dispose = jest.fn().mockResolvedValue(undefined);
+            const init = vi.fn();
+            const flush = vi.fn().mockResolvedValue(undefined);
+            const dispose = vi.fn().mockResolvedValue(undefined);
 
             registerScopedPlugin();
             PluginRegistry.registerStore("lifecycleStore", () => ({
-                get: jest.fn(),
-                set: jest.fn(),
-                remove: jest.fn(),
-                clear: jest.fn(),
-                has: jest.fn(),
-                keys: jest.fn(),
+                get: vi.fn(),
+                set: vi.fn(),
+                remove: vi.fn(),
+                clear: vi.fn(),
+                has: vi.fn(),
+                keys: vi.fn(),
                 init,
                 flush,
                 dispose,
@@ -625,7 +625,7 @@ describe("PluginRegistry", () => {
 
     describe("Error handling in callHandler", () => {
         test("should handle errors in handler and return null", async () => {
-            const errorHandler = jest.fn().mockImplementation(() => {
+            const errorHandler = vi.fn().mockImplementation(() => {
                 throw new Error("Test error");
             });
 
@@ -639,7 +639,7 @@ describe("PluginRegistry", () => {
         });
 
         test("should handle non-Error exceptions in handler", async () => {
-            const errorHandler = jest.fn().mockImplementation(() => {
+            const errorHandler = vi.fn().mockImplementation(() => {
                 throw "String error"; // Not an Error object
             });
 

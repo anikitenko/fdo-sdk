@@ -3,32 +3,34 @@ import { PluginRegistry } from "../src/PluginRegistry";
 import { MESSAGE_TYPE } from "../src/enums";
 
 // Mock process.parentPort
-const mockPostMessage = jest.fn();
-const mockOnMessage = jest.fn();
+const mockPostMessage = vi.fn();
+const mockOnMessage = vi.fn();
 global.process.parentPort = {
     postMessage: mockPostMessage,
     on: mockOnMessage,
 } as any;
 
-jest.mock("../src/Logger", () => ({
-    Logger: jest.fn().mockImplementation(() => ({
-        log: jest.fn(),
-        error: jest.fn(),
-        event: jest.fn().mockReturnValue("mock-correlation-id"),
-    })),
+vi.mock("../src/Logger", () => ({
+    Logger: vi.fn().mockImplementation(function () {
+        return {
+        log: vi.fn(),
+        error: vi.fn(),
+        event: vi.fn().mockReturnValue("mock-correlation-id"),
+        };
+    }),
 }));
 
-jest.mock("../src/PluginRegistry", () => ({
+vi.mock("../src/PluginRegistry", () => ({
     PluginRegistry: {
         DIAGNOSTICS_HANDLER: "__sdk.getDiagnostics",
-        assertHostApiCompatibility: jest.fn(),
-        configureCapabilities: jest.fn(),
-        callInit: jest.fn(),
-        callRenderer: jest.fn().mockReturnValue("mock_rendered_output"),
-        callHandler: jest.fn().mockReturnValue("mock_handler_output"),
-        getQuickActions: jest.fn().mockReturnValue(["action1", "action2"]),
-        getSidePanelConfig: jest.fn().mockReturnValue(["panel1", "panel2"]),
-        getDiagnostics: jest.fn().mockReturnValue({ health: { status: "healthy" } }),
+        assertHostApiCompatibility: vi.fn(),
+        configureCapabilities: vi.fn(),
+        callInit: vi.fn(),
+        callRenderer: vi.fn().mockReturnValue("mock_rendered_output"),
+        callHandler: vi.fn().mockReturnValue("mock_handler_output"),
+        getQuickActions: vi.fn().mockReturnValue(["action1", "action2"]),
+        getSidePanelConfig: vi.fn().mockReturnValue(["panel1", "panel2"]),
+        getDiagnostics: vi.fn().mockReturnValue({ health: { status: "healthy" } }),
     },
 }));
 
@@ -36,7 +38,7 @@ describe("Communicator", () => {
     let communicator: Communicator;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         communicator = new Communicator();
     });
 
@@ -50,7 +52,7 @@ describe("Communicator", () => {
     });
 
     test("should listen to messages from main process and emit event", () => {
-        const mockEmit = jest.spyOn(communicator, "emit");
+        const mockEmit = vi.spyOn(communicator, "emit");
 
         const mockMessage = { data: { message: MESSAGE_TYPE.PLUGIN_READY, content: "test" } };
 
@@ -63,7 +65,7 @@ describe("Communicator", () => {
     });
 
     test("should reject invalid host message types", () => {
-        const mockEmit = jest.spyOn(communicator, "emit");
+        const mockEmit = vi.spyOn(communicator, "emit");
 
         const mockMessage = { data: { message: "UNKNOWN_TYPE", content: "test" } };
 
@@ -76,7 +78,7 @@ describe("Communicator", () => {
     });
 
     test("should accept missing content for valid host messages", () => {
-        const mockEmit = jest.spyOn(communicator, "emit");
+        const mockEmit = vi.spyOn(communicator, "emit");
         const mockMessage = { data: { message: MESSAGE_TYPE.PLUGIN_READY } };
         const callback = mockOnMessage.mock.calls[0][1];
         callback(mockMessage);
@@ -123,7 +125,7 @@ describe("Communicator", () => {
     });
 
     test("should return init failure when apiVersion is incompatible", () => {
-        (PluginRegistry.assertHostApiCompatibility as jest.Mock).mockImplementationOnce(() => {
+        (PluginRegistry.assertHostApiCompatibility as vi.Mock).mockImplementationOnce(() => {
             throw new Error("Incompatible plugin API major version. Host requested \"2.0.0\", plugin SDK provides \"1.0.0\".");
         });
 
@@ -141,7 +143,7 @@ describe("Communicator", () => {
     });
 
     test("should return a stable init failure response when plugin init fails", () => {
-        (PluginRegistry.callInit as jest.Mock).mockImplementationOnce(() => {
+        (PluginRegistry.callInit as vi.Mock).mockImplementationOnce(() => {
             throw new Error("init failed");
         });
 
@@ -165,7 +167,7 @@ describe("Communicator", () => {
     });
 
     test("should fall back to default render payload when render preparation fails", () => {
-        (PluginRegistry.callRenderer as jest.Mock).mockImplementationOnce(() => {
+        (PluginRegistry.callRenderer as vi.Mock).mockImplementationOnce(() => {
             throw new Error("invalid render payload");
         });
 
@@ -228,9 +230,9 @@ describe("Communicator", () => {
     });
 
     it("should handle message with undefined data", () => {
-        const emitSpy = jest.spyOn(communicator, "emit");
+        const emitSpy = vi.spyOn(communicator, "emit");
 
-        const onMock = (process.parentPort.on as jest.Mock).mock.calls[0][1];
+        const onMock = (process.parentPort.on as vi.Mock).mock.calls[0][1];
         onMock({ data: undefined });
 
         expect((communicator as any)._logger.error).toHaveBeenCalled();
@@ -240,7 +242,7 @@ describe("Communicator", () => {
     describe("Error handling in UI_MESSAGE", () => {
         test("should handle Error objects thrown by handler", async () => {
             const error = new Error("Test error");
-            (PluginRegistry.callHandler as jest.Mock).mockRejectedValueOnce(error);
+            (PluginRegistry.callHandler as vi.Mock).mockRejectedValueOnce(error);
 
             communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
                 handler: "errorHandler",
@@ -259,7 +261,7 @@ describe("Communicator", () => {
         });
 
         test("should handle non-Error objects thrown by handler", async () => {
-            (PluginRegistry.callHandler as jest.Mock).mockRejectedValueOnce("String error");
+            (PluginRegistry.callHandler as vi.Mock).mockRejectedValueOnce("String error");
 
             communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {
                 handler: "errorHandler",
@@ -295,7 +297,7 @@ describe("Communicator", () => {
 
     describe("Comprehensive message handling", () => {
         test("should handle null message data", () => {
-            const emitSpy = jest.spyOn(communicator, "emit");
+            const emitSpy = vi.spyOn(communicator, "emit");
 
             const callback = mockOnMessage.mock.calls[0][1];
             callback({ data: null });
@@ -305,7 +307,7 @@ describe("Communicator", () => {
         });
 
         test("should reject message with missing message property", () => {
-            const emitSpy = jest.spyOn(communicator, "emit");
+            const emitSpy = vi.spyOn(communicator, "emit");
 
             const callback = mockOnMessage.mock.calls[0][1];
             callback({ data: { content: "test" } });
@@ -315,7 +317,7 @@ describe("Communicator", () => {
         });
 
         test("should reject message with empty object data", () => {
-            const emitSpy = jest.spyOn(communicator, "emit");
+            const emitSpy = vi.spyOn(communicator, "emit");
 
             const callback = mockOnMessage.mock.calls[0][1];
             callback({ data: {} });

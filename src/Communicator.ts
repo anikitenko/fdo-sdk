@@ -1,5 +1,4 @@
 import {Logger} from "./Logger";
-import {MessageEvent} from "electron";
 import {PluginRegistry} from "./PluginRegistry";
 import {MESSAGE_TYPE} from "./enums";
 import { EventEmitter } from "events";
@@ -12,16 +11,39 @@ import {
     UIMessageResponse
 } from "./types";
 
+type ParentPortMessage = { data?: unknown } | unknown;
+
+interface ParentPortBridge {
+    postMessage: (message: HostResponseEnvelope) => void;
+    on: (event: "message", listener: (message: ParentPortMessage) => void) => void;
+}
+
 export class Communicator extends EventEmitter {
     private readonly _logger: Logger = new Logger({ context: { component: "Communicator" } })
+    private readonly parentPort: ParentPortBridge;
 
     constructor() {
         super();
+        this.parentPort = this.getParentPortBridge();
         this.init();
     }
 
     private sendMessage(message: HostResponseEnvelope) {
-        process.parentPort.postMessage(message)
+        this.parentPort.postMessage(message)
+    }
+
+    private getParentPortBridge(): ParentPortBridge {
+        const parentPort = (process as unknown as { parentPort?: unknown }).parentPort;
+        if (!parentPort || typeof parentPort !== "object") {
+            throw new Error("Plugin host messaging bridge is unavailable: process.parentPort is not initialized.");
+        }
+
+        const candidate = parentPort as Partial<ParentPortBridge>;
+        if (typeof candidate.postMessage !== "function" || typeof candidate.on !== "function") {
+            throw new Error("Plugin host messaging bridge is unavailable: process.parentPort is missing required methods.");
+        }
+
+        return candidate as ParentPortBridge;
     }
 
     private buildInitFailureResponse(error: unknown): PluginInitResponse {
@@ -42,8 +64,10 @@ export class Communicator extends EventEmitter {
     }
 
     private init() {
-        process.parentPort.on("message", (message: MessageEvent) => {
-            const data = message.data;
+        this.parentPort.on("message", (message: ParentPortMessage) => {
+            const data = message && typeof message === "object" && "data" in message
+                ? (message as { data?: unknown }).data
+                : message;
 
             try {
                 const validatedMessage = validateHostMessageEnvelope(data);

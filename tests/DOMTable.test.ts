@@ -4,7 +4,7 @@ describe("DOMTable", () => {
     let domTable: DOMTable;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         domTable = new DOMTable();
     });
 

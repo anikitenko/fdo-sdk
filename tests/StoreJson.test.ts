@@ -5,32 +5,37 @@ import { Logger } from '../src/Logger';
 import { atomicWriteFile } from '../src/utils/atomic';
 
 // Mock fs module
-jest.mock('fs', () => ({
-  existsSync: jest.fn(),
-  readFileSync: jest.fn(),
-  mkdirSync: jest.fn(),
-  promises: {
-    mkdir: jest.fn().mockResolvedValue(undefined),
-    writeFile: jest.fn().mockResolvedValue(undefined),
-  },
-}));
+vi.mock('fs', () => {
+  const existsSync = vi.fn();
+  const readFileSync = vi.fn();
+  const mkdirSync = vi.fn();
+  const promises = {
+    mkdir: vi.fn().mockResolvedValue(undefined),
+    writeFile: vi.fn().mockResolvedValue(undefined),
+  };
+  const fsMock = { existsSync, readFileSync, mkdirSync, promises };
+  return {
+    ...fsMock,
+    default: fsMock,
+  };
+});
 
-jest.mock('../src/utils/atomic', () => ({
-  atomicWriteFile: jest.fn().mockResolvedValue(undefined),
+vi.mock('../src/utils/atomic', () => ({
+  atomicWriteFile: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock Logger
-jest.mock('../src/Logger', () => {
+vi.mock('../src/Logger', () => {
   return {
-    Logger: jest.fn().mockImplementation(() => {
+    Logger: vi.fn().mockImplementation(function () {
       return {
-        warn: jest.fn(),
-        info: jest.fn(),
-        error: jest.fn(),
-        debug: jest.fn(),
-        verbose: jest.fn(),
-        silly: jest.fn(),
-        log: jest.fn()
+        warn: vi.fn(),
+        info: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        verbose: vi.fn(),
+        silly: vi.fn(),
+        log: vi.fn()
       };
     })
   };
@@ -41,7 +46,7 @@ describe('StoreJson', () => {
   let store: ReturnType<typeof createJsonStore>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     store = createJsonStore({ filePath: mockFilePath, logger: new Logger() as any });
     store._store = {};
   });
@@ -49,7 +54,7 @@ describe('StoreJson', () => {
   describe('initialization', () => {
     it('should initialize with empty store when file does not exist', () => {
       // Mock file doesn't exist
-      (fs.existsSync as jest.Mock).mockReturnValue(false);
+      (fs.existsSync as vi.Mock).mockReturnValue(false);
 
       // Reinitialize the store to use our mocks
       store._init?.();
@@ -61,8 +66,8 @@ describe('StoreJson', () => {
 
     it('should load data from file when it exists', () => {
       // Mock file exists and contains data
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ testKey: 'testValue' }));
+      (fs.existsSync as vi.Mock).mockReturnValue(true);
+      (fs.readFileSync as vi.Mock).mockReturnValue(JSON.stringify({ testKey: 'testValue' }));
 
       // Reinitialize the store to use our mocks
       store._init?.();
@@ -77,8 +82,8 @@ describe('StoreJson', () => {
 
     it('should handle JSON parse errors during initialization', () => {
       // Mock file exists but contains invalid JSON
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (fs.readFileSync as jest.Mock).mockReturnValue('invalid json');
+      (fs.existsSync as vi.Mock).mockReturnValue(true);
+      (fs.readFileSync as vi.Mock).mockReturnValue('invalid json');
 
       // Reinitialize the store to use our mocks
       store._init?.();
@@ -137,7 +142,7 @@ describe('StoreJson', () => {
     });
 
     it('should handle file write errors', async () => {
-      (atomicWriteFile as jest.Mock).mockRejectedValue(new Error('Write error'));
+      (atomicWriteFile as vi.Mock).mockRejectedValue(new Error('Write error'));
 
       expect(() => store.set('testKey', 'testValue')).not.toThrow();
       await store._flush();
@@ -220,7 +225,7 @@ describe('StoreJson', () => {
     it('should write to file when removing a value', async () => {
       store.set('testKey', 'testValue');
       await store._flush();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       store.remove('testKey');
       await store._flush();
@@ -234,7 +239,7 @@ describe('StoreJson', () => {
     it('should write to file when clearing the store', async () => {
       store.set('testKey', 'testValue');
       await store._flush();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       store.clear();
       await store._flush();
@@ -257,8 +262,8 @@ describe('StoreJson', () => {
   });
 
   it('should back up corrupted JSON content and reset store', async () => {
-    (fs.existsSync as jest.Mock).mockReturnValue(true);
-    (fs.readFileSync as jest.Mock).mockReturnValue('{bad json');
+    (fs.existsSync as vi.Mock).mockReturnValue(true);
+    (fs.readFileSync as vi.Mock).mockReturnValue('{bad json');
 
     store._init();
 

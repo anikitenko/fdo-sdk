@@ -6,7 +6,7 @@ describe("DOMNested", () => {
     let domText: DOMText;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         domNested = new DOMNested();
         domButton = new DOMButton();
         domText = new DOMText();
@@ -30,7 +30,7 @@ describe("DOMNested", () => {
         const text = domText.createHText(1, "Hello World", {}, "test-text");
         const nested = domNested.createBlockDiv([button, text], {}, "test-div");
 
-        expect(nested.toString()).toBe(`<div id="test-div" className="go11"><button id="test-button" className="pure-button custom-class go11" onClick={() => { }}>Click Me</button><h1 id="test-text" className="go11">Hello World</h1></div>`);
+        expect(nested.toString()).toBe(`<div id="test-div" className="go11"><button id="test-button" className="pure-button custom-class go11" onClick={() => {}}>Click Me</button><h1 id="test-text" className="go11">Hello World</h1></div>`);
     });
 
     test("createBlockDiv with no options", () => {

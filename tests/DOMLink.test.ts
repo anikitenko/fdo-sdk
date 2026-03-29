@@ -4,7 +4,7 @@ describe("DOMLink", () => {
     let domLink: DOMLink;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         domLink = new DOMLink("link");
     });
 

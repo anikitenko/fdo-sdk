@@ -2,34 +2,43 @@ import { Logger } from "../src/Logger";
 import * as winston from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 
-jest.mock("winston", () => {
+vi.mock("winston", () => {
     const logMethods = {
-        log: jest.fn(),
-        info: jest.fn(),
-        error: jest.fn(),
-        warn: jest.fn(),
-        debug: jest.fn(),
-        verbose: jest.fn(),
-        silly: jest.fn(),
+        log: vi.fn(),
+        info: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+        verbose: vi.fn(),
+        silly: vi.fn(),
     };
 
-    return {
-        createLogger: jest.fn(() => logMethods),
+    const winstonMock = {
+        createLogger: vi.fn(() => logMethods),
         format: {
-            combine: jest.fn(),
-            timestamp: jest.fn(),
-            json: jest.fn(),
-            prettyPrint: jest.fn(),
-            errors: jest.fn(),
+            combine: vi.fn(),
+            timestamp: vi.fn(),
+            json: vi.fn(),
+            prettyPrint: vi.fn(),
+            errors: vi.fn(),
         },
         transports: {
-            DailyRotateFile: jest.fn(),
+            DailyRotateFile: vi.fn(),
         },
+    };
+    return {
+        ...winstonMock,
+        default: winstonMock,
     };
 });
 
-jest.mock("winston-daily-rotate-file", () => {
-    return jest.fn().mockImplementation((options: unknown) => options);
+vi.mock("winston-daily-rotate-file", () => {
+    const mocked = vi.fn().mockImplementation(function (this: unknown, options: unknown) {
+        return options;
+    });
+    return {
+        default: mocked,
+    };
 });
 
 describe("Logger", () => {
@@ -54,8 +63,8 @@ describe("Logger", () => {
         delete process.env.FDO_SDK_LOG_ROOT;
         delete process.env.FDO_SDK_SESSION_ID;
         setPlatform(originalPlatform);
-        jest.resetModules();
-        jest.clearAllMocks();
+        vi.resetModules();
+        vi.clearAllMocks();
     });
 
     it("should use LOG_LEVEL from environment", () => {

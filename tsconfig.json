@@ -3,15 +3,12 @@
     "target": "es6",
     "experimentalDecorators": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "dist/@types",
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": false
+    "sourceMap": true
   },
   "include": [
     "src/**/*"

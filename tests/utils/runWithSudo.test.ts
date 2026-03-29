@@ -5,23 +5,26 @@ import { pify } from "../../src/utils/pify";
 import { resetCapabilityStateForTests } from "../../src/utils/capabilities";
 
 // Mock electron dialog
-jest.mock("electron", () => ({
+vi.mock("electron", () => ({
   dialog: {
-    showMessageBox: jest.fn(),
+    showMessageBox: vi.fn(),
   },
 }));
 
 // Mock sudo-prompt
-jest.mock("@expo/sudo-prompt", () => ({
-  exec: jest.fn(),
-}));
+vi.mock("@expo/sudo-prompt", () => {
+  const exec = vi.fn();
+  return {
+    default: { exec },
+    exec,
+  };
+});
 
 // Mock pify to return a function that returns a promise
-jest.mock("../../src/utils/pify", () => ({
-  pify: jest.fn().mockImplementation(() => {
+vi.mock("../../src/utils/pify", () => ({
+  pify: vi.fn().mockImplementation((fn: any) => {
     return (cmd: string, opts: any) => {
       return new Promise((resolve, reject) => {
-        const mockExec = require("@expo/sudo-prompt").exec;
         const callback = (error: Error | null, stdout?: string) => {
           if (error) {
             reject(error);
@@ -29,7 +32,7 @@ jest.mock("../../src/utils/pify", () => ({
             resolve(stdout);
           }
         };
-        mockExec(cmd, opts, callback);
+        fn(cmd, opts, callback);
       });
     };
   }),
@@ -37,17 +40,17 @@ jest.mock("../../src/utils/pify", () => ({
 
 describe("runWithSudo", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     resetCapabilityStateForTests();
     PluginRegistry.configureCapabilities({ granted: ["sudo.prompt"] });
   });
 
   it("should show a confirmation dialog with default message when no confirmMessage is provided", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -61,10 +64,10 @@ describe("runWithSudo", () => {
 
   it("should show a confirmation dialog with custom message when confirmMessage is provided", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -78,10 +81,10 @@ describe("runWithSudo", () => {
 
   it("should use the provided name in the dialog detail", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -95,10 +98,10 @@ describe("runWithSudo", () => {
 
   it("should use 'Tool' as the default name if none is provided", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -112,7 +115,7 @@ describe("runWithSudo", () => {
 
   it("should return an empty string if the user cancels the dialog", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Cancel"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 0 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 0 });
 
     const result = await runWithSudo("echo hello");
 
@@ -125,10 +128,10 @@ describe("runWithSudo", () => {
 
   it("should pass the command and options to sudo.exec", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -154,10 +157,10 @@ describe("runWithSudo", () => {
 
   it("should return the stdout from sudo.exec", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -169,11 +172,11 @@ describe("runWithSudo", () => {
 
   it("should throw an error if sudo.exec fails", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with an error
     const error = new Error("Command failed");
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(error);
     });
 
@@ -183,10 +186,10 @@ describe("runWithSudo", () => {
 
   it("should verify all dialog configuration properties", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -206,10 +209,10 @@ describe("runWithSudo", () => {
 
   it("should handle empty command gracefully", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "");
     });
 
@@ -228,10 +231,10 @@ describe("runWithSudo", () => {
 
   it("should pass only icns option when only icns is provided", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -250,10 +253,10 @@ describe("runWithSudo", () => {
 
   it("should pass only env option when only env is provided", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -273,10 +276,10 @@ describe("runWithSudo", () => {
 
   it("should format the detail message correctly with plugin name", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -289,10 +292,10 @@ describe("runWithSudo", () => {
   });
   it("should call pify with sudo.exec function", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Mock sudo.exec to call the callback with a success result
-    (sudo.exec as jest.Mock).mockImplementation((cmd, opts, cb) => {
+    (sudo.exec as vi.Mock).mockImplementation((cmd, opts, cb) => {
       cb(null, "Command executed successfully");
     });
 
@@ -300,22 +303,22 @@ describe("runWithSudo", () => {
 
     // Verify pify was called with a function that calls sudo.exec
     expect(pify).toHaveBeenCalled();
-    const pifyArg = (pify as jest.Mock).mock.calls[0][0];
+    const pifyArg = (pify as vi.Mock).mock.calls[0][0];
     expect(typeof pifyArg).toBe("function");
 
     // Call the function passed to pify to verify it calls sudo.exec
-    const callback = jest.fn();
+    const callback = vi.fn();
     pifyArg("test command", { test: "options" }, callback);
     expect(sudo.exec).toHaveBeenCalledWith("test command", { test: "options" }, callback);
   });
 
   it("should call the promisified function with correct arguments", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Create a spy for the promisified function
-    const promisifiedFn = jest.fn().mockResolvedValue("Command executed successfully");
-    (pify as jest.Mock).mockReturnValue(promisifiedFn);
+    const promisifiedFn = vi.fn().mockResolvedValue("Command executed successfully");
+    (pify as vi.Mock).mockReturnValue(promisifiedFn);
 
     const options = {
       name: "Test Plugin",
@@ -335,11 +338,11 @@ describe("runWithSudo", () => {
 
   it("should format the options correctly for sudoExec", async () => {
     // Mock dialog.showMessageBox to return a response indicating "Proceed"
-    (dialog.showMessageBox as jest.Mock).mockResolvedValue({ response: 1 });
+    (dialog.showMessageBox as vi.Mock).mockResolvedValue({ response: 1 });
 
     // Create a spy for the promisified function
-    const promisifiedFn = jest.fn().mockResolvedValue("Command executed successfully");
-    (pify as jest.Mock).mockReturnValue(promisifiedFn);
+    const promisifiedFn = vi.fn().mockResolvedValue("Command executed successfully");
+    (pify as vi.Mock).mockReturnValue(promisifiedFn);
 
     // Test with partial options
     await runWithSudo("echo hello", { icns: "test.icns" });

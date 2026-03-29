@@ -1,10 +1,12 @@
 {
   "extends": "../tsconfig.json",
+  "files": [
+    "../src/ambient/electron.d.ts"
+  ],
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
       "@anikitenko/fdo-sdk": [
         "../src/index.ts"

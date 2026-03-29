@@ -25,7 +25,7 @@ describe("deprecation", () => {
     });
 
     test("emits each deprecation notice only once per id", () => {
-        const warn = jest.fn();
+        const warn = vi.fn();
 
         emitDeprecationWarning(
             { id: "api.oldMethod", message: "oldMethod() is deprecated." },
