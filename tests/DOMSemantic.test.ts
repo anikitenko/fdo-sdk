@@ -4,7 +4,7 @@ describe("DOMSemantic", () => {
     let domSemantic: DOMSemantic;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         domSemantic = new DOMSemantic();
     });
 

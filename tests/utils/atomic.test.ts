@@ -1,10 +1,10 @@
 import { atomicWriteFile, atomicWriteFileSync } from '../../src/utils/atomic';
 
 // Mock the write-file-atomic module
-jest.mock('write-file-atomic', () => {
+vi.mock('write-file-atomic', () => {
   return {
     __esModule: true,
-    default: jest.fn().mockImplementation((...args: any[]) => {
+    default: vi.fn().mockImplementation((...args: any[]) => {
       return Promise.resolve();
     }),
   };
@@ -14,11 +14,11 @@ jest.mock('write-file-atomic', () => {
 import writeFileAtomicImport from 'write-file-atomic';
 
 // Add sync method to the mock
-(writeFileAtomicImport as any).sync = jest.fn();
+(writeFileAtomicImport as any).sync = vi.fn();
 
 describe('atomic', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('atomicWriteFile', () => {

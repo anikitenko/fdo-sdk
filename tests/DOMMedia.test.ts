@@ -4,7 +4,7 @@ describe("DOMMedia", () => {
     let domMedia: DOMMedia;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         domMedia = new DOMMedia();
     });
 

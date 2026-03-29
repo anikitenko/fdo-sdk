@@ -26,45 +26,39 @@ class AsyncRejectRenderOnLoadPlugin extends FDO_SDK {
 
 describe("FDO_SDK", () => {
     let sdk: FDO_SDK;
-    let mockLogger: jest.SpyInstance;
-    let mockLoggerInfo: jest.SpyInstance;
-    let mockLoggerWarn: jest.SpyInstance;
-    let mockLoggerDebug: jest.SpyInstance;
-    let mockLoggerVerbose: jest.SpyInstance;
-    let mockLoggerSilly: jest.SpyInstance;
-    let mockLoggerEvent: jest.SpyInstance;
+    let mockLogger: vi.SpyInstance;
+    let mockLoggerInfo: vi.SpyInstance;
+    let mockLoggerWarn: vi.SpyInstance;
+    let mockLoggerDebug: vi.SpyInstance;
+    let mockLoggerVerbose: vi.SpyInstance;
+    let mockLoggerSilly: vi.SpyInstance;
+    let mockLoggerEvent: vi.SpyInstance;
 
     beforeEach(() => {
         // Mock process.parentPort to prevent errors
         (global as any).process.parentPort = {
-            on: jest.fn(),
-            postMessage: jest.fn(),
+            on: vi.fn(),
+            postMessage: vi.fn(),
         };
 
         // Mock Logger methods
-        mockLogger = jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
-        mockLoggerInfo = jest.spyOn(Logger.prototype, "info").mockImplementation(() => {});
-        mockLoggerWarn = jest.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
-        mockLoggerDebug = jest.spyOn(Logger.prototype, "debug").mockImplementation(() => {});
-        mockLoggerVerbose = jest.spyOn(Logger.prototype, "verbose").mockImplementation(() => {});
-        mockLoggerSilly = jest.spyOn(Logger.prototype, "silly").mockImplementation(() => {});
-        mockLoggerEvent = jest.spyOn(Logger.prototype, "event").mockImplementation(() => "mock-correlation-id");
-        jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+        mockLogger = vi.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+        mockLoggerInfo = vi.spyOn(Logger.prototype, "info").mockImplementation(() => {});
+        mockLoggerWarn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+        mockLoggerDebug = vi.spyOn(Logger.prototype, "debug").mockImplementation(() => {});
+        mockLoggerVerbose = vi.spyOn(Logger.prototype, "verbose").mockImplementation(() => {});
+        mockLoggerSilly = vi.spyOn(Logger.prototype, "silly").mockImplementation(() => {});
+        mockLoggerEvent = vi.spyOn(Logger.prototype, "event").mockImplementation(() => "mock-correlation-id");
+        vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
 
         // Mock PluginRegistry
-        jest.spyOn(PluginRegistry, "registerPlugin").mockImplementation(() => {});
-
-        jest.mock("electron", () => ({
-            shell: {
-                openExternal: jest.fn(),
-            },
-        }));
+        vi.spyOn(PluginRegistry, "registerPlugin").mockImplementation(() => {});
 
         sdk = new FDO_SDK();
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
         delete (global as any).process.parentPort;
     });
 
@@ -85,7 +79,7 @@ describe("FDO_SDK", () => {
         const mockMessage = { data: "test-message" };
 
         // Simulate the callback execution (extract the actual function from the Jest mock)
-        const messageCallback = (process.parentPort.on as jest.Mock).mock.calls[0][1];
+        const messageCallback = (process.parentPort.on as vi.Mock).mock.calls[0][1];
 
         // Call the extracted function manually with a test message
         messageCallback(mockMessage);
@@ -106,7 +100,7 @@ describe("FDO_SDK", () => {
     });
 
     test("should log an error and throw when render() is called", () => {
-        const logSpy = jest.spyOn(sdk["_logger"], "error"); // Spy on logger
+        const logSpy = vi.spyOn(sdk["_logger"], "error"); // Spy on logger
         expect(() => sdk.render()).toThrow("Method 'render' must be implemented by plugin.");
         expect(logSpy).toHaveBeenCalledWith(expect.any(Error)); // Ensure logger was called
         expect(logSpy.mock.calls[0][0].message).toBe("Method 'render' must be implemented by plugin.");
@@ -115,7 +109,7 @@ describe("FDO_SDK", () => {
     test("should return raw render output when render is implemented", () => {
         const mockSdk = new MockPlugin();
 
-        const renderSpy = jest.spyOn(mockSdk, "render");
+        const renderSpy = vi.spyOn(mockSdk, "render");
         const result = mockSdk.render();
 
         expect(renderSpy).toHaveBeenCalled();
@@ -185,7 +179,7 @@ describe("FDO_SDK", () => {
 
     test("should reject async render promises at serialization boundary", async () => {
         const asyncPlugin = new AsyncRejectRenderPlugin();
-        const errorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+        const errorSpy = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
 
         expect(() => asyncPlugin.serializeRender()).toThrow(
             "Method 'render' must return a synchronous string. Async render promises are not supported."
@@ -197,7 +191,7 @@ describe("FDO_SDK", () => {
 
     test("should reject async renderOnLoad promises at serialization boundary", async () => {
         const asyncPlugin = new AsyncRejectRenderOnLoadPlugin();
-        const errorSpy = jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+        const errorSpy = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
 
         expect(() => asyncPlugin.serializeRenderOnLoad()).toThrow(
             "Method 'renderOnLoad' must return a synchronous string. Async on-load promises are not supported."

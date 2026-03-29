@@ -10,8 +10,8 @@ describe("QuickActionMixin", () => {
     beforeEach(() => {
         // Mock process.parentPort to prevent errors
         (global as any).process.parentPort = {
-            on: jest.fn(), // Mock the 'on' function
-            postMessage: jest.fn(), // Mock postMessage (if needed)
+            on: vi.fn(), // Mock the 'on' function
+            postMessage: vi.fn(), // Mock postMessage (if needed)
         };
     });
 

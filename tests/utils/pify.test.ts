@@ -2,26 +2,29 @@ import pifyImport from 'pify';
 import { pify } from '../../src/utils/pify';
 
 // Mock pify
-jest.mock('pify', () => {
-  return jest.fn().mockImplementation((fn) => {
+vi.mock('pify', () => {
+  const mocked = vi.fn().mockImplementation((fn) => {
     return `promisified-${fn}`;
   });
+  return {
+    default: mocked,
+  };
 });
 
 describe('pify', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should call pifyImport with the provided function', () => {
-    const testFn = jest.fn();
+    const testFn = vi.fn();
     pify(testFn);
     
     expect(pifyImport).toHaveBeenCalledWith(testFn);
   });
 
   it('should return the result from pifyImport', () => {
-    const testFn = jest.fn();
+    const testFn = vi.fn();
     const result = pify(testFn);
     
     expect(result).toBe(`promisified-${testFn}`);
@@ -30,10 +33,10 @@ describe('pify', () => {
   // Simplified test that doesn't rely on complex type handling
   it('should work with a callback-style function', () => {
     // Create a simple mock function
-    const mockFn = jest.fn();
+    const mockFn = vi.fn();
     
     // Mock pifyImport to return a function that returns a promise
-    (pifyImport as jest.Mock).mockImplementation(() => {
+    (pifyImport as vi.Mock).mockImplementation(() => {
       return mockFn;
     });
     

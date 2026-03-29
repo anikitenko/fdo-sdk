@@ -3,17 +3,17 @@ import { NotificationManager } from '../src/utils/NotificationManager';
 import { FDO_SDK } from '../src';
 
 describe('ErrorHandler Decorator', () => {
-    let mockError: jest.Mock;
-    let mockSDK: { error: jest.Mock };
+    let mockError: vi.Mock;
+    let mockSDK: { error: vi.Mock };
 
     beforeEach(() => {
-        mockError = jest.fn();
+        mockError = vi.fn();
         mockSDK = { error: mockError };
         (NotificationManager as any).instance = undefined;
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('should handle successful method execution', async () => {

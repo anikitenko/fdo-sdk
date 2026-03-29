@@ -1,20 +1,20 @@
 import { DOM } from "../src/DOM";
-import { css as gooberCss, extractCss, setup } from "goober";
+import { css as gooberCss, extractCss, keyframes, setup } from "goober";
 
-jest.mock("goober", () => ({
-    css: jest.fn(() => {
+vi.mock("goober", () => ({
+    css: vi.fn(() => {
         return "mocked-class";
     }),
-    extractCss: jest.fn(() => "mocked-css"),
-    keyframes: jest.fn(() => "mocked-keyframe"),
-    setup: jest.fn()
+    extractCss: vi.fn(() => "mocked-css"),
+    keyframes: vi.fn(() => "mocked-keyframe"),
+    setup: vi.fn()
 }));
 
 describe("DOM", () => {
     let dom: DOM;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         dom = new DOM();
     });
 
@@ -63,7 +63,7 @@ describe("DOM", () => {
         const styleObj = { color: "red", "font-size": "16px" };
         const className = (dom as any).createClassFromStyle(styleObj);
 
-        const gooberMock = gooberCss as jest.MockedFunction<typeof gooberCss>;
+        const gooberMock = gooberCss as vi.MockedFunction<typeof gooberCss>;
 
         // Check that gooberCss was called correctly with a tagged template literal
         expect(gooberCss).toHaveBeenCalledTimes(1);
@@ -140,7 +140,7 @@ describe("DOM", () => {
     });
 
     test("createAttributes should return attributes without event handlers", () => {
-        const props = { id: "test", class: "box", onClick: jest.fn() };
+        const props = { id: "test", class: "box", onClick: vi.fn() };
         const attributes = (dom as any).createAttributes(props);
 
         expect(attributes.toString()).toContain(`id=\"test\"`);
@@ -149,7 +149,7 @@ describe("DOM", () => {
     });
 
     test("createAttributes should return attributes as a properly formatted string", () => {
-        const props = { id: "test", class: "box", onClick: jest.fn() };
+        const props = { id: "test", class: "box", onClick: vi.fn() };
         const attributes = (dom as any).createAttributes(props);
 
         expect(attributes).toBe(`id="test" className="box"`);
@@ -187,13 +187,13 @@ describe("DOM", () => {
     });
 
     test("createOnAttributes should return only event handlers as stringified functions", () => {
-        const mockClickHandler = jest.fn();
-        const props = { onClick: mockClickHandler, onHover: jest.fn(), id: "test" };
+        const mockClickHandler = vi.fn();
+        const props = { onClick: mockClickHandler, onHover: vi.fn(), id: "test" };
         const eventAttributes = (dom as any).createOnAttributes(props);
 
         expect(eventAttributes).toContain(`onClick={${mockClickHandler.toString()}}`);
         expect(eventAttributes).toContain(`onHover={${props.onHover.toString()}}`);
-        expect(eventAttributes).not.toContain("id");
+        expect(eventAttributes).not.toContain("id=");
     });
 
     test("createElement should create elements with various configurations", () => {
@@ -207,11 +207,11 @@ describe("DOM", () => {
 
         // Test case 3: Element with event handler
         const element3 = dom.createElement("button", { onClick: () => {}}, "Content");
-        expect(element3.toString()).toBe(`<button onClick={() => { }}>Content</button>`);
+        expect(element3.toString()).toBe(`<button onClick={() => {}}>Content</button>`);
 
         // Test case 4: Element with both regular attributes and event handlers
         const element4 = dom.createElement("button", { onClick: () => {}, className: "mock"}, "Content");
-        expect(element4.toString()).toBe(`<button className="mock" onClick={() => { }}>Content</button>`);
+        expect(element4.toString()).toBe(`<button className="mock" onClick={() => {}}>Content</button>`);
     });
 
     test("should create keyframe and return the generated class name", () => {
@@ -226,8 +226,7 @@ describe("DOM", () => {
         const keyframeClass = dom.createStyleKeyframe(keyframeCSS);
 
         // Verify the keyframes function was called
-        const keyframesMock = require("goober").keyframes as jest.Mock;
-        expect(keyframesMock).toHaveBeenCalled();
+        expect(keyframes).toHaveBeenCalled();
 
         // Verify the returned class name
         expect(keyframeClass).toBe("mocked-keyframe");
@@ -247,7 +246,7 @@ describe("DOM", () => {
         }, "Content");
 
         // Verify the element has the keyframe class
-        expect(element.toString()).toBe(`<button className="mocked-keyframe" onClick={() => { }}>Content</button>`);
+        expect(element.toString()).toBe(`<button className="mocked-keyframe" onClick={() => {}}>Content</button>`);
     });
 
     test("should create keyframe with complex animation steps", () => {
@@ -260,8 +259,7 @@ describe("DOM", () => {
         const keyframeClass = dom.createStyleKeyframe(complexKeyframe);
 
         // Verify the keyframes function was called
-        const keyframesMock = require("goober").keyframes as jest.Mock;
-        expect(keyframesMock).toHaveBeenCalled();
+        expect(keyframes).toHaveBeenCalled();
         expect(keyframeClass).toBe("mocked-keyframe");
     });
 
@@ -275,8 +273,8 @@ describe("DOM", () => {
         const dom = new DOM(false);
 
         // Stub dependencies
-        jest.spyOn(dom, "createAttributes").mockReturnValue("id='test'");
-        jest.spyOn(dom, "createOnAttributes").mockReturnValue("");
+        vi.spyOn(dom, "createAttributes").mockReturnValue("id='test'");
+        vi.spyOn(dom, "createOnAttributes").mockReturnValue("");
 
         const result = dom.createElement("div", {}, "Hello");
         expect(result).toBe("<div id='test'>Hello</div>");
@@ -285,8 +283,8 @@ describe("DOM", () => {
     test("createElement with onAttributes only", () => {
         const dom = new DOM(false);
 
-        jest.spyOn(dom, "createAttributes").mockReturnValue("");
-        jest.spyOn(dom, "createOnAttributes").mockReturnValue("onClick='doSomething()'");
+        vi.spyOn(dom, "createAttributes").mockReturnValue("");
+        vi.spyOn(dom, "createOnAttributes").mockReturnValue("onClick='doSomething()'");
 
         const result = dom.createElement("button", {}, "Click");
         expect(result).toBe("<button onClick='doSomething()'>Click</button>");
@@ -295,8 +293,8 @@ describe("DOM", () => {
     test("createElement with both attributes and onAttributes", () => {
         const dom = new DOM(false);
 
-        jest.spyOn(dom, "createAttributes").mockReturnValue("id='test'");
-        jest.spyOn(dom, "createOnAttributes").mockReturnValue("onClick='fn()'");
+        vi.spyOn(dom, "createAttributes").mockReturnValue("id='test'");
+        vi.spyOn(dom, "createOnAttributes").mockReturnValue("onClick='fn()'");
 
         const result = dom.createElement("span", {}, "Wow");
         expect(result).toBe("<span id='test' onClick='fn()'>Wow</span>");
@@ -305,8 +303,8 @@ describe("DOM", () => {
     test("createElement with no attributes", () => {
         const dom = new DOM(false);
 
-        jest.spyOn(dom, "createAttributes").mockReturnValue("");
-        jest.spyOn(dom, "createOnAttributes").mockReturnValue("");
+        vi.spyOn(dom, "createAttributes").mockReturnValue("");
+        vi.spyOn(dom, "createOnAttributes").mockReturnValue("");
 
         const result = dom.createElement("hr");
         expect(result).toBe("<hr></hr>");
@@ -315,8 +313,8 @@ describe("DOM", () => {
     test("combineProperties with all defaults", () => {
         const dom = new DOM();
 
-        jest.spyOn(dom, "mergeOptions").mockReturnValue({ classes: [], disableDefaultClass: false });
-        jest.spyOn(dom, "createClassFromStyle").mockReturnValue("go11");
+        vi.spyOn(dom, "mergeOptions").mockReturnValue({ classes: [], disableDefaultClass: false });
+        vi.spyOn(dom, "createClassFromStyle").mockReturnValue("go11");
 
         const result = dom.combineProperties("default", {});
         expect(result.id).toMatch(/^[a-z0-9]+$/); // random id
@@ -326,7 +324,7 @@ describe("DOM", () => {
     test("combineProperties with disableDefaultClass true", () => {
         const dom = new DOM();
 
-        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+        vi.spyOn(dom, "mergeOptions").mockReturnValue({
             classes: ["x"],
             disableDefaultClass: true,
         });
@@ -338,12 +336,12 @@ describe("DOM", () => {
     test("combineProperties with custom style", () => {
         const dom = new DOM();
 
-        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+        vi.spyOn(dom, "mergeOptions").mockReturnValue({
             classes: ["x"],
             style: { color: "red" },
             disableDefaultClass: false,
         });
-        jest.spyOn(dom, "createClassFromStyle").mockReturnValue("style-123");
+        vi.spyOn(dom, "createClassFromStyle").mockReturnValue("style-123");
 
         const result = dom.combineProperties("main", {});
         expect(result.className).toBe("main x style-123");
@@ -351,7 +349,7 @@ describe("DOM", () => {
 
     test("combineProperties with custom ID", () => {
         const dom = new DOM();
-        jest.spyOn(dom, "mergeOptions").mockReturnValue({ classes: [], disableDefaultClass: false });
+        vi.spyOn(dom, "mergeOptions").mockReturnValue({ classes: [], disableDefaultClass: false });
 
         const result = dom.combineProperties("box", {}, "custom-id");
         expect(result.id).toBe("custom-id");
@@ -360,7 +358,7 @@ describe("DOM", () => {
     test("combineProperties with all falsy class components", () => {
         const dom = new DOM();
 
-        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+        vi.spyOn(dom, "mergeOptions").mockReturnValue({
             classes: [],
             disableDefaultClass: true,
             style: undefined,
@@ -373,13 +371,13 @@ describe("DOM", () => {
     test("combineProperties with only generatedStyle truthy", () => {
         const dom = new DOM();
 
-        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+        vi.spyOn(dom, "mergeOptions").mockReturnValue({
             classes: [],
             disableDefaultClass: true,
             style: { color: "red" },
         });
 
-        jest.spyOn(dom, "createClassFromStyle").mockReturnValue("styled");
+        vi.spyOn(dom, "createClassFromStyle").mockReturnValue("styled");
 
         const result = dom.combineProperties("default", {});
         expect(result.className).toBe("styled");
@@ -388,7 +386,7 @@ describe("DOM", () => {
     test("combineProperties handles undefined classes", () => {
         const dom = new DOM();
 
-        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+        vi.spyOn(dom, "mergeOptions").mockReturnValue({
             // no `classes` property
             disableDefaultClass: true,
             style: undefined,
@@ -401,7 +399,7 @@ describe("DOM", () => {
     test("combineProperties handles undefined style", () => {
         const dom = new DOM();
 
-        jest.spyOn(dom, "mergeOptions").mockReturnValue({
+        vi.spyOn(dom, "mergeOptions").mockReturnValue({
             classes: [],
             disableDefaultClass: false,
             style: undefined,

@@ -4,7 +4,7 @@ describe("DOMMisc", () => {
     let domMisc: DOMMisc;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         domMisc = new DOMMisc();
     });
 

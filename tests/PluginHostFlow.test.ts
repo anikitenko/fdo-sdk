@@ -43,23 +43,23 @@ class IntegrationPlugin extends FDO_SDK {
 }
 
 describe("Plugin host message flow", () => {
-    const mockPostMessage = jest.fn();
-    const mockOnMessage = jest.fn();
+    const mockPostMessage = vi.fn();
+    const mockOnMessage = vi.fn();
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         PluginRegistry.clearAllHandlers();
         PluginRegistry.clearPlugin();
         (global as any).process.parentPort = {
             on: mockOnMessage,
             postMessage: mockPostMessage,
         };
-        jest.spyOn(Logger.prototype, "log").mockImplementation(() => {});
-        jest.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+        vi.spyOn(Logger.prototype, "log").mockImplementation(() => {});
+        vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        vi.restoreAllMocks();
         PluginRegistry.clearAllHandlers();
         PluginRegistry.clearPlugin();
         delete (global as any).process.parentPort;

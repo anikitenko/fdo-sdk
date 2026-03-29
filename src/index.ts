@@ -1,5 +1,4 @@
 import {Logger} from "./Logger";
-import "electron";
 import "./ambient/fdo-host";
 import {Communicator} from "./Communicator";
 import {PluginRegistry} from "./PluginRegistry";

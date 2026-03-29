@@ -43,6 +43,10 @@ if (!files.includes("dist/fdo-sdk.bundle.js")) {
   fail("tarball is missing dist/fdo-sdk.bundle.js");
 }
 
+if (!files.some((file) => file.startsWith("docs/"))) {
+  fail("tarball does not include documentation files under docs/");
+}
+
 const forbiddenPrefixes = ["src/", "tests/", ".github/", "coverage/"];
 const forbiddenFiles = files.filter((file) => forbiddenPrefixes.some((prefix) => file.startsWith(prefix)));
 if (forbiddenFiles.length > 0) {

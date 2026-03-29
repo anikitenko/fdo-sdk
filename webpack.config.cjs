@@ -19,6 +19,11 @@ module.exports = {
         usedExports: false,
         concatenateModules: false,
     },
+    performance: {
+        // SDK is shipped as a Node/Electron library bundle, not a web entrypoint.
+        // Webpack size hints are not meaningful for this artifact.
+        hints: false,
+    },
     resolve: {
         extensions: ['.ts', '.js', '.json'],
     },
@@ -37,19 +42,27 @@ module.exports = {
             outFile: "dom-metadata.json",
         })
     ],
-    externals: {
-        electron: 'commonjs electron',
-        fs: 'fs',
-        path: 'path',
-        os: 'os',
-        https: 'https',
-        http: 'http',
-        zlib: 'zlib',
-        util: 'util',
-        stream: 'stream',
-        buffer: 'buffer',
-        crypto: 'crypto',
-        "worker_threads": "worker_threads",
-        "child_process": "child_process"
-    }
+    externals: [
+        ({ request }, callback) => {
+            if (request && request.startsWith("node:")) {
+                return callback(null, `commonjs ${request}`);
+            }
+            return callback();
+        },
+        {
+            electron: "commonjs electron",
+            fs: "commonjs fs",
+            path: "commonjs path",
+            os: "commonjs os",
+            https: "commonjs https",
+            http: "commonjs http",
+            zlib: "commonjs zlib",
+            util: "commonjs util",
+            stream: "commonjs stream",
+            buffer: "commonjs buffer",
+            crypto: "commonjs crypto",
+            "worker_threads": "commonjs worker_threads",
+            "child_process": "commonjs child_process"
+        }
+    ]
 };

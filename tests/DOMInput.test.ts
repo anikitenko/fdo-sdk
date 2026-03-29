@@ -4,7 +4,7 @@ describe("DOMInput", () => {
     let domInput: DOMInput;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         domInput = new DOMInput("input");
     });
 

@@ -81,6 +81,8 @@ Distribution mode:
 
 - The published runtime artifact is Node/CommonJS-oriented (`dist/fdo-sdk.bundle.js`).
 - The package does not expose a browser-global SDK contract; FDO host/runtime wiring is the supported path.
+- `electron` is declared as a peer dependency (not bundled as an SDK runtime dependency).
+- `docs/` and `examples/` are included in the published package for offline reference.
 
 ### Creating a Plugin
 

@@ -4,7 +4,7 @@ describe("DOMText", () => {
     let domText: DOMText;
 
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         domText = new DOMText();
     });
 

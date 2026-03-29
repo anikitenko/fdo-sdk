@@ -6,7 +6,7 @@ describe('StoreDefault', () => {
 
   beforeAll(() => {
     // Replace Object.keys with a spy
-    Object.keys = jest.fn().mockImplementation(originalObjectKeys);
+    Object.keys = vi.fn().mockImplementation(originalObjectKeys);
   });
 
   afterAll(() => {
@@ -16,7 +16,7 @@ describe('StoreDefault', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Clear the store before each test
     StoreDefault.clear()
@@ -116,7 +116,7 @@ describe('StoreDefault', () => {
       };
 
       // Create a spy to track property deletions
-      const deletePropertySpy = jest.fn();
+      const deletePropertySpy = vi.fn();
       const handler = {
         deleteProperty: (target: any, prop: string) => {
           deletePropertySpy(prop);
