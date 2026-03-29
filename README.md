@@ -207,21 +207,39 @@ Example host request payload:
 ### Building
 
 ```bash
-npm run build        # Build webpack bundle (automatically runs build:types first)
+npm run build        # Build webpack bundle and emit TypeScript declarations
+npm run build:bundle # Build runtime bundle only
 npm run build:types  # Generate TypeScript declarations only
+npm run verify:pack  # Verify declaration artifacts and npm pack contents
 ```
+
+Build artifacts required for publish:
+
+- `dist/fdo-sdk.bundle.js`
+- `dist/dom-metadata.json`
+- `dist/@types/**` (including `dist/@types/index.d.ts`)
 
 ### Testing
 
 ```bash
-npm test             # Run Jest tests
+npm test             # Run Vitest tests
 npm run test:coverage # Run tests with coverage report
 npm run coverage:open # Open coverage report in browser
 ```
 
 ### Publishing
 
-The package includes a `prepublishOnly` script that automatically runs tests and builds before publishing to ensure quality.
+The package includes strict verification gates before publishing:
+
+- `prepack` runs `build` and `verify:types:local`
+- `prepublishOnly` runs tests, example type checks, build, and `verify:pack`
+
+`verify:pack` fails if:
+
+- `dist/@types/index.d.ts` is missing
+- no declaration files are present under `dist/@types/`
+- `package.json.types` or `exports["."].types` do not resolve to existing files
+- `npm pack --dry-run --json` does not include declaration files
 
 #### Release Automation
 
