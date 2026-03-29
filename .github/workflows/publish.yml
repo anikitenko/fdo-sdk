@@ -59,3 +59,5 @@ jobs:
           echo "workflow_ref=${GITHUB_WORKFLOW_REF}"
           npm config get registry
       - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
