@@ -189,6 +189,27 @@ npm run coverage:open # Open coverage report in browser
 
 The package includes a `prepublishOnly` script that automatically runs tests and builds before publishing to ensure quality.
 
+#### Release Automation
+
+- CI (`.github/workflows/ci.yml`) runs on PRs and on pushes to `main`.
+- Release automation (`.github/workflows/release-please.yml`) runs on `main` and:
+  - opens/updates a release PR with version and changelog changes
+  - creates a `v*` git tag when that release PR is merged
+- Publish (`.github/workflows/publish.yml`) runs on `v*` tag push and publishes to npm with provenance.
+
+Typical fully automated flow:
+
+1. Merge feature/fix PRs to `main`.
+2. Merge the generated release PR.
+3. Tag-triggered publish runs automatically.
+
+Manual fallback flow:
+
+```bash
+npm version patch
+git push origin main --follow-tags
+```
+
 ## Documentation
 
 - Full API documentation is available in the TypeScript declaration files
