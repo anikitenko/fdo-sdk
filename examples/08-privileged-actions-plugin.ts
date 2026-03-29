@@ -17,7 +17,7 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
     }
 
     render(): string {
-        return `<div style={{ padding: "16px" }}>
+        return `<div style="padding: 16px;">
             <h2>Privileged Actions Demo</h2>
             <p>Click to request a dry-run scoped filesystem mutation in host runtime.</p>
             <button id="run-privileged-action">Run Dry-Run</button>

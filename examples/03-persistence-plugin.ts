@@ -506,9 +506,8 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
                 }
               } catch (error) {
                 resultDiv.innerHTML = ${JSON.stringify(
-                  domText.createPText("An error occurred. Check the console.", { style: { color: 'red' } })
+                  domText.createPText("An error occurred while saving preferences.", { style: { color: 'red' } })
                 )};
-                console.error('Save error:', error);
               }
             }
           </script>
@@ -527,7 +526,7 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
       return `
         <div style="padding: 20px; color: red;">
           <h2>Error rendering plugin</h2>
-          <p>An error occurred while rendering the plugin UI. Check the console for details.</p>
+          <p>An error occurred while rendering the plugin UI. Check plugin logs for details.</p>
         </div>
       `;
     }

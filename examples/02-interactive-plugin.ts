@@ -20,7 +20,7 @@
  * 2. Show a counter with increment/decrement buttons
  * 3. Process button clicks and form submissions
  * 4. Update the UI dynamically based on user actions
- * 5. Log all user interactions to the console
+ * 5. Log all user interactions through SDK handlers
  */
 
 import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry, DOMText, DOMNested, DOMButton, DOMInput } from "@anikitenko/fdo-sdk";
@@ -321,7 +321,6 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
         }),
         
         `<script>
-          const plugin = this;
           async function handleFormSubmit() {
             const userName = document.getElementById('userName').value;
             const resultDiv = document.getElementById('form-result');
@@ -334,10 +333,14 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
             resultDiv.innerHTML = '${domText.createPText("Processing...", { style: { color: '#666' } })}';
             
             try {
-              await plugin.handleFormSubmit({ userName });
+              const result = await window.fdoSDK.sendMessage('submitForm', { userName });
+              if (result?.success) {
+                resultDiv.innerHTML = '${domText.createPText("Form submitted successfully.", { style: { color: 'green' } })}';
+              } else {
+                resultDiv.innerHTML = '${domText.createPText("Form submission failed.", { style: { color: 'red' } })}';
+              }
             } catch (error) {
-              resultDiv.innerHTML = '${domText.createPText("An error occurred. Check the console.", { style: { color: 'red' } })}';
-              console.error('Form submission error:', error);
+              resultDiv.innerHTML = '${domText.createPText("An error occurred while submitting the form.", { style: { color: 'red' } })}';
             }
           }
         </script>`,
@@ -389,7 +392,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
       return `
         <div style="padding: 20px; color: red;">
           <h2>Error rendering plugin</h2>
-          <p>An error occurred while rendering the plugin UI. Check the console for details.</p>
+          <p>An error occurred while rendering the plugin UI. Check plugin logs for details.</p>
         </div>
       `;
     }
