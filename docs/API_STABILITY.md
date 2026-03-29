@@ -36,13 +36,20 @@ This document defines which SDK surfaces are stable contracts versus internal im
   - `useStore`
   - `registerStore`
   - `configureStorage`
+  - `configureCapabilities`
 - Documented decorator behavior (`handleError`)
 - Runtime contract validators exported from `src/utils/contracts.ts`
+- Privileged action helper exports:
+  - `createFilesystemScopeCapability`
+  - `createHostsWriteActionRequest`
+  - `createFilesystemMutateActionRequest`
+  - `validatePrivilegedActionRequest`
 
 ## Provisional Surfaces
 
 - Store lifecycle capability metadata shape
 - Advanced store migration/version hook behavior
+- Deprecation utility message formatting details (`formatDeprecationMessage`)
 - Example plugin implementations under `examples/`
 
 ## Internal Surfaces

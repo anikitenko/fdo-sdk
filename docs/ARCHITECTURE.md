@@ -51,6 +51,9 @@ Core message paths:
 - `PLUGIN_RENDER`
 - `UI_MESSAGE`
 
+`PLUGIN_INIT` may include an optional `content.apiVersion` from the host. The SDK validates the value and enforces major-version compatibility against `FDO_SDK.API_VERSION`.
+`PLUGIN_INIT` may also include `content.capabilities` to opt in privileged features for that plugin instance.
+
 Failure behavior:
 
 - `PLUGIN_INIT` failure: empty capabilities + `error`
@@ -75,6 +78,18 @@ Store lifecycle hooks are supported:
 - `flush()`
 - `dispose()`
 - optional capability metadata and migration/version hooks
+
+Runtime permission model:
+
+- privileged SDK features are capability-gated (`storage.json`, `sudo.prompt`, `system.hosts.write`, `system.fs.scope.<scope-id>`)
+- host grants are configured via `PluginRegistry.configureCapabilities(...)` (usually through validated `PLUGIN_INIT` payload)
+- diagnostics include granted capabilities and usage/denial counters for auditing
+
+Host-mediated privileged actions:
+
+- SDK defines a strict contract validator for host privileged requests (`validateHostPrivilegedActionRequest`)
+- current action contracts are intentionally scoped (`system.hosts.write`, `system.fs.mutate`)
+- host must enforce confirmation, path/command boundaries, and auditing; plugins should not receive generic arbitrary-write permissions
 
 ## Validation Boundaries
 

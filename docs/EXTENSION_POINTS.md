@@ -28,6 +28,7 @@ This document defines the supported ways to extend plugins with `@anikitenko/fdo
 - `PluginRegistry.useStore("json")` for scoped persistent state
 - `PluginRegistry.registerStore(name, storeOrFactory)` for custom store integrations
 - `PluginRegistry.configureStorage({ rootDir })` for persistent storage root
+- `PluginRegistry.configureCapabilities({ granted })` for host-managed grants to privileged SDK features
 
 ### UI Extensions
 
@@ -62,6 +63,7 @@ This document defines the supported ways to extend plugins with `@anikitenko/fdo
 ### Storage Misuse
 
 - do not assume JSON store is available without configured storage root
+- do not assume privileged features are available without host capability grants
 - do not rely on unscoped key names for cross-plugin shared state
 - do not depend on private store internals (`_`-prefixed fields)
 

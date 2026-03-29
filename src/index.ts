@@ -8,12 +8,22 @@ export { atomicWriteFile, atomicWriteFileSync } from "./utils/atomic";
 export { BLUEPRINT_V6_ICON_NAMES, isBlueprintV6IconName } from "./utils/blueprintIcons";
 export {
     validateHostMessageEnvelope,
+    validateHostPrivilegedActionRequest,
+    validatePluginInitPayload,
     validatePluginMetadata,
     validateSerializedRenderPayload,
     validateUIMessagePayload,
 } from "./utils/contracts";
 export { pify } from "./utils/pify";
 export { runWithSudo } from "./utils/runWithSudo";
+export { emitDeprecationWarning, formatDeprecationMessage } from "./utils/deprecation";
+export { requireFilesystemScopeCapability } from "./utils/capabilities";
+export {
+    createFilesystemMutateActionRequest,
+    createFilesystemScopeCapability,
+    createHostsWriteActionRequest,
+    validatePrivilegedActionRequest,
+} from "./utils/privilegedActions";
 
 export * from "./FDOInterface";
 export * from "./PluginMetadata";

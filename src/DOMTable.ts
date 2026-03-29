@@ -9,6 +9,13 @@ export class DOMTable extends DOM {
         super();
     }
 
+    private buildProps(
+        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }>,
+        id?: string
+    ): Record<string, any> {
+        return this.applyCustomAttributes(this.combineProperties("", options, id), options);
+    }
+
     /**
      * Creates a table element.
      * @param children - The children of the table (thead, tbody, tfoot, caption).
@@ -26,14 +33,7 @@ export class DOMTable extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("table", props, children);
     }
 
@@ -53,14 +53,7 @@ export class DOMTable extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("thead", props, children);
     }
 
@@ -81,14 +74,7 @@ export class DOMTable extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("tbody", props, children);
     }
 
@@ -108,14 +94,7 @@ export class DOMTable extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("tfoot", props, children);
     }
 
@@ -136,14 +115,7 @@ export class DOMTable extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("tr", props, children);
     }
 
@@ -164,14 +136,7 @@ export class DOMTable extends DOM {
         id?: string,
         otherProps?: Record<string, any>
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("th", {...props, ...otherProps}, children);
     }
 
@@ -192,14 +157,7 @@ export class DOMTable extends DOM {
         id?: string,
         otherProps?: Record<string, any>
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("td", {...props, ...otherProps}, children);
     }
 
@@ -218,14 +176,7 @@ export class DOMTable extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("caption", props, children);
     }
 }

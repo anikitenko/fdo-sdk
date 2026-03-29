@@ -101,6 +101,20 @@ You should treat them as:
 - not proof that the host inserts raw HTML directly
 - not proof that every browser/runtime feature is available everywhere
 
+## Trusted Markup vs Safe Text
+
+The DOM builder supports two different content models:
+
+- trusted markup composition: generic helpers like `DOM.createElement(...)` accept `children` as already-formed JSX-like fragments
+- safe text composition: `DOMText` APIs escape JSX-sensitive characters for text-node contexts
+
+Practical rule:
+
+- use `DOMText.createText(...)` and related `DOMText` methods for user-provided or untrusted text
+- use raw `children` in generic DOM helpers only for trusted plugin-authored markup fragments
+
+The SDK does not treat arbitrary raw `children` strings as a security boundary by itself. Host-side iframe sandboxing and message validation remain the boundary.
+
 ## Runtime Safety Rules
 
 ### Safe Backend Assumptions

@@ -3,7 +3,7 @@ import {MessageEvent} from "electron";
 import {PluginRegistry} from "./PluginRegistry";
 import {MESSAGE_TYPE} from "./enums";
 import { EventEmitter } from "events";
-import { validateHostMessageEnvelope, validateUIMessagePayload } from "./utils/contracts";
+import { validateHostMessageEnvelope, validatePluginInitPayload, validateUIMessagePayload } from "./utils/contracts";
 import {
     HostResponseEnvelope,
     PluginDiagnosticsRequest,
@@ -83,9 +83,12 @@ export class Communicator extends EventEmitter {
             this.sendMessage({ type: MESSAGE_TYPE.PLUGIN_READY, response: true });
         });
 
-        this.on(MESSAGE_TYPE.PLUGIN_INIT, () => {
+        this.on(MESSAGE_TYPE.PLUGIN_INIT, (data) => {
             const correlationId = this._logger.event("plugin.init.response.start");
             try {
+                const request = validatePluginInitPayload(data);
+                PluginRegistry.assertHostApiCompatibility(request.apiVersion);
+                PluginRegistry.configureCapabilities({ granted: request.capabilities ?? [] });
                 PluginRegistry.callInit();
                 this.sendMessage({
                     type: MESSAGE_TYPE.PLUGIN_INIT,

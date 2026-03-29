@@ -1,7 +1,8 @@
 import { dialog } from "electron";
 import sudo from "@expo/sudo-prompt";
-import { runWithSudo } from "../../src";
+import { PluginRegistry, runWithSudo } from "../../src";
 import { pify } from "../../src/utils/pify";
+import { resetCapabilityStateForTests } from "../../src/utils/capabilities";
 
 // Mock electron dialog
 jest.mock("electron", () => ({
@@ -37,6 +38,8 @@ jest.mock("../../src/utils/pify", () => ({
 describe("runWithSudo", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetCapabilityStateForTests();
+    PluginRegistry.configureCapabilities({ granted: ["sudo.prompt"] });
   });
 
   it("should show a confirmation dialog with default message when no confirmMessage is provided", async () => {
@@ -347,5 +350,15 @@ describe("runWithSudo", () => {
       icns: "test.icns",
       env: undefined,
     });
+  });
+
+  it("should reject when sudo capability is not granted", async () => {
+    PluginRegistry.configureCapabilities({ granted: [] });
+
+    await expect(runWithSudo("echo hello")).rejects.toThrow(
+      'Capability "sudo.prompt" is required to request elevated privileges through runWithSudo. Configure PluginRegistry.configureCapabilities({ granted: ["sudo.prompt"] }) in the host before plugin initialization.'
+    );
+    expect(dialog.showMessageBox).not.toHaveBeenCalled();
+    expect(sudo.exec).not.toHaveBeenCalled();
   });
 });

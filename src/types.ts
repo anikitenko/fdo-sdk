@@ -31,6 +31,62 @@ export type UIMessageRequest = {
     content?: unknown;
 };
 
+export type PluginInitRequest = {
+    apiVersion?: string;
+    capabilities?: PluginCapability[];
+};
+
+export type FilesystemScopeCapability = `system.fs.scope.${string}`;
+export type PluginCapability =
+    | "storage.json"
+    | "sudo.prompt"
+    | "system.hosts.write"
+    | FilesystemScopeCapability;
+
+export type CapabilityConfiguration = {
+    granted: PluginCapability[];
+};
+
+export type HostsRecord = {
+    address: string;
+    hostname: string;
+    comment?: string;
+};
+
+export type FilesystemMutationOperation =
+    | { type: "mkdir"; path: string; recursive?: boolean; mode?: number }
+    | { type: "writeFile"; path: string; content: string; encoding?: "utf8" | "base64"; mode?: number }
+    | { type: "appendFile"; path: string; content: string; encoding?: "utf8" | "base64" }
+    | { type: "rename"; from: string; to: string }
+    | { type: "remove"; path: string; recursive?: boolean; force?: boolean };
+
+export type HostPrivilegedAction =
+    | "system.hosts.write"
+    | "system.fs.mutate";
+
+export type HostsWriteActionRequest = {
+    action: "system.hosts.write";
+    payload: {
+        records: HostsRecord[];
+        dryRun?: boolean;
+        tag?: string;
+    };
+};
+
+export type FilesystemMutateActionRequest = {
+    action: "system.fs.mutate";
+    payload: {
+        scope: string;
+        operations: FilesystemMutationOperation[];
+        dryRun?: boolean;
+        reason?: string;
+    };
+};
+
+export type HostPrivilegedActionRequest =
+    | HostsWriteActionRequest
+    | FilesystemMutateActionRequest;
+
 export type UIMessageResponse = unknown | ErrorResponse;
 
 export type PluginInitResponse = {
@@ -147,6 +203,11 @@ export type PluginDiagnostics = {
         quickActionsCount: number;
         hasSidePanel: boolean;
         stores: PluginStoreDiagnostic[];
+        permissions: {
+            granted: PluginCapability[];
+            usageCount: Record<string, number>;
+            deniedCount: Record<string, number>;
+        };
     };
     notifications: {
         count: number;

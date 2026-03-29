@@ -57,6 +57,24 @@ describe("DOMText", () => {
         expect(h6).toBe(`<h6 id="hello" className="go11">Hello World</h6>`);
     })
 
+    it("should reject heading levels below 1", () => {
+        expect(() => domText.createHText(0, "Invalid")).toThrow(
+            "Heading level must be an integer between 1 and 6. Received: 0"
+        );
+    })
+
+    it("should reject heading levels above 6", () => {
+        expect(() => domText.createHText(7, "Invalid")).toThrow(
+            "Heading level must be an integer between 1 and 6. Received: 7"
+        );
+    })
+
+    it("should reject non-integer heading levels", () => {
+        expect(() => domText.createHText(2.5, "Invalid")).toThrow(
+            "Heading level must be an integer between 1 and 6. Received: 2.5"
+        );
+    })
+
     it("should create a p", () => {
         const p = domText.createPText("Hello World", {}, "hello");
         expect(p).toBe(`<p id="hello" className="go11">Hello World</p>`);
@@ -190,6 +208,13 @@ describe("DOMText", () => {
     it("should run createTextElement with empty options object", () => {
         const output = (domText as any).createTextElement("div", "Hello", undefined, {}, false, "class-b");
         expect(output).toContain("class-b");
+    });
+
+    it("should escape JSX-sensitive characters in text nodes", () => {
+        const output = domText.createText(`"<script>alert(1)</script>" & {value}`, {}, "safe-text");
+        expect(output).toBe(
+            `<span id="safe-text" className="go11">"&lt;script&gt;alert(1)&lt;/script&gt;" &amp; &#123;value&#125;</span>`
+        );
     });
 
 })

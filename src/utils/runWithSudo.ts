@@ -1,6 +1,7 @@
 import { dialog } from "electron";
 import sudo from "@expo/sudo-prompt";
 import { pify } from "./pify";
+import { requireCapability } from "./capabilities";
 
 export interface SudoOptions {
     name?: string;
@@ -16,6 +17,8 @@ export async function runWithSudo(
     command: string,
     options: SudoOptions = {}
 ): Promise<string> {
+    requireCapability("sudo.prompt", "request elevated privileges through runWithSudo");
+
     const confirmed = await dialog.showMessageBox({
         type: "warning",
         buttons: ["Cancel", "Proceed"],

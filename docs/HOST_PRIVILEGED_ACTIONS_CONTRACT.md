@@ -1,0 +1,115 @@
+# Host Privileged Actions Contract
+
+This document defines the SDK-side contract for host-mediated privileged operations.
+
+## Goal
+
+Allow narrowly scoped privileged operations without granting plugins broad filesystem escape from `PLUGIN_HOME`.
+
+## Current Actions
+
+- `system.hosts.write`
+- `system.fs.mutate`
+
+Validated by SDK helper:
+
+- `validateHostPrivilegedActionRequest(...)`
+- helpers for developer UX:
+  - `createFilesystemScopeCapability(scopeId)`
+  - `createHostsWriteActionRequest(request)`
+  - `createFilesystemMutateActionRequest(request)`
+
+## Request Shape
+
+```ts
+{
+  action: "system.hosts.write",
+  payload: {
+    records: Array<{
+      address: string;   // IPv4/IPv6
+      hostname: string;  // DNS-style host token
+      comment?: string;
+    }>,
+    dryRun?: boolean,
+    tag?: string
+  }
+}
+```
+
+## Recommended Response Envelope
+
+Hosts should return a stable envelope with correlation for all privileged actions:
+
+```ts
+type PrivilegedActionResponse =
+  | { ok: true; correlationId: string; result?: unknown }
+  | { ok: false; correlationId: string; error: string; code?: string };
+```
+
+## Plugin-Side Usage Pattern
+
+```ts
+const correlationId = "privileged-action-" + Date.now();
+const response = await window.createBackendReq("requestPrivilegedAction", {
+  correlationId,
+  request: createFilesystemMutateActionRequest({
+    action: "system.fs.mutate",
+    payload: {
+      scope: "etc-hosts",
+      dryRun: true,
+      operations: [{ type: "writeFile", path: "/etc/hosts", content: "# managed", encoding: "utf8" }]
+    }
+  })
+});
+
+if (response?.ok) {
+  // success path
+} else {
+  // deterministic error path with correlationId + error + code
+}
+```
+
+```ts
+{
+  action: "system.fs.mutate",
+  payload: {
+    scope: string, // host-defined scope id, e.g. "etc-hosts"
+    operations: Array<
+      | { type: "mkdir"; path: string; recursive?: boolean; mode?: number }
+      | { type: "writeFile"; path: string; content: string; encoding?: "utf8" | "base64"; mode?: number }
+      | { type: "appendFile"; path: string; content: string; encoding?: "utf8" | "base64" }
+      | { type: "rename"; from: string; to: string }
+      | { type: "remove"; path: string; recursive?: boolean; force?: boolean }
+    >,
+    dryRun?: boolean,
+    reason?: string
+  }
+}
+```
+
+## Capability Requirement
+
+- Host should only execute this action when capability `system.hosts.write` is granted for that plugin.
+- For `system.fs.mutate`, host should require both:
+  - broad feature capability: `system.hosts.write` (or host-defined equivalent for privileged FS API)
+  - scope capability: `system.fs.scope.<scope-id>`
+
+## Security Requirements For Hosts
+
+- enforce explicit user confirmation for non-dry-run writes
+- avoid shell interpolation; write through structured file logic
+- constrain writes to `/etc/hosts` only
+- support tagged sections to avoid uncontrolled file mutation
+- log/audit each request and outcome with plugin identity and correlation id
+- keep an allowlist mapping from `scope` -> permitted absolute roots and operation types
+- reject any operation whose target path is outside the mapped scope roots
+
+## Recommended Host Scope Model
+
+1. Define host policy scopes (for example `etc-hosts`, `usr-local-bin`), each with:
+   - allowed absolute root paths
+   - allowed operation set
+   - confirmation policy
+2. Grant plugins explicit scope capabilities using `system.fs.scope.<scope-id>`.
+3. Evaluate every `system.fs.mutate` operation against the selected scope before any write.
+4. Keep plugin runtime sandbox (`PLUGIN_HOME`) unchanged; privileged writes stay host-mediated only.
