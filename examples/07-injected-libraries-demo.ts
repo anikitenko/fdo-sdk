@@ -275,8 +275,11 @@ export default class MyPlugin extends FDO_SDK implements FDOInterface {
                 
                 function getEditorContent() {
                     const content = ace.edit("editor").getValue();
+                    const output = document.getElementById('helper-output');
                     notyf.success(\`Got \${content.split('\\n').length} lines of code!\`);
-                    console.log('Editor content:', content);
+                    if (output) {
+                        output.innerHTML = \`<strong>Editor Content Preview:</strong><br><pre>\${content.slice(0, 400)}</pre>\`;
+                    }
                 }
                 
                 // Initialize Split Grid
@@ -359,13 +362,15 @@ export default class MyPlugin extends FDO_SDK implements FDOInterface {
                     }
                 });
                 
-                console.log('Injected Libraries Demo loaded successfully!');
-                console.log('Available libraries:', {
-                    Notyf: typeof Notyf !== 'undefined',
-                    hljs: typeof hljs !== 'undefined',
-                    ace: typeof ace !== 'undefined',
-                    Split: typeof Split !== 'undefined'
-                });
+                const startupOutput = document.getElementById('helper-output');
+                if (startupOutput) {
+                    startupOutput.innerHTML = \`<strong>Injected Libraries Demo loaded successfully.</strong><br><pre>\${JSON.stringify({
+                        Notyf: typeof Notyf !== 'undefined',
+                        hljs: typeof hljs !== 'undefined',
+                        ace: typeof ace !== 'undefined',
+                        Split: typeof Split !== 'undefined'
+                    }, null, 2)}</pre>\`;
+                }
             </script>
         `;
     }

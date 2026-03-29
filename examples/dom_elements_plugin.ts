@@ -86,7 +86,11 @@ export default class DOMElementsExamplePlugin extends FDO_SDK implements FDOInte
         const option3 = new DOMInput("", {}).createOption("Option B", "b");
         const option4 = new DOMInput("", {}).createOption("Option C", "c");
         const select = domInput.createSelect([option1, option2, option3, option4], () => {
-            console.log("Selection changed");
+            const selected = document.getElementById("example-select");
+            const statusNode = document.getElementById("example-select-status");
+            if (selected && statusNode) {
+                statusNode.textContent = `Selected: ${(selected as HTMLSelectElement).value || "none"}`;
+            }
         });
 
         const groupOpt1 = new DOMInput("", {}).createOption("Item 1", "1");
@@ -115,6 +119,7 @@ export default class DOMElementsExamplePlugin extends FDO_SDK implements FDOInte
             definitionList,
             "<h2>Example 6: Select Dropdown</h2>",
             select,
+            "<p id='example-select-status'>Selected: none</p>",
             "<h2>Example 7: Grouped Select</h2>",
             groupedSelect,
             footer
