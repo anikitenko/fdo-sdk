@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.0.22...fdo-sdk-v1.1.0) (2026-03-29)
+
+
+### Features
+
+* Implement enhanced error handling with decorators ([ed9b98f](https://github.com/anikitenko/fdo-sdk/commit/ed9b98f6a5667626edb33743f712560ad838a298))
+* Implement enhanced error handling with decorators ([77edc9f](https://github.com/anikitenko/fdo-sdk/commit/77edc9fbc1ac636aa46a2cfd57150a6db4220530))
+* initialize spec-kit structure with copilot integration ([ba8054e](https://github.com/anikitenko/fdo-sdk/commit/ba8054e33de408bade3a073e1943231cc3186e1d))
+
+
+### Bug Fixes
+
+* correct constitution dates to 2025-10-27 ([2c95634](https://github.com/anikitenko/fdo-sdk/commit/2c956343f09258c66169f53ad47f99a927f9af0b))
+* remove duplicate memory/constitution.md from root ([d596aba](https://github.com/anikitenko/fdo-sdk/commit/d596aba484e614cc29864eb05355dceddc50f2fd))
+
 ## [Unreleased]
 
 ### Added
