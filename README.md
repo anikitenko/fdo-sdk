@@ -195,6 +195,7 @@ The package includes a `prepublishOnly` script that automatically runs tests and
 - Release automation (`.github/workflows/release-please.yml`) runs on `main` and:
   - opens/updates a release PR with version and changelog changes
   - creates a `v*` git tag when that release PR is merged
+- `CHANGELOG.md` is updated automatically by release-please during release PR updates.
 - Publish (`.github/workflows/publish.yml`) runs on `v*` tag push and publishes to npm with provenance.
 
 Typical fully automated flow:
