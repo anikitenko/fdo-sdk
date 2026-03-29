@@ -48,7 +48,7 @@ jobs:
           ' "$ID_TOKEN"
 
       - run: npm ci
-      - run: npm test -- --runInBand
+      - run: npm test
       - run: npm run test:examples
       - run: npm run build
       - run: npm run verify:pack
