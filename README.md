@@ -50,7 +50,8 @@ All DOM classes support:
 - **FDO_SDK Base Class**: Abstract base class with lifecycle hooks (init, render)
 - **IPC Communication**: Message-based communication between plugin workers and main application
 - **Data Persistence**: Plugin-scoped storage backends (in-memory, JSON file-based)
-- **System Integration**: Logging, file operations, and privilege elevation
+- **Capability-Gated Integration**: Host-granted capabilities for privileged SDK paths
+- **Contract Validation**: Runtime validators for metadata, host/UI envelopes, and privileged action payloads
 
 ### Injected Libraries
 
@@ -117,6 +118,36 @@ See `examples/example_plugin.ts` for a basic plugin example.
 
 See `examples/dom_elements_plugin.ts` for comprehensive examples of using the new DOM element creation capabilities including tables, media, semantic HTML, lists, and form controls.
 
+See `examples/08-privileged-actions-plugin.ts` for host privileged action request flow (`createBackendReq`) with correlation IDs and stable response envelope handling.
+
+## Capability And Privileged Actions Model
+
+The SDK uses explicit host-granted capabilities from `PLUGIN_INIT.content.capabilities` (validated at runtime).
+
+Core capabilities:
+
+- `storage.json` - required for `PluginRegistry.useStore("json")`
+- `sudo.prompt` - required for `runWithSudo(...)`
+- `system.hosts.write` - required for host-mediated hosts updates and scoped privileged fs API
+- `system.fs.scope.<scope-id>` - host-defined scoped permission for `system.fs.mutate`
+
+Privileged action contracts:
+
+- `system.hosts.write`
+- `system.fs.mutate`
+
+Public helpers exported from root package:
+
+- `validateHostPrivilegedActionRequest(...)`
+- `createHostsWriteActionRequest(...)`
+- `createFilesystemMutateActionRequest(...)`
+- `createFilesystemScopeCapability(...)`
+
+Design rule:
+
+- plugin runtime filesystem writes remain constrained by host policy (`PLUGIN_HOME`)
+- external privileged writes must be host-mediated, scoped, and auditable
+
 ## Storage Notes
 
 - `PluginRegistry.useStore("default")` returns an in-memory store scoped to the active plugin.
@@ -155,6 +186,7 @@ init(): void {
 
 - The SDK exposes a reserved diagnostics handler: `PluginRegistry.DIAGNOSTICS_HANDLER` (`"__sdk.getDiagnostics"`).
 - Hosts can query runtime health/capabilities/notifications via a `UI_MESSAGE` request without adding custom plugin handlers.
+- Diagnostics include capability grant and usage/denial counters for permission auditing.
 
 Example host request payload:
 
@@ -222,6 +254,7 @@ git push origin main --follow-tags
 - See [docs/API_STABILITY.md](./docs/API_STABILITY.md) for stable vs internal API rules and semver expectations
 - See [docs/SAFE_PLUGIN_AUTHORING.md](./docs/SAFE_PLUGIN_AUTHORING.md) for backend/UI/runtime-safe authoring practices, logging, and storage usage
 - See [docs/EXTENSION_POINTS.md](./docs/EXTENSION_POINTS.md) for supported plugin extension points and anti-patterns
+- See [docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md](./docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md) for privileged action request/response contracts, scope model, and host enforcement guidance
 
 ## License
 
