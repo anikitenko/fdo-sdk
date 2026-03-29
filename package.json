@@ -49,6 +49,7 @@
     "examples"
   ],
   "scripts": {
+    "prepare": "husky",
     "build": "webpack --config webpack.config.cjs",
     "build:types": "tsc --project tsconfig.build.json",
     "test:examples": "tsc --project examples/tsconfig.json --noEmit",
@@ -57,12 +58,16 @@
     "prepack": "npm run build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose",
     "coverage:open": "npx opn coverage/lcov-report/index.html || true",
     "prepublishOnly": "npm test && npm run test:examples && npm run build"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "@types/write-file-atomic": "^4.0.3",
     "@vitest/coverage-v8": "^4.1.2",
+    "husky": "^9.1.7",
     "ts-loader": "^9.5.4",
     "ts-morph": "^27.0.2",
     "typescript": "^6.0.2",
