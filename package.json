@@ -50,17 +50,19 @@
   ],
   "scripts": {
     "prepare": "husky",
-    "build": "webpack --config webpack.config.cjs",
+    "build": "npm run build:bundle && npm run build:types",
+    "build:bundle": "webpack --config webpack.config.cjs",
     "build:types": "tsc --project tsconfig.build.json",
     "test:examples": "tsc --project examples/tsconfig.json --noEmit",
-    "verify:pack": "node scripts/verify-pack-dry-run.mjs",
-    "prebuild": "npm run build:types",
-    "prepack": "npm run build",
+    "verify:types:local": "node scripts/verify-types-local.mjs",
+    "verify:types:pack": "node scripts/verify-types-pack.mjs",
+    "verify:pack": "npm run verify:types:pack",
+    "prepack": "npm run build && npm run verify:types:local",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose",
     "coverage:open": "npx opn coverage/lcov-report/index.html || true",
-    "prepublishOnly": "npm test && npm run test:examples && npm run build"
+    "prepublishOnly": "npm test && npm run test:examples && npm run build && npm run verify:pack"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
