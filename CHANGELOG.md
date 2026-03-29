@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.0.22...fdo-sdk-v1.1.0) (2026-03-29)
+## [1.1.0](https://github.com/anikitenko/fdo-sdk/compare/v1.0.22...v1.1.0) (2026-03-29)
 
 
 ### Features
@@ -19,8 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * correct constitution dates to 2025-10-27 ([2c95634](https://github.com/anikitenko/fdo-sdk/commit/2c956343f09258c66169f53ad47f99a927f9af0b))
 * remove duplicate memory/constitution.md from root ([d596aba](https://github.com/anikitenko/fdo-sdk/commit/d596aba484e614cc29864eb05355dceddc50f2fd))
-
-## [Unreleased]
 
 ### Added
 
@@ -51,6 +49,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - encoding allowlist (`utf8`, `base64`) for write/append operations
   - scope format validation (`^[a-z0-9][a-z0-9._-]*$`)
 - Updated privileged action contract docs with `createBackendReq` + `correlationId` usage and stable response envelope guidance.
+
+## [Unreleased]
+
+### Changed
+
+- Release automation is managed by Release Please (`.github/workflows/release-please.yml`), including automated versioning and changelog updates on release PRs.
 
 ## [1.0.19] - 2025-11-11
 
