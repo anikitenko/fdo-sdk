@@ -1,6 +1,11 @@
 import { PluginMetadata } from "../PluginMetadata";
 import { MESSAGE_TYPE } from "../enums";
 import { BLUEPRINT_V6_ICON_NAMES, isBlueprintV6IconName } from "./blueprintIcons";
+import {
+    FilesystemMutateActionRequest,
+    HostPrivilegedActionRequest,
+    PluginCapability,
+} from "../types";
 
 export interface HostMessageEnvelope {
     message: MESSAGE_TYPE;
@@ -11,6 +16,16 @@ export interface UIMessagePayload {
     handler?: string;
     content?: unknown;
 }
+
+export interface PluginInitPayload {
+    apiVersion?: string;
+    capabilities?: PluginCapability[];
+}
+
+const KNOWN_PLUGIN_CAPABILITIES = new Set<PluginCapability>(["storage.json", "sudo.prompt", "system.hosts.write"]);
+const HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE = "system.hosts.write";
+const HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE = "system.fs.mutate";
+const FS_SCOPE_CAPABILITY_PREFIX = "system.fs.scope.";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object";
@@ -169,4 +184,186 @@ export function validateUIMessagePayload(payload: unknown): UIMessagePayload {
         handler: payload.handler as string | undefined,
         content: payload.content,
     };
+}
+
+export function validatePluginInitPayload(payload: unknown): PluginInitPayload {
+    if (payload === undefined) {
+        return {};
+    }
+
+    if (!isRecord(payload)) {
+        throw new Error("Plugin init payload must be an object.");
+    }
+
+    if (payload.apiVersion !== undefined && typeof payload.apiVersion !== "string") {
+        throw new Error('Plugin init payload field "apiVersion" must be a string when provided.');
+    }
+
+    if (payload.capabilities !== undefined) {
+        if (!Array.isArray(payload.capabilities) || payload.capabilities.some((item) => typeof item !== "string")) {
+            throw new Error('Plugin init payload field "capabilities" must be an array of strings when provided.');
+        }
+        for (const capability of payload.capabilities) {
+            if (
+                !KNOWN_PLUGIN_CAPABILITIES.has(capability as PluginCapability)
+                && !capability.startsWith(FS_SCOPE_CAPABILITY_PREFIX)
+            ) {
+                throw new Error(`Plugin init payload capability "${capability}" is not supported by this SDK version.`);
+            }
+        }
+    }
+
+    return {
+        apiVersion: payload.apiVersion as string | undefined,
+        capabilities: payload.capabilities as PluginCapability[] | undefined,
+    };
+}
+
+function isValidHostName(value: string): boolean {
+    return /^[a-zA-Z0-9.-]+$/.test(value) && !value.startsWith(".") && !value.endsWith(".");
+}
+
+function isValidIpAddress(value: string): boolean {
+    const ipv4 = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+    const ipv6 = /^[0-9a-fA-F:]+$/;
+    return ipv4.test(value) || ipv6.test(value);
+}
+
+function isAbsolutePath(value: string): boolean {
+    return value.startsWith("/") || /^[a-zA-Z]:\\/.test(value);
+}
+
+function isValidScopeId(value: string): boolean {
+    return /^[a-z0-9][a-z0-9._-]*$/.test(value);
+}
+
+function validateHostsWriteActionRequest(payload: Record<string, unknown>): HostPrivilegedActionRequest {
+    if (!isRecord(payload.payload)) {
+        throw new Error('Host privileged action "payload" must be an object.');
+    }
+
+    const candidatePayload = payload.payload as Record<string, unknown>;
+    const { records, dryRun, tag } = candidatePayload;
+
+    if (!Array.isArray(records) || records.length === 0) {
+        throw new Error('Host privileged action payload field "records" must be a non-empty array.');
+    }
+
+    for (let index = 0; index < records.length; index += 1) {
+        const record = records[index];
+        if (!isRecord(record)) {
+            throw new Error(`Host privileged action payload record at index ${index} must be an object.`);
+        }
+        if (typeof record.address !== "string" || !isValidIpAddress(record.address)) {
+            throw new Error(`Host privileged action payload record at index ${index} has invalid "address".`);
+        }
+        if (typeof record.hostname !== "string" || !isValidHostName(record.hostname)) {
+            throw new Error(`Host privileged action payload record at index ${index} has invalid "hostname".`);
+        }
+        if (record.comment !== undefined && typeof record.comment !== "string") {
+            throw new Error(`Host privileged action payload record at index ${index} has invalid "comment".`);
+        }
+    }
+
+    if (dryRun !== undefined && typeof dryRun !== "boolean") {
+        throw new Error('Host privileged action payload field "dryRun" must be a boolean when provided.');
+    }
+
+    if (tag !== undefined && (typeof tag !== "string" || tag.trim().length === 0)) {
+        throw new Error('Host privileged action payload field "tag" must be a non-empty string when provided.');
+    }
+
+    return payload as HostPrivilegedActionRequest;
+}
+
+function validateFilesystemMutateActionRequest(payload: Record<string, unknown>): FilesystemMutateActionRequest {
+    if (!isRecord(payload.payload)) {
+        throw new Error('Host privileged action "payload" must be an object.');
+    }
+
+    const candidatePayload = payload.payload as Record<string, unknown>;
+
+    if (typeof candidatePayload.scope !== "string" || candidatePayload.scope.trim().length === 0) {
+        throw new Error('Host privileged action payload field "scope" must be a non-empty string.');
+    }
+    if (!isValidScopeId(candidatePayload.scope)) {
+        throw new Error('Host privileged action payload field "scope" must match /^[a-z0-9][a-z0-9._-]*$/.');
+    }
+
+    if (!Array.isArray(candidatePayload.operations) || candidatePayload.operations.length === 0) {
+        throw new Error('Host privileged action payload field "operations" must be a non-empty array.');
+    }
+
+    for (let index = 0; index < candidatePayload.operations.length; index += 1) {
+        const operation = candidatePayload.operations[index];
+        if (!isRecord(operation) || typeof operation.type !== "string") {
+            throw new Error(`Host privileged action operation at index ${index} is invalid.`);
+        }
+
+        switch (operation.type) {
+            case "mkdir":
+            case "remove": {
+                if (typeof operation.path !== "string" || !isAbsolutePath(operation.path)) {
+                    throw new Error(`Host privileged action operation at index ${index} has invalid "path".`);
+                }
+                break;
+            }
+            case "writeFile":
+            case "appendFile": {
+                if (typeof operation.path !== "string" || !isAbsolutePath(operation.path)) {
+                    throw new Error(`Host privileged action operation at index ${index} has invalid "path".`);
+                }
+                if (typeof operation.content !== "string") {
+                    throw new Error(`Host privileged action operation at index ${index} requires string "content".`);
+                }
+                if (
+                    operation.encoding !== undefined
+                    && operation.encoding !== "utf8"
+                    && operation.encoding !== "base64"
+                ) {
+                    throw new Error(`Host privileged action operation at index ${index} has invalid "encoding".`);
+                }
+                break;
+            }
+            case "rename": {
+                if (typeof operation.from !== "string" || !isAbsolutePath(operation.from)) {
+                    throw new Error(`Host privileged action operation at index ${index} has invalid "from".`);
+                }
+                if (typeof operation.to !== "string" || !isAbsolutePath(operation.to)) {
+                    throw new Error(`Host privileged action operation at index ${index} has invalid "to".`);
+                }
+                break;
+            }
+            default:
+                throw new Error(`Host privileged action operation at index ${index} has unsupported type "${operation.type}".`);
+        }
+    }
+
+    if (candidatePayload.dryRun !== undefined && typeof candidatePayload.dryRun !== "boolean") {
+        throw new Error('Host privileged action payload field "dryRun" must be a boolean when provided.');
+    }
+
+    if (candidatePayload.reason !== undefined && (typeof candidatePayload.reason !== "string" || candidatePayload.reason.trim().length === 0)) {
+        throw new Error('Host privileged action payload field "reason" must be a non-empty string when provided.');
+    }
+
+    return payload as FilesystemMutateActionRequest;
+}
+
+export function validateHostPrivilegedActionRequest(payload: unknown): HostPrivilegedActionRequest {
+    if (!isRecord(payload)) {
+        throw new Error("Host privileged action request must be an object.");
+    }
+
+    if (payload.action === HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE) {
+        return validateHostsWriteActionRequest(payload);
+    }
+
+    if (payload.action === HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE) {
+        return validateFilesystemMutateActionRequest(payload);
+    }
+
+    throw new Error(
+        `Host privileged action "action" must be "${HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE}" or "${HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE}".`
+    );
 }

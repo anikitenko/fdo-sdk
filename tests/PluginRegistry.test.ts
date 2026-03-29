@@ -6,6 +6,8 @@ import { Logger } from "../src/Logger";
 import { StoreDefault } from "../src/StoreDefault";
 import { StoreJson } from "../src/StoreJson";
 import { NotificationManager } from "../src/utils/NotificationManager";
+import { resetCapabilityStateForTests } from "../src/utils/capabilities";
+import { resetDeprecationWarningsForTests } from "../src/utils/deprecation";
 
 describe("PluginRegistry", () => {
     let mockLogger: jest.SpyInstance;
@@ -23,6 +25,9 @@ describe("PluginRegistry", () => {
         PluginRegistry.clearAllHandlers();
         PluginRegistry.clearAllStoreInstances();
         PluginRegistry.configureStorage({ rootDir: undefined });
+        PluginRegistry.configureCapabilities({ granted: [] });
+        resetCapabilityStateForTests();
+        resetDeprecationWarningsForTests();
         NotificationManager.getInstance().clearNotifications();
     });
 
@@ -30,6 +35,8 @@ describe("PluginRegistry", () => {
         delete (global as any).process.parentPort;
         PluginRegistry.clearPlugin();
         PluginRegistry.clearAllStoreInstances();
+        resetCapabilityStateForTests();
+        resetDeprecationWarningsForTests();
         NotificationManager.getInstance().clearNotifications();
     });
 
@@ -370,6 +377,7 @@ describe("PluginRegistry", () => {
         expect(diagnostics.health.handlerCount).toBe(1);
         expect(diagnostics.capabilities.registeredHandlers).toContain("ping");
         expect(diagnostics.capabilities.diagnosticsHandler).toBe(PluginRegistry.DIAGNOSTICS_HANDLER);
+        expect(diagnostics.capabilities.permissions.granted).toEqual([]);
         expect(diagnostics.notifications.recent).toHaveLength(1);
         expect(diagnostics.notifications.recent[0].message).toBe("diagnostics-ready");
     });
@@ -403,6 +411,32 @@ describe("PluginRegistry", () => {
         expect(diagnostics.health.lastErrorMessage).toBe("boom");
     });
 
+    test("should allow compatible host API versions by major", () => {
+        expect(() => PluginRegistry.assertHostApiCompatibility("1.2.3")).not.toThrow();
+    });
+
+    test("should reject incompatible host API major versions", () => {
+        expect(() => PluginRegistry.assertHostApiCompatibility("2.0.0")).toThrow(
+            'Incompatible plugin API major version. Host requested "2.0.0", plugin SDK provides "1.0.0".'
+        );
+    });
+
+    test("should reject non-semver host API versions", () => {
+        expect(() => PluginRegistry.assertHostApiCompatibility("v1")).toThrow(
+            'Host API version "v1" must follow semantic version format "major.minor.patch".'
+        );
+    });
+
+    test("should log deprecation warning once for configureCapabilityPolicy", () => {
+        PluginRegistry.configureCapabilityPolicy({ granted: ["storage.json"] });
+        PluginRegistry.configureCapabilityPolicy({ granted: ["storage.json"] });
+
+        const deprecationWarnCalls = mockLogger.mock.calls.filter(([message]) =>
+            String(message).includes("[DEPRECATED:PluginRegistry.configureCapabilityPolicy]")
+        );
+        expect(deprecationWarnCalls).toHaveLength(1);
+    });
+
     describe("Store management", () => {
         const registerScopedPlugin = () => {
             class ScopedPlugin extends FDO_SDK {
@@ -434,6 +468,7 @@ describe("PluginRegistry", () => {
         test("should return specific store when using useStore with valid store name", () => {
             registerScopedPlugin();
             PluginRegistry.configureStorage({ rootDir: "/tmp/fdo-sdk-test-storage" });
+            PluginRegistry.configureCapabilities({ granted: ["storage.json"] });
             const store = PluginRegistry.useStore("json");
             expect(store).not.toBe(StoreJson);
             expect((store as any)._filePath).toContain("/tmp/fdo-sdk-test-storage/tests-scoped-plugin/store.json");
@@ -512,6 +547,7 @@ describe("PluginRegistry", () => {
 
         test("should require explicit storage root for json store", () => {
             registerScopedPlugin();
+            PluginRegistry.configureCapabilities({ granted: ["storage.json"] });
 
             expect(() => PluginRegistry.useStore("json")).toThrow(
                 "JSON store requires a configured storage root. Set PluginRegistry.configureStorage({ rootDir }) or FDO_SDK_STORAGE_ROOT."
@@ -521,10 +557,21 @@ describe("PluginRegistry", () => {
         test("should allow JSON store root from environment", () => {
             process.env.FDO_SDK_STORAGE_ROOT = "/tmp/fdo-sdk-env-storage";
             registerScopedPlugin();
+            PluginRegistry.configureCapabilities({ granted: ["storage.json"] });
 
             const store = PluginRegistry.useStore("json");
 
             expect((store as any)._filePath).toContain("/tmp/fdo-sdk-env-storage/tests-scoped-plugin/store.json");
+        });
+
+        test("should require storage.json capability before creating json store", () => {
+            registerScopedPlugin();
+            PluginRegistry.configureStorage({ rootDir: "/tmp/fdo-sdk-test-storage" });
+            PluginRegistry.configureCapabilities({ granted: [] });
+
+            expect(() => PluginRegistry.useStore("json")).toThrow(
+                'Capability "storage.json" is required to use the JSON persistent store. Configure PluginRegistry.configureCapabilities({ granted: ["storage.json"] }) in the host before plugin initialization.'
+            );
         });
 
         test("should register store factories for plugin-scoped custom stores", () => {

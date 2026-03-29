@@ -9,6 +9,13 @@ export class DOMSemantic extends DOM {
         super();
     }
 
+    private buildProps(
+        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }>,
+        id?: string
+    ): Record<string, any> {
+        return this.applyCustomAttributes(this.combineProperties("", options, id), options);
+    }
+
     /**
      * Creates an article element.
      * @param children - The children of the article.
@@ -24,14 +31,7 @@ export class DOMSemantic extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("article", props, children);
     }
 
@@ -50,14 +50,7 @@ export class DOMSemantic extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("section", props, children);
     }
 
@@ -76,14 +69,7 @@ export class DOMSemantic extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("nav", props, children);
     }
 
@@ -102,14 +88,7 @@ export class DOMSemantic extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("header", props, children);
     }
 
@@ -128,14 +107,7 @@ export class DOMSemantic extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("footer", props, children);
     }
 
@@ -154,14 +126,7 @@ export class DOMSemantic extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("aside", props, children);
     }
 
@@ -180,14 +145,7 @@ export class DOMSemantic extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("main", props, children);
     }
 }

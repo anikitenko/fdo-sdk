@@ -21,6 +21,8 @@ jest.mock("../src/Logger", () => ({
 jest.mock("../src/PluginRegistry", () => ({
     PluginRegistry: {
         DIAGNOSTICS_HANDLER: "__sdk.getDiagnostics",
+        assertHostApiCompatibility: jest.fn(),
+        configureCapabilities: jest.fn(),
         callInit: jest.fn(),
         callRenderer: jest.fn().mockReturnValue("mock_rendered_output"),
         callHandler: jest.fn().mockReturnValue("mock_handler_output"),
@@ -89,10 +91,52 @@ describe("Communicator", () => {
 
     test("should handle PLUGIN_INIT event", () => {
         communicator.emit(MESSAGE_TYPE.PLUGIN_INIT);
+        expect(PluginRegistry.assertHostApiCompatibility).toHaveBeenCalledWith(undefined);
+        expect(PluginRegistry.configureCapabilities).toHaveBeenCalledWith({ granted: [] });
         expect(PluginRegistry.callInit).toHaveBeenCalled();
         expect(mockPostMessage).toHaveBeenCalledWith({
             type: MESSAGE_TYPE.PLUGIN_INIT,
             response: { quickActions: ["action1", "action2"], sidePanelActions: ["panel1", "panel2"] },
+        });
+    });
+
+    test("should validate and pass plugin init apiVersion compatibility", () => {
+        communicator.emit(MESSAGE_TYPE.PLUGIN_INIT, { apiVersion: "1.4.0", capabilities: ["sudo.prompt"] });
+
+        expect(PluginRegistry.assertHostApiCompatibility).toHaveBeenCalledWith("1.4.0");
+        expect(PluginRegistry.configureCapabilities).toHaveBeenCalledWith({ granted: ["sudo.prompt"] });
+        expect(PluginRegistry.callInit).toHaveBeenCalled();
+    });
+
+    test("should return init failure when plugin init payload is invalid", () => {
+        communicator.emit(MESSAGE_TYPE.PLUGIN_INIT, "invalid-payload" as any);
+
+        expect(PluginRegistry.callInit).not.toHaveBeenCalled();
+        expect(mockPostMessage).toHaveBeenCalledWith({
+            type: MESSAGE_TYPE.PLUGIN_INIT,
+            response: {
+                quickActions: [],
+                sidePanelActions: null,
+                error: "Plugin init payload must be an object.",
+            },
+        });
+    });
+
+    test("should return init failure when apiVersion is incompatible", () => {
+        (PluginRegistry.assertHostApiCompatibility as jest.Mock).mockImplementationOnce(() => {
+            throw new Error("Incompatible plugin API major version. Host requested \"2.0.0\", plugin SDK provides \"1.0.0\".");
+        });
+
+        communicator.emit(MESSAGE_TYPE.PLUGIN_INIT, { apiVersion: "2.0.0" });
+
+        expect(PluginRegistry.callInit).not.toHaveBeenCalled();
+        expect(mockPostMessage).toHaveBeenCalledWith({
+            type: MESSAGE_TYPE.PLUGIN_INIT,
+            response: {
+                quickActions: [],
+                sidePanelActions: null,
+                error: "Incompatible plugin API major version. Host requested \"2.0.0\", plugin SDK provides \"1.0.0\".",
+            },
         });
     });
 

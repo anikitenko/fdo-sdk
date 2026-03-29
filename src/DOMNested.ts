@@ -9,6 +9,13 @@ export class DOMNested extends DOM {
         super();
     }
 
+    private buildProps(
+        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }>,
+        id?: string
+    ): Record<string, any> {
+        return this.applyCustomAttributes(this.combineProperties("", options, id), options);
+    }
+
     /**
      * Creates a new div block
      * @param children - The children of the div block.
@@ -26,15 +33,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("div", props, children);
     }
 
@@ -55,15 +54,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("ul", props, children);
     }
 
@@ -82,15 +73,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("li", props, children)
     }
 
@@ -109,15 +92,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("legend", props, children);
     }
 
@@ -136,15 +111,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("fieldset", props, children);
     }
 
@@ -163,15 +130,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("form", props, children);
     }
 
@@ -192,15 +151,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("ol", props, children);
     }
 
@@ -221,15 +172,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("dl", props, children);
     }
 
@@ -248,15 +191,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("dt", props, children);
     }
 
@@ -275,15 +210,7 @@ export class DOMNested extends DOM {
         options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
-        const props = this.combineProperties("", options, id)
-
-        // Merge custom attributes (like data-static) into props
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value
-            }
-        }
-
+        const props = this.buildProps(options, id);
         return this.createElement("dd", props, children);
     }
 }

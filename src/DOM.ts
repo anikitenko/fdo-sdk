@@ -81,7 +81,7 @@ export class DOM {
      * Creates a generic HTML element.
      * @param tag - The HTML tag name (e.g., 'div', 'button', 'p')
      * @param props - An object of attributes and event listeners
-     * @param children - Nested elements or text content
+     * @param children - Trusted JSX-like child fragments. Use DOMText helpers for untrusted/user text.
      * @returns {string} - A virtual DOM element
      * @example const div = createElement('div', { className: 'container' }, 'Hello, World!');
      * @uiName Create element
@@ -142,19 +142,20 @@ export class DOM {
      */
     public createAttributes(props: Record<string, any>): string {
         const booleanAttrs = new Set([
-            "checked", "disabled", "readonly", "required", "autoplay", "controls",
+            "checked", "disabled", "readonly", "readOnly", "required", "autoplay", "controls",
             "hidden", "multiple", "selected", "default", "open", "loop"
         ])
 
         return Object.entries(props)
-            .filter(([key, value]) => !(key.startsWith("on") && typeof value === "function"))
+            .filter(([key, value]) => key !== "customAttributes" && !(key.startsWith("on") && typeof value === "function"))
             .map(([key, value]) => {
+                const normalizedKey = this.normalizeJSXPropName(key);
                 if (typeof value === "boolean") {
-                    return booleanAttrs.has(key)
-                        ? (value ? key : "") // render as `checked` if true, skip if false
-                        : `${key}="${value}"` // custom boolean-like (e.g., data-*) as string
+                    return booleanAttrs.has(normalizedKey)
+                        ? (value ? normalizedKey : "") // render as `checked` if true, skip if false
+                        : `${normalizedKey}="${this.escapeJSXAttributeValue(value)}"` // custom boolean-like (e.g., data-*) as string
                 }
-                return `${key}="${value}"`
+                return `${normalizedKey}="${this.escapeJSXAttributeValue(value)}"`
             })
             .filter(Boolean)
             .join(" ")
@@ -170,7 +171,7 @@ export class DOM {
     public createOnAttributes(props: Record<string, any>): string {
         return Object.entries(props)
             .filter(([key, value]) => (key.startsWith("on") && typeof value === "function"))
-            .map(([key, value]) => `${key}={${value.toString()}}`)
+            .map(([key, value]) => `${this.normalizeJSXPropName(key)}={${value.toString()}}`)
             .join(' ').trim();
     }
 
@@ -182,6 +183,74 @@ export class DOM {
      */
     public mergeOptions(userOptions?: Partial<typeof DOM.DEFAULT_OPTIONS>): Record<string, any> {
         return {...DOM.DEFAULT_OPTIONS, ...userOptions};
+    }
+
+    /**
+     * Merges user provided custom attributes into element props.
+     * @param props - Existing element props.
+     * @param options - Options that can include customAttributes.
+     * @returns {Record<string, any>} - Merged props.
+     * @uiSkip
+     */
+    protected applyCustomAttributes(
+        props: Record<string, any>,
+        options?: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }>
+    ): Record<string, any> {
+        if (!options?.customAttributes) {
+            return props;
+        }
+
+        for (const [attr, value] of Object.entries(options.customAttributes)) {
+            props[this.normalizeJSXPropName(attr)] = value;
+        }
+
+        return props;
+    }
+
+    /**
+     * Escapes content intended for JSX text-node context.
+     * @param value - Raw value to escape.
+     * @returns {string} - JSX-safe escaped text.
+     * @uiSkip
+     */
+    protected escapeJSXText(value: unknown): string {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/{/g, "&#123;")
+            .replace(/}/g, "&#125;");
+    }
+
+    /**
+     * Escapes values intended for quoted JSX attribute context.
+     * @param value - Raw value to escape.
+     * @returns {string} - JSX-safe escaped attribute value.
+     * @uiSkip
+     */
+    protected escapeJSXAttributeValue(value: unknown): string {
+        return this.escapeJSXText(value)
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    /**
+     * Normalizes known HTML aliases into JSX prop naming.
+     * @param key - Raw attribute/property name.
+     * @returns {string} - JSX-normalized prop name.
+     * @uiSkip
+     */
+    protected normalizeJSXPropName(key: string): string {
+        if (key === "class") {
+            return "className";
+        }
+        if (key === "for") {
+            return "htmlFor";
+        }
+        if (key === "readonly") {
+            return "readOnly";
+        }
+        return key;
     }
 }
 

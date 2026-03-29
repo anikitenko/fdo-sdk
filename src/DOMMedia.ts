@@ -28,13 +28,7 @@ export class DOMMedia extends DOM {
         id?: string,
         otherProps?: Record<string, any>
     ): string {
-        const props = this.combineProperties("", options, id);
-
-        if (options.customAttributes) {
-            for (const [attr, value] of Object.entries(options.customAttributes)) {
-                props[attr] = value;
-            }
-        }
+        const props = this.applyCustomAttributes(this.combineProperties("", options, id), options);
 
         return this.createElement("img", {...props, src, alt, ...otherProps});
     }

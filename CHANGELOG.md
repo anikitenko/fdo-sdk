@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Host privileged action SDK contracts and root exports for FDO host integration:
+  - `validateHostPrivilegedActionRequest`
+  - `createHostsWriteActionRequest(request)`
+  - `createFilesystemMutateActionRequest(request)`
+  - `createFilesystemScopeCapability(scopeId)`
+- New capability typing for scoped privileged filesystem access:
+  - `system.hosts.write`
+  - `system.fs.scope.<scope-id>`
+- New privileged action typing:
+  - `system.hosts.write`
+  - `system.fs.mutate`
+- Developer UX helpers for privileged request construction and validation:
+  - `validatePrivilegedActionRequest`
+  - `requireFilesystemScopeCapability`
+- Example plugin for privileged request flow:
+  - `examples/08-privileged-actions-plugin.ts`
+
+### Changed
+
+- Strengthened host privileged action validator rules with deterministic errors:
+  - action enum enforcement
+  - action-specific payload shape checks
+  - absolute-path enforcement for filesystem mutate operations
+  - operation allowlist (`mkdir`, `writeFile`, `appendFile`, `rename`, `remove`)
+  - encoding allowlist (`utf8`, `base64`) for write/append operations
+  - scope format validation (`^[a-z0-9][a-z0-9._-]*$`)
+- Updated privileged action contract docs with `createBackendReq` + `correlationId` usage and stable response envelope guidance.
+
 ## [1.0.19] - 2025-11-11
 
 ### Changed

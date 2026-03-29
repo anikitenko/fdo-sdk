@@ -17,12 +17,53 @@ The examples are numbered to indicate learning progression:
 5. **05-advanced-dom-plugin.ts** - Advanced DOM generation with styling
 6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
 7. **07-injected-libraries-demo.ts** - Demonstrates all automatically injected libraries and helper functions
+8. **08-privileged-actions-plugin.ts** - Host privileged action flow (`createBackendReq`) with `correlationId` and stable response handling
+
+## Scenario Reference Fixtures
+
+Use these four files as the canonical production-oriented reference set:
+
+1. **fixtures/minimal-plugin.fixture.ts**
+   Pattern: smallest valid plugin scaffold with stable lifecycle behavior.
+2. **fixtures/error-handling-plugin.fixture.ts**
+   Pattern: deterministic `@handleError` behavior with safe render fallback UI.
+3. **fixtures/storage-plugin.fixture.ts**
+   Pattern: plugin-scoped default/json store usage with graceful JSON-store unavailability handling.
+4. **fixtures/advanced-ui-plugin.fixture.ts**
+   Pattern: advanced semantic/table/action UI composition with DOM helper classes.
+
+For new plugin authoring and AI-assisted scaffolding/refactoring, prefer these fixtures first.
 
 ## Additional Examples
 
 - **dom_elements_plugin.ts** - Comprehensive examples of DOM element creation
 - **example_plugin.ts** - Legacy example plugin (deprecated, use numbered examples instead)
 - **metadata-template.ts** - Template for plugin metadata structure
+
+## Privileged Action Envelope Pattern
+
+For host-mediated privileged operations, use a stable response envelope and correlation IDs:
+
+```ts
+const correlationId = "privileged-action-" + Date.now();
+const response = await window.createBackendReq("requestPrivilegedAction", {
+  correlationId,
+  request: createFilesystemMutateActionRequest({
+    action: "system.fs.mutate",
+    payload: {
+      scope: "etc-hosts",
+      dryRun: true,
+      operations: [{ type: "writeFile", path: "/etc/hosts", content: "# managed", encoding: "utf8" }]
+    }
+  })
+});
+
+if (response?.ok) {
+  // { ok: true, correlationId, result }
+} else {
+  // { ok: false, correlationId, error, code? }
+}
+```
 
 ## Injected Libraries
 

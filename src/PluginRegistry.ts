@@ -9,6 +9,7 @@ import {
     QuickAction,
     SerializedRenderPayload,
     SidePanelConfig,
+    CapabilityConfiguration,
     StorageConfiguration,
     StoreFactory,
     StoreFactoryContext,
@@ -20,6 +21,8 @@ import { createDefaultStore } from "./StoreDefault";
 import { createJsonStore } from "./StoreJson";
 import { validatePluginMetadata, validateSerializedRenderPayload } from "./utils/contracts";
 import { NotificationManager } from "./utils/NotificationManager";
+import { configureCapabilities, getCapabilityDiagnostics, requireCapability } from "./utils/capabilities";
+import { emitDeprecationWarning } from "./utils/deprecation";
 
 type PluginWithMetadata = FDO_SDK & { metadata: PluginMetadata };
 type PluginWithQuickActions = FDO_SDK & { defineQuickActions: () => QuickAction[] };
@@ -56,6 +59,23 @@ export class PluginRegistry {
         };
     }
 
+    public static configureCapabilities(configuration: CapabilityConfiguration): void {
+        configureCapabilities(configuration);
+    }
+
+    public static configureCapabilityPolicy(configuration: CapabilityConfiguration): void {
+        emitDeprecationWarning(
+            {
+                id: "PluginRegistry.configureCapabilityPolicy",
+                message: "PluginRegistry.configureCapabilityPolicy(...) is deprecated.",
+                replacement: "PluginRegistry.configureCapabilities(...)",
+                removeIn: "2.0.0",
+            },
+            (message) => this._logger.warn(message)
+        );
+        this.configureCapabilities(configuration);
+    }
+
     public static registerPlugin(plugin: FDO_SDK): void {
         const metadata = this.hasMetadata(plugin) ? validatePluginMetadata(plugin.metadata) : null;
         this.pluginMetadata = metadata;
@@ -85,6 +105,10 @@ export class PluginRegistry {
         }
 
         const context = this.getStoreContext();
+
+        if (storeName === "json") {
+            requireCapability("storage.json", "use the JSON persistent store");
+        }
 
         if (!this.storeInstances[context.pluginId]) {
             this.storeInstances[context.pluginId] = {};
@@ -136,6 +160,21 @@ export class PluginRegistry {
         } catch (error) {
             this.recordError(error, "plugin.init.error");
             throw error;
+        }
+    }
+
+    public static assertHostApiCompatibility(hostApiVersion?: string): void {
+        if (hostApiVersion === undefined) {
+            return;
+        }
+
+        const hostMajor = this.parseApiMajor(hostApiVersion, "Host");
+        const sdkMajor = this.parseApiMajor(FDO_SDK.API_VERSION, "SDK");
+
+        if (hostMajor !== sdkMajor) {
+            throw new Error(
+                `Incompatible plugin API major version. Host requested "${hostApiVersion}", plugin SDK provides "${FDO_SDK.API_VERSION}".`
+            );
         }
     }
 
@@ -199,6 +238,7 @@ export class PluginRegistry {
         }));
         const quickActionsCount = this.getQuickActions().length;
         const sidePanelConfig = this.getSidePanelConfig();
+        const permissions = getCapabilityDiagnostics();
 
         return {
             apiVersion: FDO_SDK.API_VERSION,
@@ -228,6 +268,7 @@ export class PluginRegistry {
                     capabilities: store.capabilities,
                     version: store.getVersion?.(),
                 })),
+                permissions,
             },
             notifications: {
                 count: NotificationManager.getInstance().count,
@@ -319,6 +360,15 @@ export class PluginRegistry {
 
     private static resolveStorageRoot(): string | undefined {
         return this.storageConfiguration.rootDir ?? process.env.FDO_SDK_STORAGE_ROOT;
+    }
+
+    private static parseApiMajor(version: string, source: "Host" | "SDK"): number {
+        const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+        if (!match) {
+            throw new Error(`${source} API version "${version}" must follow semantic version format "major.minor.patch".`);
+        }
+
+        return Number.parseInt(match[1], 10);
     }
 
     private static slugify(value: string): string {

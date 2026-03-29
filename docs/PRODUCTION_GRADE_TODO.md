@@ -15,6 +15,8 @@ This backlog is based on the current SDK implementation as of 2026-03-24. It foc
 - [x] Split ambient iframe host globals out of `src/index.ts` into a dedicated ambient declaration module.
 - [x] Added runtime validation for plugin metadata, serialized render payloads, inbound host messages, and `UI_MESSAGE` payloads.
 - [x] Added an integration-style test that drives `PLUGIN_INIT` and `PLUGIN_RENDER` through `Communicator`, `PluginRegistry`, and a real `FDO_SDK` subclass.
+- [x] Added host privileged action SDK contracts and validators for `system.hosts.write` and `system.fs.mutate`, including scoped capability typing (`system.fs.scope.<scope-id>`).
+- [x] Added privileged action developer UX helpers and reference examples for `createBackendReq` + `correlationId` flow with stable response envelope handling.
 
 ## Completed In FDO Host Review
 
@@ -88,26 +90,22 @@ This backlog is based on the current SDK implementation as of 2026-03-24. It foc
   Status note: this host contract has been verified in FDO and reflected in FDO's AI coding guidance, but the SDK docs themselves still need to say it explicitly.
   Action: document this explicitly so plugin authors and AI tools know they are targeting a React-hosted JSX DSL, not raw `innerHTML`.
 
-- [ ] Add escaping and syntax-safety rules for JSX string generation.
-  Current state: text content and attribute values are interpolated directly into markup strings that are later compiled as JSX.
-  Risk: plugin-generated content can break parsing, render incorrectly, or create unsafe code-generation edges.
-  Action: centralize escaping for text nodes and JSX attribute values, then add tests for quotes, braces, angle brackets, ampersands, and script-like content.
+- [x] Add escaping and syntax-safety rules for JSX string generation.
+  Completed: JSX escaping is now centralized in `DOM` for attribute values and text-node contexts (including quotes, braces, angle brackets, ampersands, and script-like content), with regression coverage added in `DOM`/`DOMText` tests.
 
-- [ ] Normalize JSX prop and event serialization through one serializer.
-  Current state: event handlers and props are generated ad hoc across the DOM helpers.
-  Action: define the exact FDO JSX contract once, including prop names such as `className` and `htmlFor`, and have all DOM helper classes delegate to it.
+- [x] Normalize JSX prop and event serialization through one serializer.
+  Completed: JSX prop/event serialization now flows through `DOM` serializers (`createAttributes`/`createOnAttributes`) with canonical alias normalization (`class` -> `className`, `for` -> `htmlFor`, `readonly` -> `readOnly`) and shared escaping rules.
 
-- [ ] Remove copy-pasted `customAttributes` merging across DOM helper classes.
-  Current state: `DOMNested`, `DOMSemantic`, `DOMTable`, and `DOMMedia` repeat the same merge logic in many methods.
-  Action: move this into a shared helper on `DOM` so new element types stay consistent and easier for humans and AI tools to extend safely.
+- [x] Remove copy-pasted `customAttributes` merging across DOM helper classes.
+  Completed: `customAttributes` merge behavior is now centralized in `DOM.applyCustomAttributes(...)` and reused by `DOMNested`, `DOMSemantic`, `DOMTable`, and `DOMMedia`.
 
-- [ ] Validate heading levels and element-specific invariants.
+- [x] Validate heading levels and element-specific invariants.
   Current state: `DOMText.createHText()` accepts any number and emits `h${level}` without range checks.
-  Action: guard invalid levels and document behavior for unsupported element variants.
+  Completed: `DOMText.createHText()` now enforces integer levels `1..6` and throws a clear error for invalid inputs; regression tests cover below-range, above-range, and non-integer values.
 
-- [ ] Clarify whether the DOM builder is trusted-markup-only or safe-by-default.
+- [x] Clarify whether the DOM builder is trusted-markup-only or safe-by-default.
   Current state: the API accepts raw child strings everywhere, which is flexible but ambiguous in a JSX compilation pipeline.
-  Action: either document that callers are responsible for supplying trusted JSX-safe content, or provide safe text APIs plus explicit raw-markup escape hatches.
+  Completed: docs now explicitly define the contract: generic DOM helpers consume trusted JSX-like child markup, while `DOMText` helpers are the safe-text path for untrusted/user content.
 
 ## P1: Logging And Observability
 
@@ -139,16 +137,16 @@ This backlog is based on the current SDK implementation as of 2026-03-24. It foc
 - [x] Verify all examples against the current public API in CI.
   Completed: example compilation is now enforced through `test:examples`, included in workflows and prepublish checks to prevent API drift in examples.
 
-- [ ] Convert examples into scenario-based reference fixtures.
-  Action: keep one minimal plugin, one error-handling plugin, one storage plugin, and one advanced UI plugin, each with a short explanation of the intended pattern.
+- [x] Convert examples into scenario-based reference fixtures.
+  Completed: canonical fixtures now exist under `examples/fixtures/` for minimal, error-handling, storage, and advanced UI scenarios, each with concise pattern intent; examples docs now point AI/plugin authors to this fixture set first.
 
 ## P3: Future Hardening
 
-- [ ] Add plugin API version negotiation.
-  Action: use `FDO_SDK.API_VERSION` as an actual compatibility gate instead of a static constant only.
+- [x] Add plugin API version negotiation.
+  Completed: `PLUGIN_INIT` now accepts optional `content.apiVersion`; the SDK validates it and enforces major-version compatibility against `FDO_SDK.API_VERSION`, returning a stable init error response on mismatch.
 
-- [ ] Add deprecation infrastructure.
-  Action: provide a structured way to mark APIs as deprecated, emit warnings, and point plugin authors to replacements.
+- [x] Add deprecation infrastructure.
+  Completed: added structured deprecation utilities (`emitDeprecationWarning`, `formatDeprecationMessage`) with once-per-id emission semantics, plus an SDK-hosted deprecated alias (`PluginRegistry.configureCapabilityPolicy`) that points callers to `configureCapabilities`.
 
-- [ ] Add capability-based permissions.
-  Action: make privileged features such as sudo prompts, storage access, and host integrations opt-in and auditable by the FDO application.
+- [x] Add capability-based permissions.
+  Completed: privileged operations are now capability-gated and auditable. Host grants are configured through `PLUGIN_INIT.content.capabilities`/`PluginRegistry.configureCapabilities`, `useStore("json")` requires `storage.json`, `runWithSudo(...)` requires `sudo.prompt`, and diagnostics now expose grants plus usage/denial counters.

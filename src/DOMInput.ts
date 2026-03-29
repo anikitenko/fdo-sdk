@@ -61,11 +61,10 @@ export class DOMInput extends DOM {
     public createSelect(children: any[], onChange?: Function): string {
         const props = this.combineProperties("", this.options, this.id);
         const selectProps = onChange ? {...props, onChange, ...this.props} : {...props, ...this.props};
-
         const attributes = this.createAttributes(selectProps);
         const onAttributes = onChange ? this.createOnAttributes(selectProps) : "";
         const content = this.flattenChildren(children).join('');
-        
+
         let openTag;
         if (attributes && onAttributes) {
             openTag = `<select ${attributes} ${onAttributes}>`;
@@ -76,7 +75,7 @@ export class DOMInput extends DOM {
         } else {
             openTag = `<select>`;
         }
-        
+
         return `${openTag}${content}</select>`;
     }
 
@@ -94,10 +93,9 @@ export class DOMInput extends DOM {
     public createOption(label: string, value: string, selected: boolean = false, otherProps?: Record<string, any>): string {
         const props = this.combineProperties("", this.options, this.id);
         const optionProps = {...props, value, selected, ...otherProps};
-
         const attributes = this.createAttributes(optionProps);
         const openTag = attributes ? `<option ${attributes}>` : `<option>`;
-        
+
         return `${openTag}${label}</option>`;
     }
 
@@ -116,11 +114,10 @@ export class DOMInput extends DOM {
     public createOptgroup(label: string, children: any[], otherProps?: Record<string, any>): string {
         const props = this.combineProperties("", this.options, this.id);
         const optgroupProps = {...props, label, ...otherProps};
-
         const attributes = this.createAttributes(optgroupProps);
         const content = this.flattenChildren(children).join('');
         const openTag = attributes ? `<optgroup ${attributes}>` : `<optgroup>`;
-        
+
         return `${openTag}${content}</optgroup>`;
     }
 }

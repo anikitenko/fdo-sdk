@@ -144,7 +144,7 @@ describe("DOM", () => {
         const attributes = (dom as any).createAttributes(props);
 
         expect(attributes.toString()).toContain(`id=\"test\"`);
-        expect(attributes.toString()).toContain(`class=\"box\"`);
+        expect(attributes.toString()).toContain(`className=\"box\"`);
         expect(attributes.toString()).not.toContain(`onClick`);
     });
 
@@ -152,7 +152,7 @@ describe("DOM", () => {
         const props = { id: "test", class: "box", onClick: jest.fn() };
         const attributes = (dom as any).createAttributes(props);
 
-        expect(attributes).toBe(`id="test" class="box"`);
+        expect(attributes).toBe(`id="test" className="box"`);
     });
 
     test("createAttributes should handle boolean attributes correctly", () => {
@@ -169,9 +169,21 @@ describe("DOM", () => {
         expect(attributes).toContain("checked");
         expect(attributes).not.toContain("disabled");
         expect(attributes).toContain("required");
-        expect(attributes).not.toContain("readonly");
+        expect(attributes).not.toContain("readOnly");
         expect(attributes).toContain("hidden");
         expect(attributes).toContain(`data-custom="true"`); // Custom boolean attributes use string format
+    });
+
+    test("createAttributes should escape JSX-sensitive attribute values", () => {
+        const attributes = (dom as any).createAttributes({
+            title: `x"y'z & <tag> {value} </tag>`,
+            for: "field-id",
+        });
+
+        expect(attributes).toContain(
+            `title="x&quot;y&#39;z &amp; &lt;tag&gt; &#123;value&#125; &lt;/tag&gt;"`
+        );
+        expect(attributes).toContain(`htmlFor="field-id"`);
     });
 
     test("createOnAttributes should return only event handlers as stringified functions", () => {
@@ -187,7 +199,7 @@ describe("DOM", () => {
     test("createElement should create elements with various configurations", () => {
         // Test case 1: Element with both attributes and children
         const element1 = dom.createElement("div", { id: "test", "class": "box" }, "Content");
-        expect(element1.toString()).toBe(`<div id="test" class="box">Content</div>`);
+        expect(element1.toString()).toBe(`<div id="test" className="box">Content</div>`);
 
         // Test case 2: Element with no attributes
         const element2 = dom.createElement("span", {}, "Hello");

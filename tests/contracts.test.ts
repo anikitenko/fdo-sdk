@@ -1,5 +1,7 @@
 import {
     validateHostMessageEnvelope,
+    validateHostPrivilegedActionRequest,
+    validatePluginInitPayload,
     validatePluginMetadata,
     validateSerializedRenderPayload,
     validateUIMessagePayload,
@@ -106,5 +108,134 @@ describe("SDK contract validators", () => {
         expect(() => validateUIMessagePayload({ handler: 1 })).toThrow(
             'UI message payload field "handler" must be a string when provided.'
         );
+    });
+
+    test("validates plugin init payloads", () => {
+        expect(validatePluginInitPayload(undefined)).toEqual({});
+        expect(validatePluginInitPayload({
+            apiVersion: "1.0.0",
+            capabilities: ["storage.json", "system.hosts.write", "system.fs.scope.etc-hosts"]
+        })).toEqual({
+            apiVersion: "1.0.0",
+            capabilities: ["storage.json", "system.hosts.write", "system.fs.scope.etc-hosts"],
+        });
+    });
+
+    test("rejects invalid plugin init payloads", () => {
+        expect(() => validatePluginInitPayload("bad-payload")).toThrow("Plugin init payload must be an object.");
+        expect(() => validatePluginInitPayload({ apiVersion: 1 })).toThrow(
+            'Plugin init payload field "apiVersion" must be a string when provided.'
+        );
+        expect(() => validatePluginInitPayload({ capabilities: [1] })).toThrow(
+            'Plugin init payload field "capabilities" must be an array of strings when provided.'
+        );
+        expect(() => validatePluginInitPayload({ capabilities: ["unknown.capability"] })).toThrow(
+            'Plugin init payload capability "unknown.capability" is not supported by this SDK version.'
+        );
+    });
+
+    test("validates host privileged action requests", () => {
+        expect(validateHostPrivilegedActionRequest({
+            action: "system.hosts.write",
+            payload: {
+                records: [
+                    { address: "127.0.0.1", hostname: "local.test", comment: "dev alias" },
+                ],
+                dryRun: true,
+                tag: "fdo-plugin",
+            },
+        })).toEqual({
+            action: "system.hosts.write",
+            payload: {
+                records: [
+                    { address: "127.0.0.1", hostname: "local.test", comment: "dev alias" },
+                ],
+                dryRun: true,
+                tag: "fdo-plugin",
+            },
+        });
+    });
+
+    test("rejects invalid host privileged action requests", () => {
+        expect(() => validateHostPrivilegedActionRequest(null)).toThrow(
+            "Host privileged action request must be an object."
+        );
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.shell.exec",
+            payload: { records: [] },
+        })).toThrow('Host privileged action "action" must be "system.hosts.write" or "system.fs.mutate".');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.hosts.write",
+            payload: { records: [] },
+        })).toThrow('Host privileged action payload field "records" must be a non-empty array.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.hosts.write",
+            payload: { records: [{ address: "invalid", hostname: "local.test" }] },
+        })).toThrow('Host privileged action payload record at index 0 has invalid "address".');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.hosts.write",
+            payload: { records: [{ address: "127.0.0.1", hostname: "bad host" }] },
+        })).toThrow('Host privileged action payload record at index 0 has invalid "hostname".');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.fs.mutate",
+            payload: { scope: "etc-hosts", operations: [] },
+        })).toThrow('Host privileged action payload field "operations" must be a non-empty array.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.fs.mutate",
+            payload: { scope: "etc hosts", operations: [{ type: "mkdir", path: "/tmp/ok" }] },
+        })).toThrow('Host privileged action payload field "scope" must match /^[a-z0-9][a-z0-9._-]*$/.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.fs.mutate",
+            payload: {
+                scope: "etc-hosts",
+                operations: [{ type: "chown", path: "/tmp/ok" } as any],
+            },
+        })).toThrow('Host privileged action operation at index 0 has unsupported type "chown".');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.fs.mutate",
+            payload: {
+                scope: "etc-hosts",
+                operations: [{ type: "writeFile", path: "relative/path", content: "x" }],
+            },
+        })).toThrow('Host privileged action operation at index 0 has invalid "path".');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.fs.mutate",
+            payload: {
+                scope: "etc-hosts",
+                operations: [{ type: "writeFile", path: "/tmp/ok", content: "x", encoding: "latin1" as any }],
+            },
+        })).toThrow('Host privileged action operation at index 0 has invalid "encoding".');
+    });
+
+    test("validates filesystem mutate privileged action requests", () => {
+        expect(validateHostPrivilegedActionRequest({
+            action: "system.fs.mutate",
+            payload: {
+                scope: "etc-hosts",
+                dryRun: true,
+                reason: "plugin setup",
+                operations: [
+                    { type: "mkdir", path: "/tmp/fdo-test", recursive: true },
+                    { type: "writeFile", path: "/tmp/fdo-test/file.txt", content: "hello", encoding: "utf8" },
+                    { type: "appendFile", path: "/tmp/fdo-test/file.txt", content: "\nworld" },
+                    { type: "rename", from: "/tmp/fdo-test/file.txt", to: "/tmp/fdo-test/file2.txt" },
+                    { type: "remove", path: "/tmp/fdo-test", recursive: true, force: true },
+                ],
+            },
+        })).toEqual({
+            action: "system.fs.mutate",
+            payload: {
+                scope: "etc-hosts",
+                dryRun: true,
+                reason: "plugin setup",
+                operations: [
+                    { type: "mkdir", path: "/tmp/fdo-test", recursive: true },
+                    { type: "writeFile", path: "/tmp/fdo-test/file.txt", content: "hello", encoding: "utf8" },
+                    { type: "appendFile", path: "/tmp/fdo-test/file.txt", content: "\nworld" },
+                    { type: "rename", from: "/tmp/fdo-test/file.txt", to: "/tmp/fdo-test/file2.txt" },
+                    { type: "remove", path: "/tmp/fdo-test", recursive: true, force: true },
+                ],
+            },
+        });
     });
 });

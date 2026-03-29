@@ -134,6 +134,9 @@ export class DOMText extends DOM {
         options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
         id?: string
     ): string {
+        if (!Number.isInteger(level) || level < 1 || level > 6) {
+            throw new Error(`Heading level must be an integer between 1 and 6. Received: ${level}`);
+        }
         const element = `h${level}`;
         return this.createTextElement(element, content, id, options, true);
     }
@@ -423,7 +426,8 @@ export class DOMText extends DOM {
                 : DOM.DEFAULT_OPTIONS.disableDefaultClass;
         const defaultBlueprintClass = disableDefaultClass || disableDefaultClassOpt ? "" : defaultClass;
         const props = this.combineProperties(defaultBlueprintClass, options, id)
+        const safeContent = this.escapeJSXText(content);
 
-        return this.createElement(element, {...props, ...extraProps}, content);
+        return this.createElement(element, {...props, ...extraProps}, safeContent);
     }
 }

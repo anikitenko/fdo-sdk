@@ -12,6 +12,7 @@
     }
   },
   "include": [
-    "*.ts"
+    "*.ts",
+    "fixtures/**/*.ts"
   ]
 }
