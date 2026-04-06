@@ -170,6 +170,67 @@ describe("FDO_SDK", () => {
         expect(mockLoggerEvent).toHaveBeenCalledWith("plugin.custom.event", { value: 1 });
     });
 
+    test("should resolve host-provided log directory after subclass metadata is initialized", () => {
+        class MetadataFieldPlugin extends FDO_SDK {
+            private readonly _metadata = {
+                id: "field-plugin",
+                name: "Field Plugin",
+                version: "1.0.0",
+                author: "Test",
+                description: "Uses field-based metadata",
+                icon: "cog",
+            };
+
+            get metadata() {
+                return this._metadata;
+            }
+
+            public init(): void {
+                this.log("Field Plugin initialized!");
+            }
+
+            public render(): string {
+                return "<div>ok</div>";
+            }
+        }
+
+        process.env.FDO_SDK_LOG_ROOT = "/tmp/fdo-sdk-plugin-logs";
+        const plugin = new MetadataFieldPlugin();
+        expect(plugin.getLogDirectory()).toBe("/tmp/fdo-sdk-plugin-logs");
+    });
+
+    test("should allow init-time logging with the host-provided log directory available", () => {
+        class LoggingInitPlugin extends FDO_SDK {
+            private readonly _metadata = {
+                id: "logging-init-plugin",
+                name: "Logging Init Plugin",
+                version: "1.0.0",
+                author: "Test",
+                description: "Validates init-time logging",
+                icon: "cog",
+            };
+
+            get metadata() {
+                return this._metadata;
+            }
+
+            public init(): void {
+                this.log(this.metadata.name + " initialized!");
+            }
+
+            public render(): string {
+                return "<div>ok</div>";
+            }
+        }
+
+        process.env.FDO_SDK_LOG_ROOT = "/tmp/fdo-sdk-plugin-logs";
+        const plugin = new LoggingInitPlugin();
+        plugin.init();
+
+        expect(plugin.getLogDirectory()).toBe("/tmp/fdo-sdk-plugin-logs");
+        expect(mockLogger).toHaveBeenCalledWith("Logging Init Plugin initialized!");
+    });
+
     test('renderOnLoad returns a function as string', () => {
         const result = sdk.renderOnLoad();
 

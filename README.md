@@ -11,6 +11,13 @@ Plugin development therefore spans two different runtimes:
 - Plugin backend/runtime: your plugin class, handlers, storage, logging, and initialization run in the plugin process.
 - Plugin UI/runtime: rendered UI code runs inside the sandboxed iframe host, where FDO injects browser-side helpers and selected UI libraries.
 
+Third-party import rule:
+
+- Backend/runtime plugin code can import npm dependencies that are bundled into the plugin artifact.
+- Iframe UI/runtime code (`render()` output and `renderOnLoad()` code) must not rely on arbitrary `import`/`require` of npm packages at runtime.
+- In iframe UI/runtime, use host-injected globals documented by FDO/SDK (for example `Notyf`, `hljs`, `ace`, `Split`, and `window.*` helpers).
+- Treat non-injected third-party UI imports as unsupported unless FDO host explicitly adds and documents them.
+
 The supported lifecycle contract is synchronous:
 
 - `init()` performs setup
@@ -132,11 +139,14 @@ Core capabilities:
 - `sudo.prompt` - required for `runWithSudo(...)`
 - `system.hosts.write` - required for host-mediated hosts updates and scoped privileged fs API
 - `system.fs.scope.<scope-id>` - host-defined scoped permission for `system.fs.mutate`
+- `system.process.exec` - required for host-mediated process execution
+- `system.process.scope.<scope-id>` - host-defined scoped permission for `system.process.exec`
 
 Privileged action contracts:
 
 - `system.hosts.write`
 - `system.fs.mutate`
+- `system.process.exec`
 
 Public helpers exported from root package:
 
@@ -144,11 +154,51 @@ Public helpers exported from root package:
 - `createHostsWriteActionRequest(...)`
 - `createFilesystemMutateActionRequest(...)`
 - `createFilesystemScopeCapability(...)`
+- `createProcessExecActionRequest(...)`
+- `createProcessScopeCapability(...)`
 
 Design rule:
 
 - plugin runtime filesystem writes remain constrained by host policy (`PLUGIN_HOME`)
 - external privileged writes must be host-mediated, scoped, and auditable
+- external command execution must be host-mediated, scoped, and auditable
+
+## Operator-Style Plugins
+
+The SDK is intended to support operator-style plugins, not just small UI widgets.
+
+Typical examples:
+
+- Docker Desktop-like plugins
+- Kubernetes dashboards
+- Helm release managers
+- Podman / container-runtime consoles
+- Terraform / infrastructure operator panels
+- local cluster or dev-environment controllers
+
+Recommended backend model for these plugins:
+
+- plugin UI remains inside the iframe runtime
+- operational actions go through host-mediated privileged contracts
+- process execution uses `system.process.exec` plus a narrow scope such as `system.process.scope.docker-cli`
+- filesystem mutations use `system.fs.mutate` plus a narrow scope such as `system.fs.scope.<scope-id>`
+
+Do not model these plugins around generic unrestricted shell access.
+
+Preferred pattern:
+
+- define a host scope for each tool family
+- allow exact executables, cwd roots, env keys, timeout ceilings, and argument patterns
+- audit every privileged request with plugin identity and correlation id
+
+Examples of suitable process scopes:
+
+- `system.process.scope.docker-cli`
+- `system.process.scope.kubectl`
+- `system.process.scope.helm`
+- `system.process.scope.terraform`
+
+This keeps the plugin ecosystem expressive enough for serious operational tooling while keeping FDO host as the real security boundary.
 
 ## Storage Notes
 
@@ -160,7 +210,7 @@ Design rule:
 ## Logging Notes
 
 - Log files are written under a configurable root directory via `FDO_SDK_LOG_ROOT` (or fallback `./logs`).
-- Logs are namespaced by plugin scope in per-plugin subdirectories.
+- In FDO host runtime, log files are written directly into the host-provided plugin log directory.
 - Lifecycle/IPC logs now include structured event fields and correlation IDs for host-side aggregation.
 
 Plugin author logging API:
@@ -173,6 +223,7 @@ Plugin author logging API:
 - `this.silly(message, ...meta)` low-priority trace log
 - `this.error(error)` error log
 - `this.event(name, payload)` structured event log, returns a correlation ID
+- `this.getLogDirectory()` resolved directory for this plugin's log files
 
 Example:
 
@@ -181,8 +232,15 @@ init(): void {
   this.info("Plugin init started", { plugin: this.metadata.name });
   const correlationId = this.event("plugin.init.custom", { phase: "start" });
   this.debug("Custom init event emitted", { correlationId });
+  this.info(`Log directory: ${this.getLogDirectory()}`);
 }
 ```
+
+In FDO host runtime, logs are typically written under:
+
+- `PLUGIN_HOME/logs/`
+
+Plugin identity is still attached in structured log metadata (`pluginId`, `component`, `sessionId`), but the filesystem layout is flat inside the host-provided log directory.
 
 ## Host Diagnostics Notes
 

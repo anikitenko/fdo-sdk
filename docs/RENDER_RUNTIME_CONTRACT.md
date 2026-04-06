@@ -136,6 +136,18 @@ These are generally iframe/runtime concerns:
 - goober styling used by rendered UI behavior
 - UI-only injected libraries
 
+### Third-Party Imports In UI Runtime
+
+`render()` and `renderOnLoad()` run inside the FDO iframe runtime wrapper. They are not a general npm module loader.
+
+Rules:
+
+- Do not assume arbitrary third-party `import`/`require` works in iframe UI code.
+- Use only host-injected globals and helpers documented by FDO/SDK.
+- If a new UI library is needed, it must be added by FDO host injection policy first, then documented.
+
+Backend/runtime plugin code (outside iframe UI) can still import normal npm modules as part of the plugin build artifact.
+
 ### Unsafe Assumption To Avoid
 
 Do not assume iframe-injected libraries exist in:
