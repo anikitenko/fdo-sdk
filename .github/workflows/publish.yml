@@ -1,6 +1,8 @@
 name: Publish
 
 on:
+  release:
+    types: [published]
   push:
     tags:
       - "fdo-sdk-v*"
@@ -12,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: publish-${{ github.ref }}
+  group: publish-${{ github.event.release.tag_name || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -20,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
 
       - uses: actions/setup-node@v6
         with:
@@ -57,6 +61,7 @@ jobs:
         run: |
           echo "repo=${GITHUB_REPOSITORY}"
           echo "ref=${GITHUB_REF}"
+          echo "release_tag=${{ github.event.release.tag_name || '' }}"
           echo "workflow_ref=${GITHUB_WORKFLOW_REF}"
           npm config get registry
       - run: npm publish --provenance --access public
