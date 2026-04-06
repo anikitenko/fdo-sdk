@@ -12,7 +12,7 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
             name: "PrivilegedActionsPlugin",
             version: "1.0.0",
             author: "FDO Team",
-            description: "Demonstrates host privileged action request flow with correlation IDs.",
+            description: "Demonstrates the low-level host privileged action request flow with correlation IDs.",
             icon: "shield",
         };
     }
@@ -25,6 +25,8 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
     render(): string {
         return `<div style="padding: 16px;">
             <h2>Privileged Actions Demo</h2>
+            <p>This file demonstrates the low-level transport helper path.</p>
+            <p>Prefer curated operator fixtures and <code>requestOperatorTool(...)</code> first when a known tool family fits.</p>
             <p>Click to request a dry-run scoped filesystem mutation in host runtime.</p>
             <button id="run-privileged-action">Run Dry-Run</button>
             <pre id="result-box"></pre>

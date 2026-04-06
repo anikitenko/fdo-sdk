@@ -1,11 +1,12 @@
 import {
-    createProcessExecActionRequest,
+    createOperatorToolCapabilityPreset,
     FDOInterface,
     FDO_SDK,
+    getOperatorToolPreset,
     isPrivilegedActionErrorResponse,
     isPrivilegedActionSuccessResponse,
     PluginMetadata,
-    requestPrivilegedAction,
+    requestOperatorTool,
 } from "../src";
 
 export default class OperatorPluginExample extends FDO_SDK implements FDOInterface {
@@ -22,14 +23,20 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
     }
 
     init(): void {
-        this.info("Operator plugin example initialized", { logDirectory: this.getLogDirectory() });
+        this.info("Operator plugin example initialized", {
+            logDirectory: this.getLogDirectory(),
+            preset: getOperatorToolPreset("docker-cli"),
+            requestedCapabilities: createOperatorToolCapabilityPreset("docker-cli"),
+        });
     }
 
     render(): string {
         return `
             <div style="padding: 16px;">
                 <h2>Operator Plugin Example</h2>
-                <p>This pattern is intended for Docker Desktop-like plugins, Kubernetes dashboards, and similar operator tooling.</p>
+                <p>This file demonstrates the curated operator helper path for a known tool family.</p>
+                <p>Preferred capability bundle: <code>${JSON.stringify(createOperatorToolCapabilityPreset("docker-cli"))}</code></p>
+                <p>Preferred request helper: <code>requestOperatorTool("docker-cli", ...)</code></p>
                 <button id="run-docker-status">Dry-Run Docker Status</button>
                 <pre id="operator-result-box"></pre>
             </div>
@@ -37,18 +44,6 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
     }
 
     renderOnLoad(): string {
-        const request = createProcessExecActionRequest({
-            action: "system.process.exec",
-            payload: {
-                scope: "docker-cli",
-                command: "/usr/local/bin/docker",
-                args: ["ps", "--format", "json"],
-                timeoutMs: 5000,
-                dryRun: true,
-                reason: "preview running containers for dashboard",
-            },
-        });
-
         return `
             () => {
                 const button = document.getElementById("run-docker-status");
@@ -58,7 +53,13 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
                 button.addEventListener("click", async () => {
                     let correlationId = "unknown";
                     try {
-                        const response = await (${requestPrivilegedAction.toString()})(${JSON.stringify(request)}, {
+                        const response = await (${requestOperatorTool.toString()})("docker-cli", {
+                            command: "/usr/local/bin/docker",
+                            args: ["ps", "--format", "json"],
+                            timeoutMs: 5000,
+                            dryRun: true,
+                            reason: "preview running containers for dashboard",
+                        }, {
                             correlationIdPrefix: "docker-cli",
                         });
                         correlationId = response.correlationId;

@@ -2,6 +2,8 @@
 
 This backlog is based on the current SDK implementation as of 2026-03-24. It focuses on making the package durable in production, reusable across plugins, and easier for AI tooling to reason about safely.
 
+For the longer-term product/platform roadmap, see [docs/REVOLUTIONARY_PLUGIN_SYSTEM_TODO.md](./REVOLUTIONARY_PLUGIN_SYSTEM_TODO.md).
+
 ## Completed In This Pass
 
 - [x] Hardened `@handleError()` so a failing `errorUIRenderer` falls back to the default render error UI instead of causing an unhandled rejection.

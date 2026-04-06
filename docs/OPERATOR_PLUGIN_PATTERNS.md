@@ -24,6 +24,20 @@ Use three layers:
 
 Do not collapse those layers into unrestricted shell execution from plugin code.
 
+## Preferred Decision Order
+
+When choosing an operator authoring pattern, prefer this order:
+
+1. start from the closest operator fixture under `examples/fixtures/`
+2. use curated capability presets for known tool families
+3. use `requestOperatorTool(...)` for known tool families
+4. use `requestScopedProcessExec(...)` for host-specific/internal tools not covered by curated presets
+5. use lower-level request-building helpers only when transport-level control is explicitly needed
+
+This ordering is intentional. It is the default path AI tooling and documentation should recommend first.
+
+For FDO-side Monaco/editor/capability-UX/AI alignment on this ordering, use [docs/PHASE_1_FDO_ALIGNMENT_PROMPT.md](./PHASE_1_FDO_ALIGNMENT_PROMPT.md).
+
 ## Execution Pattern
 
 For tool execution, prefer:
@@ -190,6 +204,26 @@ const response = await requestScopedProcessExec("internal-runner", {
 });
 ```
 
+## Supported But Non-Default Paths
+
+These paths remain supported, but should not be recommended first when a safer or more opinionated operator path fits:
+
+- `requestPrivilegedAction(...)` with manually constructed operator request payloads for known tool families
+- `createProcessExecActionRequest(...)` as the first-choice authoring pattern for known curated tool families
+- generic numbered learning examples as the first production scaffold
+- removed legacy scaffolds or ad hoc legacy copies as a starting point for new plugins
+- raw string matching against permission errors when structured capability diagnostics are available
+
+Use these paths only when:
+
+- the user explicitly asks for lower-level control
+- the workflow is not covered by a curated preset
+- transport-level debugging or contract inspection is the real goal
+
+Primary low-level reference example:
+
+- `examples/08-privileged-actions-plugin.ts`
+
 ## Missing Capability Diagnostics
 
 When a plugin is denied by SDK capability checks, prefer structured remediation over raw string matching:
@@ -229,6 +263,9 @@ It is better than:
 
 AI assistants should recommend:
 
+- fixture-first operator scaffolding
+- curated capability presets for known tool families
+- `requestOperatorTool(...)` for known tool families
 - scoped process execution for Docker/Kubernetes/Helm/Terraform style plugins
 - scoped filesystem mutation for controlled external writes
 - deterministic response envelope handling
@@ -236,6 +273,9 @@ AI assistants should recommend:
 
 AI assistants should avoid recommending:
 
+- legacy examples as default scaffolds
+- numbered learning examples as the first production path
+- low-level request construction for known curated tool families
 - generic shell execution
 - unrestricted process spawning
 - broad "root" style plugin permissions

@@ -2,29 +2,11 @@
 
 This directory contains example plugin implementations that demonstrate core FDO SDK features.
 
-## Getting Started
+## Start Here
 
-For comprehensive documentation on using these examples, see the [Quick Start Guide](../specs/002-plugin-examples/quickstart.md).
+For new plugin authoring and AI-assisted scaffolding, start with the fixture set first.
 
-## Examples
-
-The examples are numbered to indicate learning progression:
-
-1. **01-basic-plugin.ts** - Basic plugin creation with lifecycle and rendering
-2. **02-interactive-plugin.ts** - Interactive UI with handlers and messaging
-3. **03-persistence-plugin.ts** - Data persistence with storage backends
-4. **04-ui-extensions-plugin.ts** - Quick actions and side panel integration
-5. **05-advanced-dom-plugin.ts** - Advanced DOM generation with styling
-6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
-7. **07-injected-libraries-demo.ts** - Demonstrates all automatically injected libraries and helper functions
-8. **08-privileged-actions-plugin.ts** - Host privileged action flow using `requestPrivilegedAction(...)` with correlation ids and stable response handling
-9. **09-operator-plugin.ts** - Docker/Kubernetes-style operator plugin pattern using scoped host process execution helpers
-
-For operator-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli`, `system.process.scope.kubectl`, `system.process.scope.terraform`, or another explicit tool-family scope rather than raw shell execution.
-
-## Scenario Reference Fixtures
-
-Use these four files as the canonical production-oriented reference set:
+Primary authoring entry points:
 
 1. **fixtures/minimal-plugin.fixture.ts**
    Pattern: smallest valid plugin scaffold with stable lifecycle behavior.
@@ -34,31 +16,54 @@ Use these four files as the canonical production-oriented reference set:
    Pattern: plugin-scoped default/json store usage with graceful JSON-store unavailability handling.
 4. **fixtures/advanced-ui-plugin.fixture.ts**
    Pattern: advanced semantic/table/action UI composition with DOM helper classes.
-
-For new plugin authoring and AI-assisted scaffolding/refactoring, prefer these fixtures first.
-
-Operator-oriented reference fixtures:
-
-1. **fixtures/operator-kubernetes-plugin.fixture.ts**
+5. **fixtures/operator-kubernetes-plugin.fixture.ts**
    Pattern: curated `kubectl` operator preset for cluster-console style plugins.
-2. **fixtures/operator-terraform-plugin.fixture.ts**
+6. **fixtures/operator-terraform-plugin.fixture.ts**
    Pattern: curated `terraform` operator preset for plan/apply style plugins.
-3. **fixtures/operator-custom-tool-plugin.fixture.ts**
+7. **fixtures/operator-custom-tool-plugin.fixture.ts**
    Pattern: generic scoped process execution for host-specific/internal tools not covered by curated presets.
 
-For operator-style plugin generation and AI-assisted scaffolding:
-- use curated operator fixtures for known tool families
-- use the custom-tool fixture for internal runners and host-specific scopes
+Use the operator fixtures for production-oriented DevOps/SRE/plugin authoring work.
+Use the non-operator fixtures for lifecycle, error-handling, storage, and UI composition baselines.
+
+## Getting Started
+
+For comprehensive documentation on using these examples, see the [Quick Start Guide](../specs/002-plugin-examples/quickstart.md).
+
+## Learning Examples
+
+The numbered examples are learning references, not the default production starting point.
+Use them to understand individual SDK features after choosing the right fixture baseline.
+
+The examples are still numbered to indicate learning progression:
+
+1. **01-basic-plugin.ts** - Basic plugin creation with lifecycle and rendering
+2. **02-interactive-plugin.ts** - Interactive UI with handlers and messaging
+3. **03-persistence-plugin.ts** - Data persistence with storage backends
+4. **04-ui-extensions-plugin.ts** - Quick actions and side panel integration
+5. **05-advanced-dom-plugin.ts** - Advanced DOM generation with styling
+6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
+7. **07-injected-libraries-demo.ts** - Demonstrates all automatically injected libraries and helper functions
+8. **08-privileged-actions-plugin.ts** - Low-level host privileged action flow using `requestPrivilegedAction(...)` with correlation ids and stable response handling
+9. **09-operator-plugin.ts** - Curated operator helper example for a known tool family using `requestOperatorTool(...)`
+
+For operator-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli`, `system.process.scope.kubectl`, `system.process.scope.terraform`, or another explicit tool-family scope rather than raw shell execution.
 
 ## Additional Examples
 
 - **dom_elements_plugin.ts** - Comprehensive examples of DOM element creation
-- **example_plugin.ts** - Legacy example plugin (deprecated, use numbered examples instead)
 - **metadata-template.ts** - Template for plugin metadata structure
 
 ## Privileged Action Envelope Pattern
 
-For host-mediated privileged operations, use a stable response envelope and correlation IDs:
+For host-mediated privileged operations, use a stable response envelope and correlation IDs.
+This is the low-level transport pattern. For known operator tool families, prefer the curated operator fixtures and helper APIs first:
+
+- `createOperatorToolCapabilityPreset(...)`
+- `createOperatorToolActionRequest(...)`
+- `requestOperatorTool(...)`
+
+Use the generic transport pattern below when you need lower-level control or a non-curated action family:
 
 ```ts
 const request = createFilesystemMutateActionRequest({
