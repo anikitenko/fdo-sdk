@@ -125,6 +125,17 @@ export type PrivilegedActionResponse<TResult = unknown> =
     | PrivilegedActionSuccessResponse<TResult>
     | PrivilegedActionErrorResponse;
 
+export type PrivilegedActionBackendRequest<TRequest extends HostPrivilegedActionRequest = HostPrivilegedActionRequest> = {
+    correlationId: string;
+    request: TRequest;
+};
+
+export type RequestPrivilegedActionOptions = {
+    correlationId?: string;
+    handler?: string;
+    correlationIdPrefix?: string;
+};
+
 export type UIMessageResponse = unknown | ErrorResponse;
 
 export type PluginInitResponse = {

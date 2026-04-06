@@ -127,7 +127,7 @@ See `examples/example_plugin.ts` for a basic plugin example.
 
 See `examples/dom_elements_plugin.ts` for comprehensive examples of using the new DOM element creation capabilities including tables, media, semantic HTML, lists, and form controls.
 
-See `examples/08-privileged-actions-plugin.ts` for host privileged action request flow (`createBackendReq`) with correlation IDs and stable response envelope handling.
+See `examples/08-privileged-actions-plugin.ts` for host privileged action request flow using `requestPrivilegedAction(...)` with correlation IDs and stable response envelope handling.
 
 See `examples/09-operator-plugin.ts` for a Docker/Kubernetes-style operator pattern built on scoped host process execution.
 
@@ -158,6 +158,8 @@ Public helpers exported from root package:
 - `createFilesystemScopeCapability(...)`
 - `createProcessExecActionRequest(...)`
 - `createProcessScopeCapability(...)`
+- `createPrivilegedActionBackendRequest(...)`
+- `requestPrivilegedAction(...)`
 
 Design rule:
 

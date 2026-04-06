@@ -1,11 +1,11 @@
 import {
-    createPrivilegedActionCorrelationId,
     createProcessExecActionRequest,
     FDOInterface,
     FDO_SDK,
     isPrivilegedActionErrorResponse,
     isPrivilegedActionSuccessResponse,
     PluginMetadata,
+    requestPrivilegedAction,
 } from "../src";
 
 export default class OperatorPluginExample extends FDO_SDK implements FDOInterface {
@@ -56,12 +56,12 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
                 if (!button || !output) return;
 
                 button.addEventListener("click", async () => {
-                    const correlationId = (${createPrivilegedActionCorrelationId.toString()})("docker-cli");
+                    let correlationId = "unknown";
                     try {
-                        const response = await window.createBackendReq("requestPrivilegedAction", {
-                            correlationId,
-                            request: ${JSON.stringify(request)},
+                        const response = await (${requestPrivilegedAction.toString()})(${JSON.stringify(request)}, {
+                            correlationIdPrefix: "docker-cli",
                         });
+                        correlationId = response.correlationId;
 
                         if (${isPrivilegedActionSuccessResponse.toString()}(response)) {
                             output.textContent = JSON.stringify({
@@ -84,7 +84,7 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
 
                         output.textContent = JSON.stringify({
                             status: "error",
-                            correlationId,
+                            correlationId: response?.correlationId ?? correlationId,
                             error: "Invalid privileged action response envelope",
                             code: "INVALID_RESPONSE",
                         }, null, 2);

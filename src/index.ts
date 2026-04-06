@@ -31,6 +31,10 @@ export {
     isPrivilegedActionSuccessResponse,
     unwrapPrivilegedActionResponse,
 } from "./utils/privilegedResponses";
+export {
+    createPrivilegedActionBackendRequest,
+    requestPrivilegedAction,
+} from "./utils/privilegedTransport";
 
 export * from "./FDOInterface";
 export * from "./PluginMetadata";

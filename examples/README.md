@@ -17,7 +17,7 @@ The examples are numbered to indicate learning progression:
 5. **05-advanced-dom-plugin.ts** - Advanced DOM generation with styling
 6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
 7. **07-injected-libraries-demo.ts** - Demonstrates all automatically injected libraries and helper functions
-8. **08-privileged-actions-plugin.ts** - Host privileged action flow (`createBackendReq`) with `correlationId` and stable response handling
+8. **08-privileged-actions-plugin.ts** - Host privileged action flow using `requestPrivilegedAction(...)` with correlation ids and stable response handling
 9. **09-operator-plugin.ts** - Docker/Kubernetes-style operator plugin pattern using scoped host process execution helpers
 
 For Docker-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli` rather than raw shell execution.
@@ -48,17 +48,17 @@ For new plugin authoring and AI-assisted scaffolding/refactoring, prefer these f
 For host-mediated privileged operations, use a stable response envelope and correlation IDs:
 
 ```ts
-const correlationId = "privileged-action-" + Date.now();
-const response = await window.createBackendReq("requestPrivilegedAction", {
-  correlationId,
-  request: createFilesystemMutateActionRequest({
-    action: "system.fs.mutate",
-    payload: {
-      scope: "etc-hosts",
-      dryRun: true,
-      operations: [{ type: "writeFile", path: "/etc/hosts", content: "# managed", encoding: "utf8" }]
-    }
-  })
+const request = createFilesystemMutateActionRequest({
+  action: "system.fs.mutate",
+  payload: {
+    scope: "etc-hosts",
+    dryRun: true,
+    operations: [{ type: "writeFile", path: "/etc/hosts", content: "# managed", encoding: "utf8" }]
+  }
+});
+
+const response = await requestPrivilegedAction(request, {
+  correlationIdPrefix: "etc-hosts",
 });
 
 if (response?.ok) {

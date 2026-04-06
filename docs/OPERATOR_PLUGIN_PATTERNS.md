@@ -52,13 +52,13 @@ The host should map each scope to:
 
 ```ts
 import {
-  createPrivilegedActionCorrelationId,
+  createPrivilegedActionBackendRequest,
   createProcessExecActionRequest,
   isPrivilegedActionErrorResponse,
   isPrivilegedActionSuccessResponse,
+  requestPrivilegedAction,
 } from "@anikitenko/fdo-sdk";
 
-const correlationId = createPrivilegedActionCorrelationId("docker-cli");
 const request = createProcessExecActionRequest({
   action: "system.process.exec",
   payload: {
@@ -71,9 +71,8 @@ const request = createProcessExecActionRequest({
   },
 });
 
-const response = await window.createBackendReq("requestPrivilegedAction", {
-  correlationId,
-  request,
+const response = await requestPrivilegedAction(request, {
+  correlationIdPrefix: "docker-cli",
 });
 
 if (isPrivilegedActionSuccessResponse(response)) {
@@ -82,6 +81,18 @@ if (isPrivilegedActionSuccessResponse(response)) {
   // response.error + response.code
 }
 ```
+
+If you need the transport payload without sending it immediately, use:
+
+```ts
+const payload = createPrivilegedActionBackendRequest(request, {
+  correlationIdPrefix: "docker-cli",
+});
+
+// payload = { correlationId, request }
+```
+
+For serialized `renderOnLoad()` handlers, prefer the self-contained `requestPrivilegedAction(...)` helper over manually building `window.createBackendReq("requestPrivilegedAction", ...)`.
 
 ## Why This Pattern
 
