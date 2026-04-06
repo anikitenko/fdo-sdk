@@ -4,7 +4,9 @@ import {
   PluginMetadata,
   createOperatorToolActionRequest,
   createOperatorToolCapabilityPreset,
+  createScopedWorkflowRequest,
   requestOperatorTool,
+  requestScopedWorkflow,
 } from "@anikitenko/fdo-sdk";
 
 /**
@@ -44,6 +46,7 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
       <div style={{ padding: "16px" }}>
         <h1>${this._metadata.name}</h1>
         <p>Use curated capability and request helpers for known tool families.</p>
+        <p>For multi-step preview/apply flows, prefer <code>requestScopedWorkflow(...)</code> over plugin-private orchestration.</p>
       </div>
     `;
   }
@@ -55,6 +58,76 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
       timeoutMs: 10000,
       dryRun: true,
       reason: "preview infrastructure plan",
+    });
+  }
+
+  buildPreviewApplyWorkflow() {
+    return createScopedWorkflowRequest("terraform", {
+      kind: "process-sequence",
+      title: "Terraform preview and apply",
+      summary: "Preview infrastructure changes before apply",
+      dryRun: true,
+      steps: [
+        {
+          id: "plan",
+          title: "Generate plan",
+          phase: "preview",
+          command: "/usr/local/bin/terraform",
+          args: ["plan", "-input=false"],
+          timeoutMs: 10000,
+          reason: "preview infrastructure plan",
+          onError: "abort",
+        },
+        {
+          id: "apply",
+          title: "Apply plan",
+          phase: "apply",
+          command: "/usr/local/bin/terraform",
+          args: ["apply", "-input=false", "tfplan"],
+          timeoutMs: 10000,
+          reason: "apply approved infrastructure plan",
+          onError: "abort",
+        },
+      ],
+      confirmation: {
+        message: "Apply infrastructure changes?",
+        requiredForStepIds: ["apply"],
+      },
+    });
+  }
+
+  async previewAndApplyWorkflow(): Promise<unknown> {
+    return requestScopedWorkflow("terraform", {
+      kind: "process-sequence",
+      title: "Terraform preview and apply",
+      summary: "Preview infrastructure changes before apply",
+      dryRun: true,
+      steps: [
+        {
+          id: "plan",
+          title: "Generate plan",
+          phase: "preview",
+          command: "/usr/local/bin/terraform",
+          args: ["plan", "-input=false"],
+          timeoutMs: 10000,
+          reason: "preview infrastructure plan",
+          onError: "abort",
+        },
+        {
+          id: "apply",
+          title: "Apply plan",
+          phase: "apply",
+          command: "/usr/local/bin/terraform",
+          args: ["apply", "-input=false", "tfplan"],
+          timeoutMs: 10000,
+          reason: "apply approved infrastructure plan",
+          onError: "abort",
+        },
+      ],
+      confirmation: {
+        message: "Apply infrastructure changes?",
+        requiredForStepIds: ["apply"],
+      },
     });
   }
 }

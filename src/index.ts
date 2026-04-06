@@ -31,6 +31,7 @@ export {
     createHostsWriteActionRequest,
     createProcessExecActionRequest,
     createProcessScopeCapability,
+    createWorkflowRunActionRequest,
     validatePrivilegedActionRequest,
 } from "./utils/privilegedActions";
 export {
@@ -52,6 +53,10 @@ export {
     requestOperatorTool,
     requestScopedProcessExec,
 } from "./utils/operatorTooling";
+export {
+    createScopedWorkflowRequest,
+    requestScopedWorkflow,
+} from "./utils/workflowTooling";
 
 export * from "./FDOInterface";
 export * from "./PluginMetadata";

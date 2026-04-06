@@ -4,6 +4,7 @@ import {
     createHostsWriteActionRequest,
     createProcessExecActionRequest,
     createProcessScopeCapability,
+    createWorkflowRunActionRequest,
     validatePrivilegedActionRequest,
 } from "../../src";
 
@@ -84,6 +85,50 @@ describe("privileged action helpers", () => {
                 timeoutMs: 5000,
                 dryRun: true,
                 reason: "list containers",
+            },
+        });
+    });
+
+    test("builds workflow run requests through validator", () => {
+        expect(createWorkflowRunActionRequest({
+            action: "system.workflow.run",
+            payload: {
+                scope: "terraform",
+                kind: "process-sequence",
+                title: "Terraform preview and apply",
+                steps: [
+                    {
+                        id: "plan",
+                        title: "Generate plan",
+                        command: "/usr/local/bin/terraform",
+                        args: ["plan", "-input=false"],
+                        onError: "abort",
+                    },
+                ],
+                confirmation: {
+                    message: "Apply infrastructure changes?",
+                    requiredForStepIds: ["plan"],
+                },
+            },
+        })).toEqual({
+            action: "system.workflow.run",
+            payload: {
+                scope: "terraform",
+                kind: "process-sequence",
+                title: "Terraform preview and apply",
+                steps: [
+                    {
+                        id: "plan",
+                        title: "Generate plan",
+                        command: "/usr/local/bin/terraform",
+                        args: ["plan", "-input=false"],
+                        onError: "abort",
+                    },
+                ],
+                confirmation: {
+                    message: "Apply infrastructure changes?",
+                    requiredForStepIds: ["plan"],
+                },
             },
         });
     });

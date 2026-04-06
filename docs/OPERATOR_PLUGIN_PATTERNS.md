@@ -31,8 +31,9 @@ When choosing an operator authoring pattern, prefer this order:
 1. start from the closest operator fixture under `examples/fixtures/`
 2. use curated capability presets for known tool families
 3. use `requestOperatorTool(...)` for known tool families
-4. use `requestScopedProcessExec(...)` for host-specific/internal tools not covered by curated presets
-5. use lower-level request-building helpers only when transport-level control is explicitly needed
+4. use `requestScopedWorkflow(...)` when the plugin needs a structured multi-step host-mediated flow
+5. use `requestScopedProcessExec(...)` for host-specific/internal tools not covered by curated presets
+6. use lower-level request-building helpers only when transport-level control is explicitly needed
 
 This ordering is intentional. It is the default path AI tooling and documentation should recommend first.
 
@@ -203,6 +204,42 @@ const response = await requestScopedProcessExec("internal-runner", {
   dryRun: true,
 });
 ```
+
+## Structured Workflow Helpers
+
+When a plugin is about to chain multiple host-mediated process steps into one operator flow, prefer the workflow helper instead of plugin-private orchestration:
+
+```ts
+import { requestScopedWorkflow } from "@anikitenko/fdo-sdk";
+
+const response = await requestScopedWorkflow("terraform", {
+  kind: "process-sequence",
+  title: "Terraform preview and apply",
+  steps: [
+    {
+      id: "plan",
+      title: "Generate plan",
+      phase: "preview",
+      command: "/usr/local/bin/terraform",
+      args: ["plan", "-input=false"],
+    },
+    {
+      id: "apply",
+      title: "Apply plan",
+      phase: "apply",
+      command: "/usr/local/bin/terraform",
+      args: ["apply", "-input=false", "tfplan"],
+      onError: "abort",
+    },
+  ],
+  confirmation: {
+    message: "Apply infrastructure changes?",
+    requiredForStepIds: ["apply"],
+  },
+});
+```
+
+Use this path for preview/apply and inspect/act style flows when one request is no longer enough.
 
 ## Supported But Non-Default Paths
 

@@ -163,7 +163,7 @@ describe("SDK contract validators", () => {
         expect(() => validateHostPrivilegedActionRequest({
             action: "system.shell.exec",
             payload: { records: [] },
-        })).toThrow('Host privileged action "action" must be "system.hosts.write", "system.fs.mutate", or "system.process.exec".');
+        })).toThrow('Host privileged action "action" must be "system.hosts.write", "system.fs.mutate", "system.process.exec", or "system.workflow.run".');
         expect(() => validateHostPrivilegedActionRequest({
             action: "system.hosts.write",
             payload: { records: [] },
@@ -225,6 +225,84 @@ describe("SDK contract validators", () => {
             action: "system.process.exec",
             payload: { scope: "docker-cli", command: "/usr/local/bin/docker", encoding: "latin1" as any },
         })).toThrow('Host privileged action payload field "encoding" must be "utf8" or "base64" when provided.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.workflow.run",
+            payload: {
+                scope: "terraform",
+                kind: "invalid-kind",
+                title: "Workflow",
+                steps: [],
+            },
+        })).toThrow('Host privileged workflow payload field "kind" must be "process-sequence".');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.workflow.run",
+            payload: {
+                scope: "terraform",
+                kind: "process-sequence",
+                title: "Workflow",
+                steps: [
+                    {
+                        id: "Plan Step",
+                        title: "Generate plan",
+                        command: "/usr/local/bin/terraform",
+                    },
+                ],
+            },
+        })).toThrow('Host privileged workflow step at index 0 field "id" must match /^[a-z0-9][a-z0-9._-]*$/.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.workflow.run",
+            payload: {
+                scope: "terraform",
+                kind: "process-sequence",
+                title: "Workflow",
+                steps: [
+                    {
+                        id: "plan",
+                        title: "Generate plan",
+                        command: "terraform",
+                    },
+                ],
+            },
+        })).toThrow('Host privileged workflow step at index 0 field "command" must be an absolute path.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.workflow.run",
+            payload: {
+                scope: "terraform",
+                kind: "process-sequence",
+                title: "Workflow",
+                steps: [
+                    {
+                        id: "plan",
+                        title: "Generate plan",
+                        command: "/usr/local/bin/terraform",
+                    },
+                    {
+                        id: "plan",
+                        title: "Apply plan",
+                        command: "/usr/local/bin/terraform",
+                    },
+                ],
+            },
+        })).toThrow('Host privileged workflow payload field "steps" must not contain duplicate step ids.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.workflow.run",
+            payload: {
+                scope: "terraform",
+                kind: "process-sequence",
+                title: "Workflow",
+                steps: [
+                    {
+                        id: "plan",
+                        title: "Generate plan",
+                        command: "/usr/local/bin/terraform",
+                    },
+                ],
+                confirmation: {
+                    message: "Continue?",
+                    requiredForStepIds: ["apply"],
+                },
+            },
+        })).toThrow('Host privileged workflow confirmation field "requiredForStepIds" references unknown step id "apply".');
     });
 
     test("validates filesystem mutate privileged action requests", () => {
@@ -287,6 +365,88 @@ describe("SDK contract validators", () => {
                 encoding: "utf8",
                 dryRun: true,
                 reason: "inspect compose services",
+            },
+        });
+    });
+
+    test("validates scoped workflow privileged action requests", () => {
+        expect(validateHostPrivilegedActionRequest({
+            action: "system.workflow.run",
+            payload: {
+                scope: "terraform",
+                kind: "process-sequence",
+                title: "Terraform preview and apply",
+                summary: "Preview infrastructure changes before apply",
+                dryRun: true,
+                steps: [
+                    {
+                        id: "plan",
+                        title: "Generate plan",
+                        phase: "preview",
+                        command: "/usr/local/bin/terraform",
+                        args: ["plan", "-input=false"],
+                        cwd: "/Users/test/project",
+                        env: { TF_IN_AUTOMATION: "1" },
+                        timeoutMs: 10000,
+                        input: "{}",
+                        encoding: "utf8",
+                        reason: "preview infrastructure plan",
+                        onError: "abort",
+                    },
+                    {
+                        id: "apply",
+                        title: "Apply plan",
+                        phase: "apply",
+                        command: "/usr/local/bin/terraform",
+                        args: ["apply", "-input=false", "tfplan"],
+                        timeoutMs: 10000,
+                        reason: "apply approved infrastructure plan",
+                        onError: "abort",
+                    },
+                ],
+                confirmation: {
+                    message: "Apply infrastructure changes?",
+                    requiredForStepIds: ["apply"],
+                },
+            },
+        })).toEqual({
+            action: "system.workflow.run",
+            payload: {
+                scope: "terraform",
+                kind: "process-sequence",
+                title: "Terraform preview and apply",
+                summary: "Preview infrastructure changes before apply",
+                dryRun: true,
+                steps: [
+                    {
+                        id: "plan",
+                        title: "Generate plan",
+                        phase: "preview",
+                        command: "/usr/local/bin/terraform",
+                        args: ["plan", "-input=false"],
+                        cwd: "/Users/test/project",
+                        env: { TF_IN_AUTOMATION: "1" },
+                        timeoutMs: 10000,
+                        input: "{}",
+                        encoding: "utf8",
+                        reason: "preview infrastructure plan",
+                        onError: "abort",
+                    },
+                    {
+                        id: "apply",
+                        title: "Apply plan",
+                        phase: "apply",
+                        command: "/usr/local/bin/terraform",
+                        args: ["apply", "-input=false", "tfplan"],
+                        timeoutMs: 10000,
+                        reason: "apply approved infrastructure plan",
+                        onError: "abort",
+                    },
+                ],
+                confirmation: {
+                    message: "Apply infrastructure changes?",
+                    requiredForStepIds: ["apply"],
+                },
             },
         });
     });

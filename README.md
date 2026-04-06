@@ -188,6 +188,9 @@ Public helpers exported from root package:
 - `createOperatorToolCapabilityPreset(...)`
 - `createOperatorToolActionRequest(...)`
 - `requestOperatorTool(...)`
+- `createWorkflowRunActionRequest(...)`
+- `createScopedWorkflowRequest(...)`
+- `requestScopedWorkflow(...)`
 
 Design rule:
 
@@ -222,6 +225,7 @@ Preferred pattern:
 - define a host scope for each tool family
 - allow exact executables, cwd roots, env keys, timeout ceilings, and argument patterns
 - audit every privileged request with plugin identity and correlation id
+- use `requestScopedWorkflow(...)` when a plugin needs a typed multi-step preview/apply or inspect/act flow instead of plugin-private orchestration
 
 Examples of suitable process scopes:
 

@@ -43,7 +43,11 @@ This document defines which SDK surfaces are stable contracts versus internal im
   - `createFilesystemScopeCapability`
   - `createHostsWriteActionRequest`
   - `createFilesystemMutateActionRequest`
+  - `createWorkflowRunActionRequest`
   - `validatePrivilegedActionRequest`
+- Workflow helper exports:
+  - `createScopedWorkflowRequest`
+  - `requestScopedWorkflow`
 
 ## Provisional Surfaces
 

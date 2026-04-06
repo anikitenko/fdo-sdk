@@ -6,6 +6,7 @@ import {
     HostPrivilegedActionRequest,
     PluginCapability,
     ProcessExecActionRequest,
+    ScopedWorkflowRunActionRequest,
 } from "../types";
 
 export interface HostMessageEnvelope {
@@ -32,8 +33,12 @@ const KNOWN_PLUGIN_CAPABILITIES = new Set<PluginCapability>([
 const HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE = "system.hosts.write";
 const HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE = "system.fs.mutate";
 const HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC = "system.process.exec";
+const HOST_PRIVILEGED_ACTION_SYSTEM_WORKFLOW_RUN = "system.workflow.run";
 const FS_SCOPE_CAPABILITY_PREFIX = "system.fs.scope.";
 const PROCESS_SCOPE_CAPABILITY_PREFIX = "system.process.scope.";
+const WORKFLOW_KINDS = new Set(["process-sequence"]);
+const WORKFLOW_STEP_PHASES = new Set(["inspect", "preview", "mutate", "apply", "cleanup"]);
+const WORKFLOW_STEP_ERROR_BEHAVIORS = new Set(["abort", "continue"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object";
@@ -444,6 +449,163 @@ function validateProcessExecActionRequest(payload: Record<string, unknown>): Pro
     return payload as ProcessExecActionRequest;
 }
 
+function validateWorkflowProcessStep(step: unknown, index: number): string {
+    if (!isRecord(step)) {
+        throw new Error(`Host privileged workflow step at index ${index} must be an object.`);
+    }
+
+    if (typeof step.id !== "string" || step.id.trim().length === 0) {
+        throw new Error(`Host privileged workflow step at index ${index} must have a non-empty "id".`);
+    }
+    if (!isValidScopeId(step.id)) {
+        throw new Error(`Host privileged workflow step at index ${index} field "id" must match /^[a-z0-9][a-z0-9._-]*$/.`);
+    }
+
+    if (typeof step.title !== "string" || step.title.trim().length === 0) {
+        throw new Error(`Host privileged workflow step at index ${index} must have a non-empty "title".`);
+    }
+
+    if (step.phase !== undefined && (typeof step.phase !== "string" || !WORKFLOW_STEP_PHASES.has(step.phase))) {
+        throw new Error(`Host privileged workflow step at index ${index} has invalid "phase".`);
+    }
+
+    if (typeof step.command !== "string" || step.command.trim().length === 0) {
+        throw new Error(`Host privileged workflow step at index ${index} must have a non-empty "command".`);
+    }
+
+    if (!isAbsolutePath(step.command)) {
+        throw new Error(`Host privileged workflow step at index ${index} field "command" must be an absolute path.`);
+    }
+
+    if (step.args !== undefined) {
+        if (!Array.isArray(step.args) || step.args.some((arg) => typeof arg !== "string")) {
+            throw new Error(`Host privileged workflow step at index ${index} field "args" must be an array of strings when provided.`);
+        }
+    }
+
+    if (step.cwd !== undefined) {
+        if (typeof step.cwd !== "string" || !isAbsolutePath(step.cwd)) {
+            throw new Error(`Host privileged workflow step at index ${index} field "cwd" must be an absolute path when provided.`);
+        }
+    }
+
+    if (step.env !== undefined) {
+        if (!isRecord(step.env)) {
+            throw new Error(`Host privileged workflow step at index ${index} field "env" must be an object when provided.`);
+        }
+
+        for (const [key, value] of Object.entries(step.env)) {
+            if (!/^[A-Z_][A-Z0-9_]*$/i.test(key)) {
+                throw new Error(`Host privileged workflow step at index ${index} field "env" has invalid key "${key}".`);
+            }
+            if (typeof value !== "string") {
+                throw new Error(`Host privileged workflow step at index ${index} field "env.${key}" must be a string.`);
+            }
+        }
+    }
+
+    if (step.timeoutMs !== undefined) {
+        if (typeof step.timeoutMs !== "number" || !Number.isFinite(step.timeoutMs) || step.timeoutMs <= 0) {
+            throw new Error(`Host privileged workflow step at index ${index} field "timeoutMs" must be a positive number when provided.`);
+        }
+    }
+
+    if (step.input !== undefined && typeof step.input !== "string") {
+        throw new Error(`Host privileged workflow step at index ${index} field "input" must be a string when provided.`);
+    }
+
+    if (step.encoding !== undefined && step.encoding !== "utf8" && step.encoding !== "base64") {
+        throw new Error(`Host privileged workflow step at index ${index} field "encoding" must be "utf8" or "base64" when provided.`);
+    }
+
+    if (step.reason !== undefined && (typeof step.reason !== "string" || step.reason.trim().length === 0)) {
+        throw new Error(`Host privileged workflow step at index ${index} field "reason" must be a non-empty string when provided.`);
+    }
+
+    if (
+        step.onError !== undefined
+        && (typeof step.onError !== "string" || !WORKFLOW_STEP_ERROR_BEHAVIORS.has(step.onError))
+    ) {
+        throw new Error(`Host privileged workflow step at index ${index} has invalid "onError".`);
+    }
+
+    return step.id;
+}
+
+function validateScopedWorkflowRunActionRequest(payload: Record<string, unknown>): ScopedWorkflowRunActionRequest {
+    if (!isRecord(payload.payload)) {
+        throw new Error('Host privileged action "payload" must be an object.');
+    }
+
+    const candidatePayload = payload.payload as Record<string, unknown>;
+
+    if (typeof candidatePayload.scope !== "string" || candidatePayload.scope.trim().length === 0) {
+        throw new Error('Host privileged workflow payload field "scope" must be a non-empty string.');
+    }
+    if (!isValidScopeId(candidatePayload.scope)) {
+        throw new Error('Host privileged workflow payload field "scope" must match /^[a-z0-9][a-z0-9._-]*$/.');
+    }
+
+    if (typeof candidatePayload.kind !== "string" || !WORKFLOW_KINDS.has(candidatePayload.kind)) {
+        throw new Error('Host privileged workflow payload field "kind" must be "process-sequence".');
+    }
+
+    if (typeof candidatePayload.title !== "string" || candidatePayload.title.trim().length === 0) {
+        throw new Error('Host privileged workflow payload field "title" must be a non-empty string.');
+    }
+
+    if (
+        candidatePayload.summary !== undefined
+        && (typeof candidatePayload.summary !== "string" || candidatePayload.summary.trim().length === 0)
+    ) {
+        throw new Error('Host privileged workflow payload field "summary" must be a non-empty string when provided.');
+    }
+
+    if (candidatePayload.dryRun !== undefined && typeof candidatePayload.dryRun !== "boolean") {
+        throw new Error('Host privileged workflow payload field "dryRun" must be a boolean when provided.');
+    }
+
+    if (!Array.isArray(candidatePayload.steps) || candidatePayload.steps.length === 0) {
+        throw new Error('Host privileged workflow payload field "steps" must be a non-empty array.');
+    }
+
+    const stepIds = candidatePayload.steps.map((step, index) => validateWorkflowProcessStep(step, index));
+    const uniqueStepIds = new Set(stepIds);
+    if (uniqueStepIds.size !== stepIds.length) {
+        throw new Error('Host privileged workflow payload field "steps" must not contain duplicate step ids.');
+    }
+
+    if (candidatePayload.confirmation !== undefined) {
+        if (!isRecord(candidatePayload.confirmation)) {
+            throw new Error('Host privileged workflow payload field "confirmation" must be an object when provided.');
+        }
+
+        if (
+            typeof candidatePayload.confirmation.message !== "string"
+            || candidatePayload.confirmation.message.trim().length === 0
+        ) {
+            throw new Error('Host privileged workflow confirmation field "message" must be a non-empty string.');
+        }
+
+        if (candidatePayload.confirmation.requiredForStepIds !== undefined) {
+            if (
+                !Array.isArray(candidatePayload.confirmation.requiredForStepIds)
+                || candidatePayload.confirmation.requiredForStepIds.some((value) => typeof value !== "string" || value.trim().length === 0)
+            ) {
+                throw new Error('Host privileged workflow confirmation field "requiredForStepIds" must be an array of non-empty strings when provided.');
+            }
+
+            for (const stepId of candidatePayload.confirmation.requiredForStepIds) {
+                if (!uniqueStepIds.has(stepId)) {
+                    throw new Error(`Host privileged workflow confirmation field "requiredForStepIds" references unknown step id "${stepId}".`);
+                }
+            }
+        }
+    }
+
+    return payload as ScopedWorkflowRunActionRequest;
+}
+
 export function validateHostPrivilegedActionRequest(payload: unknown): HostPrivilegedActionRequest {
     if (!isRecord(payload)) {
         throw new Error("Host privileged action request must be an object.");
@@ -461,7 +623,11 @@ export function validateHostPrivilegedActionRequest(payload: unknown): HostPrivi
         return validateProcessExecActionRequest(payload);
     }
 
+    if (payload.action === HOST_PRIVILEGED_ACTION_SYSTEM_WORKFLOW_RUN) {
+        return validateScopedWorkflowRunActionRequest(payload);
+    }
+
     throw new Error(
-        `Host privileged action "action" must be "${HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE}", "${HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE}", or "${HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC}".`
+        `Host privileged action "action" must be "${HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE}", "${HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE}", "${HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC}", or "${HOST_PRIVILEGED_ACTION_SYSTEM_WORKFLOW_RUN}".`
     );
 }
