@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 concurrency:
   group: release-please-${{ github.ref }}
@@ -16,8 +17,60 @@ concurrency:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - id: release
+        uses: googleapis/release-please-action@v4
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+
+      - name: Debug OIDC claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOKEN_JSON="$(curl -sS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=npm:registry.npmjs.org")"
+          ID_TOKEN="$(node -e 'const fs=require("fs");const data=JSON.parse(fs.readFileSync(0,"utf8"));process.stdout.write(data.value||"")' <<< "$TOKEN_JSON")"
+          node -e '
+            const token = process.argv[1];
+            const payload = token.split(".")[1];
+            const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+            const out = {
+              iss: decoded.iss,
+              aud: decoded.aud,
+              sub: decoded.sub,
+              repository: decoded.repository,
+              job_workflow_ref: decoded.job_workflow_ref,
+              ref: decoded.ref
+            };
+            console.log(JSON.stringify(out, null, 2));
+          ' "$ID_TOKEN"
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:examples
+      - run: npm run build
+      - run: npm run verify:pack
+      - name: Preflight publish context
+        run: |
+          echo "repo=${GITHUB_REPOSITORY}"
+          echo "ref=${GITHUB_REF}"
+          echo "workflow_ref=${GITHUB_WORKFLOW_REF}"
+          npm config get registry
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

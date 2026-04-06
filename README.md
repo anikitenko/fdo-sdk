@@ -350,15 +350,15 @@ The package includes strict verification gates before publishing:
 - CI (`.github/workflows/ci.yml`) runs on PRs and on pushes to `main`.
 - Release automation (`.github/workflows/release-please.yml`) runs on `main` and:
   - opens/updates a release PR with version and changelog changes
-  - creates a `v*` git tag when that release PR is merged
+  - creates a release/tag when that release PR is merged
+  - publishes the package to npm with provenance when a new release is created
 - `CHANGELOG.md` is updated automatically by release-please during release PR updates.
-- Publish (`.github/workflows/publish.yml`) runs on `v*` tag push and publishes to npm with provenance.
 
 Typical fully automated flow:
 
 1. Merge feature/fix PRs to `main`.
 2. Merge the generated release PR.
-3. Tag-triggered publish runs automatically.
+3. Release Please creates the release and publishes automatically.
 
 Manual fallback flow:
 
