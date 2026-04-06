@@ -114,10 +114,10 @@ describe("SDK contract validators", () => {
         expect(validatePluginInitPayload(undefined)).toEqual({});
         expect(validatePluginInitPayload({
             apiVersion: "1.0.0",
-            capabilities: ["storage.json", "system.hosts.write", "system.fs.scope.etc-hosts"]
+            capabilities: ["storage.json", "system.hosts.write", "system.fs.scope.etc-hosts", "system.process.exec", "system.process.scope.docker-cli"]
         })).toEqual({
             apiVersion: "1.0.0",
-            capabilities: ["storage.json", "system.hosts.write", "system.fs.scope.etc-hosts"],
+            capabilities: ["storage.json", "system.hosts.write", "system.fs.scope.etc-hosts", "system.process.exec", "system.process.scope.docker-cli"],
         });
     });
 
@@ -163,7 +163,7 @@ describe("SDK contract validators", () => {
         expect(() => validateHostPrivilegedActionRequest({
             action: "system.shell.exec",
             payload: { records: [] },
-        })).toThrow('Host privileged action "action" must be "system.hosts.write" or "system.fs.mutate".');
+        })).toThrow('Host privileged action "action" must be "system.hosts.write", "system.fs.mutate", or "system.process.exec".');
         expect(() => validateHostPrivilegedActionRequest({
             action: "system.hosts.write",
             payload: { records: [] },
@@ -205,6 +205,26 @@ describe("SDK contract validators", () => {
                 operations: [{ type: "writeFile", path: "/tmp/ok", content: "x", encoding: "latin1" as any }],
             },
         })).toThrow('Host privileged action operation at index 0 has invalid "encoding".');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.process.exec",
+            payload: { scope: "docker-cli", command: "docker" },
+        })).toThrow('Host privileged action payload field "command" must be an absolute path.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.process.exec",
+            payload: { scope: "docker cli", command: "/usr/local/bin/docker" },
+        })).toThrow('Host privileged action payload field "scope" must match /^[a-z0-9][a-z0-9._-]*$/.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.process.exec",
+            payload: { scope: "docker-cli", command: "/usr/local/bin/docker", args: ["ps", 1] as any },
+        })).toThrow('Host privileged action payload field "args" must be an array of strings when provided.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.process.exec",
+            payload: { scope: "docker-cli", command: "/usr/local/bin/docker", timeoutMs: 0 },
+        })).toThrow('Host privileged action payload field "timeoutMs" must be a positive number when provided.');
+        expect(() => validateHostPrivilegedActionRequest({
+            action: "system.process.exec",
+            payload: { scope: "docker-cli", command: "/usr/local/bin/docker", encoding: "latin1" as any },
+        })).toThrow('Host privileged action payload field "encoding" must be "utf8" or "base64" when provided.');
     });
 
     test("validates filesystem mutate privileged action requests", () => {
@@ -235,6 +255,38 @@ describe("SDK contract validators", () => {
                     { type: "rename", from: "/tmp/fdo-test/file.txt", to: "/tmp/fdo-test/file2.txt" },
                     { type: "remove", path: "/tmp/fdo-test", recursive: true, force: true },
                 ],
+            },
+        });
+    });
+
+    test("validates process exec privileged action requests", () => {
+        expect(validateHostPrivilegedActionRequest({
+            action: "system.process.exec",
+            payload: {
+                scope: "docker-cli",
+                command: "/usr/local/bin/docker",
+                args: ["compose", "ps", "--format", "json"],
+                cwd: "/Users/test/project",
+                env: { DOCKER_CONFIG: "/Users/test/.docker" },
+                timeoutMs: 5000,
+                input: "{}",
+                encoding: "utf8",
+                dryRun: true,
+                reason: "inspect compose services",
+            },
+        })).toEqual({
+            action: "system.process.exec",
+            payload: {
+                scope: "docker-cli",
+                command: "/usr/local/bin/docker",
+                args: ["compose", "ps", "--format", "json"],
+                cwd: "/Users/test/project",
+                env: { DOCKER_CONFIG: "/Users/test/.docker" },
+                timeoutMs: 5000,
+                input: "{}",
+                encoding: "utf8",
+                dryRun: true,
+                reason: "inspect compose services",
             },
         });
     });

@@ -60,6 +60,31 @@ describe("PluginRegistry", () => {
         expect(PluginRegistry.getSidePanelConfig()).toBeNull();
     });
 
+    test("should defer field-based metadata validation until subclass initialization is complete", () => {
+        class FieldMetadataPlugin extends FDO_SDK {
+            private readonly _metadata = {
+                id: "field-metadata-plugin",
+                name: "Field Metadata Plugin",
+                version: "1.0.0",
+                author: "Test",
+                description: "Test plugin",
+                icon: "cog",
+            };
+
+            get metadata() {
+                return this._metadata;
+            }
+
+            init() {}
+            render(): any { return "<div>ok</div>"; }
+        }
+
+        const plugin = new FieldMetadataPlugin();
+
+        expect(() => PluginRegistry.registerPlugin(plugin)).not.toThrow();
+        expect(PluginRegistry.getPluginScopeForLogging(plugin)).toBe("field-metadata-plugin");
+    });
+
     test("should return only side panel config when using SidePanelMixin", () => {
         class SidePanelPlugin extends SidePanelMixin(FDO_SDK) {
             get metadata() {

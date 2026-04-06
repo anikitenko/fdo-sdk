@@ -6,6 +6,17 @@ These are injected by the FDO application host for plugin UI code. They should n
 
 For the full backend-vs-iframe runtime contract, see [RENDER_RUNTIME_CONTRACT.md](./RENDER_RUNTIME_CONTRACT.md).
 
+## Important Boundary: Third-Party Imports
+
+In iframe UI runtime (`render()` / `renderOnLoad()` execution):
+
+- arbitrary npm package `import` / `require` is not a supported contract
+- only host-injected globals and helpers are guaranteed
+
+If you need a new UI library in iframe code, it must be added by FDO host injection and documented here first.
+
+Backend/plugin runtime code can still import npm dependencies that are bundled with the plugin artifact.
+
 ## Table of Contents
 
 - [CSS Libraries](#css-libraries)

@@ -16,6 +16,8 @@ vi.mock("../src/Logger", () => ({
         log: vi.fn(),
         error: vi.fn(),
         event: vi.fn().mockReturnValue("mock-correlation-id"),
+        withContext: vi.fn(function () { return this; }),
+        getLogDirectory: vi.fn().mockReturnValue("/tmp/fdo-sdk-logs/mock-plugin"),
         };
     }),
 }));
@@ -31,6 +33,7 @@ vi.mock("../src/PluginRegistry", () => ({
         getQuickActions: vi.fn().mockReturnValue(["action1", "action2"]),
         getSidePanelConfig: vi.fn().mockReturnValue(["panel1", "panel2"]),
         getDiagnostics: vi.fn().mockReturnValue({ health: { status: "healthy" } }),
+        getPluginScopeForLogging: vi.fn().mockReturnValue("mock-plugin"),
     },
 }));
 

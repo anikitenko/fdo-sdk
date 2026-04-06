@@ -77,15 +77,12 @@ export class PluginRegistry {
     }
 
     public static registerPlugin(plugin: FDO_SDK): void {
-        const metadata = this.hasMetadata(plugin) ? validatePluginMetadata(plugin.metadata) : null;
+        const metadata = this.tryResolvePluginMetadata(plugin, { allowDeferred: true });
         this.pluginMetadata = metadata;
         this.pluginInstance = plugin;
         this.diagnosticsState = this.createDiagnosticsState();
         const pluginScope = this.getPluginStorageScope(metadata);
-        this._logger = this._logger.withContext({
-            component: "PluginRegistry",
-            pluginId: pluginScope,
-        });
+        this._logger = this._logger.withContext({ component: "PluginRegistry", pluginId: pluginScope });
         this._logger.event("plugin.registered", {
             pluginScope,
             pluginName: metadata?.name,
@@ -151,9 +148,11 @@ export class PluginRegistry {
     }
 
     public static callInit(): void {
+        this.refreshLoggerContext();
         this._logger.event("plugin.init.start");
         try {
             this.pluginInstance?.init(); // Safe call without `!`
+            this.refreshLoggerContext();
             this.diagnosticsState.initCount += 1;
             this.diagnosticsState.lastInitAt = new Date().toISOString();
             this._logger.event("plugin.init.success");
@@ -187,6 +186,7 @@ export class PluginRegistry {
         }
 
         try {
+            this.refreshLoggerContext();
             const payload = validateSerializedRenderPayload({
                 render: this.pluginInstance?.serializeRender(),
                 onLoad: this.pluginInstance?.serializeRenderOnLoad()
@@ -206,6 +206,7 @@ export class PluginRegistry {
 
         if (handler) {
             try {
+                this.refreshLoggerContext();
                 this._logger.event("plugin.handler.start", { handler: name });
                 const result = await handler(data);
                 this.diagnosticsState.handlerCount += 1;
@@ -279,7 +280,7 @@ export class PluginRegistry {
     }
 
     public static clearPlugin(): void {
-        void this.disposeStoreScope(this.getStoreContext().pluginId);
+        void this.disposeStoreScope(this.getPluginScopeForLogging(this.pluginInstance));
         this.pluginInstance = null;
         this.pluginMetadata = null;
         this.diagnosticsState = this.createDiagnosticsState();
@@ -340,6 +341,13 @@ export class PluginRegistry {
         const metadata = validatePluginMetadata(this.pluginInstance.metadata);
         this.pluginMetadata = metadata;
         return metadata;
+    }
+
+    public static getPluginScopeForLogging(plugin?: FDO_SDK | null): string {
+        const metadata = plugin
+            ? this.tryResolvePluginMetadata(plugin, { allowDeferred: true })
+            : (this.pluginMetadata ?? this.tryResolvePluginMetadata(this.pluginInstance, { allowDeferred: true }));
+        return this.getPluginStorageScope(metadata);
     }
 
     private static getPluginStorageScope(metadata: PluginMetadata | null): string {
@@ -409,6 +417,37 @@ export class PluginRegistry {
 
     private static hasMetadata(plugin: FDO_SDK): plugin is PluginWithMetadata {
         return "metadata" in plugin;
+    }
+
+    private static refreshLoggerContext(): void {
+        const pluginScope = this.getPluginScopeForLogging(this.pluginInstance);
+        this._logger = this._logger.withContext({
+            component: "PluginRegistry",
+            pluginId: pluginScope,
+        });
+    }
+
+    private static tryResolvePluginMetadata(
+        plugin?: FDO_SDK | null,
+        options: { allowDeferred?: boolean } = {}
+    ): PluginMetadata | null {
+        if (!plugin || !this.hasMetadata(plugin)) {
+            return null;
+        }
+
+        const rawMetadata = plugin.metadata;
+        if ((rawMetadata === undefined || rawMetadata === null) && options.allowDeferred) {
+            return null;
+        }
+
+        try {
+            return validatePluginMetadata(rawMetadata);
+        } catch (error) {
+            if (options.allowDeferred && (rawMetadata === undefined || rawMetadata === null)) {
+                return null;
+            }
+            throw error;
+        }
     }
 
     private static hasQuickActions(plugin: FDO_SDK): plugin is PluginWithQuickActions {

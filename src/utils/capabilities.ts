@@ -11,6 +11,7 @@ const audit: CapabilityAudit = {
     deniedCount: {},
 };
 const FILESYSTEM_SCOPE_CAPABILITY_PREFIX = "system.fs.scope.";
+const PROCESS_SCOPE_CAPABILITY_PREFIX = "system.process.scope.";
 
 function increment(counter: Record<string, number>, key: string): void {
     counter[key] = (counter[key] ?? 0) + 1;
@@ -37,11 +38,24 @@ export function requireCapability(capability: PluginCapability, action: string):
 }
 
 export function requireFilesystemScopeCapability(scopeId: string, action: string): void {
+    requireScopedCapability(scopeId, action, FILESYSTEM_SCOPE_CAPABILITY_PREFIX, "Filesystem");
+}
+
+export function requireProcessScopeCapability(scopeId: string, action: string): void {
+    requireScopedCapability(scopeId, action, PROCESS_SCOPE_CAPABILITY_PREFIX, "Process");
+}
+
+function requireScopedCapability(
+    scopeId: string,
+    action: string,
+    prefix: string,
+    label: string
+): void {
     const normalizedScope = scopeId.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
     if (!normalizedScope || !/[a-z0-9]/.test(normalizedScope)) {
-        throw new Error("Filesystem scope id must contain at least one alphanumeric character.");
+        throw new Error(`${label} scope id must contain at least one alphanumeric character.`);
     }
-    const capability = `${FILESYSTEM_SCOPE_CAPABILITY_PREFIX}${normalizedScope}` as PluginCapability;
+    const capability = `${prefix}${normalizedScope}` as PluginCapability;
     requireCapability(capability, action);
 }
 

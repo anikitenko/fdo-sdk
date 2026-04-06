@@ -1,6 +1,7 @@
 import { Logger } from "../src/Logger";
 import * as winston from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
+import fs from "fs";
 
 vi.mock("winston", () => {
     const logMethods = {
@@ -44,6 +45,7 @@ vi.mock("winston-daily-rotate-file", () => {
 describe("Logger", () => {
     let logger: Logger;
     let winstonLoggerMock: any;
+    let mkdirSyncSpy: vi.SpyInstance;
     const originalPlatform = process.platform;
 
     const setPlatform = (platform: string) => {
@@ -54,6 +56,7 @@ describe("Logger", () => {
 
     beforeEach(() => {
         // Capture the mocked logger that Winston creates
+        mkdirSyncSpy = vi.spyOn(fs, "mkdirSync").mockImplementation(() => undefined as unknown as string);
         winstonLoggerMock = winston.createLogger();
         logger = new Logger();
     });
@@ -134,9 +137,17 @@ describe("Logger", () => {
 
         expect(DailyRotateFile).toHaveBeenCalledWith(
             expect.objectContaining({
-                dirname: "/tmp/fdo-sdk-logs/test-plugin",
+                dirname: "/tmp/fdo-sdk-logs",
             })
         );
+    });
+
+    test("should create the configured log directory eagerly", () => {
+        process.env.FDO_SDK_LOG_ROOT = "/tmp/fdo-sdk-logs";
+
+        new Logger({ context: { pluginId: "test-plugin" } });
+
+        expect(mkdirSyncSpy).toHaveBeenCalledWith("/tmp/fdo-sdk-logs", { recursive: true });
     });
 
     test("should create child logger with merged context", () => {
@@ -149,9 +160,18 @@ describe("Logger", () => {
 
         expect(DailyRotateFile).toHaveBeenCalledWith(
             expect.objectContaining({
-                dirname: "/tmp/fdo-sdk-logs/parent-plugin",
+                dirname: "/tmp/fdo-sdk-logs",
             })
         );
+    });
+
+    test("should expose the resolved log directory", () => {
+        const fileLogger = new Logger({
+            logRoot: "/tmp/fdo-sdk-logs",
+            context: { pluginId: "test-plugin" },
+        });
+
+        expect(fileLogger.getLogDirectory()).toBe("/tmp/fdo-sdk-logs");
     });
 
     test("should write structured events and return correlation id", () => {

@@ -19,7 +19,8 @@ interface ParentPortBridge {
 }
 
 export class Communicator extends EventEmitter {
-    private readonly _logger: Logger = new Logger({ context: { component: "Communicator" } })
+    private _logger: Logger = new Logger({ context: { component: "Communicator" } })
+    private loggerScope: string = "global";
     private readonly parentPort: ParentPortBridge;
 
     constructor() {
@@ -71,11 +72,11 @@ export class Communicator extends EventEmitter {
 
             try {
                 const validatedMessage = validateHostMessageEnvelope(data);
-                this._logger.log(`Received from main process: ${validatedMessage.message}`);
-                this._logger.event("ipc.message.received", { type: validatedMessage.message });
+                this.getLogger().log(`Received from main process: ${validatedMessage.message}`);
+                this.getLogger().event("ipc.message.received", { type: validatedMessage.message });
                 this.emit(validatedMessage.message, validatedMessage.content);
             } catch (error) {
-                this._logger.error(new Error(`Ignoring invalid host message: ${error}`));
+                this.getLogger().error(new Error(`Ignoring invalid host message: ${error}`));
             }
         });
 
@@ -108,7 +109,7 @@ export class Communicator extends EventEmitter {
         });
 
         this.on(MESSAGE_TYPE.PLUGIN_INIT, (data) => {
-            const correlationId = this._logger.event("plugin.init.response.start");
+            const correlationId = this.getLogger().event("plugin.init.response.start");
             try {
                 const request = validatePluginInitPayload(data);
                 PluginRegistry.assertHostApiCompatibility(request.apiVersion);
@@ -121,38 +122,38 @@ export class Communicator extends EventEmitter {
                         sidePanelActions: PluginRegistry.getSidePanelConfig(),
                     } satisfies PluginInitResponse,
                 });
-                this._logger.event("plugin.init.response.success", {}, { correlationId });
+                this.getLogger().event("plugin.init.response.success", {}, { correlationId });
             } catch (error) {
-                this._logger.error(new Error(`Error preparing plugin initialization response: ${error}`));
+                this.getLogger().error(new Error(`Error preparing plugin initialization response: ${error}`));
                 this.sendMessage({
                     type: MESSAGE_TYPE.PLUGIN_INIT,
                     response: this.buildInitFailureResponse(error),
                 });
-                this._logger.event("plugin.init.response.error", {}, { correlationId });
+                this.getLogger().event("plugin.init.response.error", {}, { correlationId });
             }
         });
 
         this.on(MESSAGE_TYPE.PLUGIN_RENDER, () => {
-            const correlationId = this._logger.event("plugin.render.response.start");
+            const correlationId = this.getLogger().event("plugin.render.response.start");
             try {
                 this.sendMessage({
                     type: MESSAGE_TYPE.PLUGIN_RENDER,
                     response: PluginRegistry.callRenderer(),
                 });
-                this._logger.event("plugin.render.response.success", {}, { correlationId });
+                this.getLogger().event("plugin.render.response.success", {}, { correlationId });
             } catch (error) {
-                this._logger.error(new Error(`Error preparing render payload: ${error}`));
+                this.getLogger().error(new Error(`Error preparing render payload: ${error}`));
                 this.sendMessage({
                     type: MESSAGE_TYPE.PLUGIN_RENDER,
                     response: this.buildRenderFailureResponse("Invalid render payload."),
                 });
-                this._logger.event("plugin.render.response.error", {}, { correlationId });
+                this.getLogger().event("plugin.render.response.error", {}, { correlationId });
             }
         });
 
         // 🔹 UI ↔ Plugin Communication
         this.on(MESSAGE_TYPE.UI_MESSAGE, async (data) => {
-            const correlationId = this._logger.event("ui.message.response.start");
+            const correlationId = this.getLogger().event("ui.message.response.start");
             let response: UIMessageResponse;
 
             try {
@@ -164,13 +165,13 @@ export class Communicator extends EventEmitter {
                 } else {
                     response = await PluginRegistry.callHandler(handlerName, payload.content);
                 }
-                this._logger.event("ui.message.response.success", { handler: handlerName }, { correlationId });
+                this.getLogger().event("ui.message.response.success", { handler: handlerName }, { correlationId });
             } catch (error) {
-                this._logger.error(new Error(`Error in UI message handling: ${error}`));
+                this.getLogger().error(new Error(`Error in UI message handling: ${error}`));
                 response = {
                     error: error instanceof Error ? error.message : "Unknown error"
                 };
-                this._logger.event("ui.message.response.error", {}, { correlationId });
+                this.getLogger().event("ui.message.response.error", {}, { correlationId });
             }
 
             this.sendMessage({
@@ -178,5 +179,14 @@ export class Communicator extends EventEmitter {
                 response
             });
         });
+    }
+
+    private getLogger(): Logger {
+        const pluginScope = PluginRegistry.getPluginScopeForLogging();
+        if (pluginScope !== this.loggerScope) {
+            this._logger = this._logger.withContext({ component: "Communicator", pluginId: pluginScope });
+            this.loggerScope = pluginScope;
+        }
+        return this._logger;
     }
 }

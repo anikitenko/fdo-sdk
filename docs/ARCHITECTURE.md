@@ -81,15 +81,17 @@ Store lifecycle hooks are supported:
 
 Runtime permission model:
 
-- privileged SDK features are capability-gated (`storage.json`, `sudo.prompt`, `system.hosts.write`, `system.fs.scope.<scope-id>`)
+- privileged SDK features are capability-gated (`storage.json`, `sudo.prompt`, `system.hosts.write`, `system.fs.scope.<scope-id>`, `system.process.exec`, `system.process.scope.<scope-id>`)
 - host grants are configured via `PluginRegistry.configureCapabilities(...)` (usually through validated `PLUGIN_INIT` payload)
 - diagnostics include granted capabilities and usage/denial counters for auditing
 
 Host-mediated privileged actions:
 
 - SDK defines a strict contract validator for host privileged requests (`validateHostPrivilegedActionRequest`)
-- current action contracts are intentionally scoped (`system.hosts.write`, `system.fs.mutate`)
+- current action contracts are intentionally scoped (`system.hosts.write`, `system.fs.mutate`, `system.process.exec`)
 - host must enforce confirmation, path/command boundaries, and auditing; plugins should not receive generic arbitrary-write permissions
+
+Operator-style plugins should be built on top of these scoped host contracts rather than direct shell/process assumptions. This includes Docker Desktop-like plugins, Kubernetes dashboards, Helm managers, Terraform consoles, and similar operational tooling.
 
 ## Validation Boundaries
 

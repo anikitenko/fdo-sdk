@@ -5,6 +5,7 @@ import {
     FilesystemMutateActionRequest,
     HostPrivilegedActionRequest,
     PluginCapability,
+    ProcessExecActionRequest,
 } from "../types";
 
 export interface HostMessageEnvelope {
@@ -22,10 +23,17 @@ export interface PluginInitPayload {
     capabilities?: PluginCapability[];
 }
 
-const KNOWN_PLUGIN_CAPABILITIES = new Set<PluginCapability>(["storage.json", "sudo.prompt", "system.hosts.write"]);
+const KNOWN_PLUGIN_CAPABILITIES = new Set<PluginCapability>([
+    "storage.json",
+    "sudo.prompt",
+    "system.hosts.write",
+    "system.process.exec",
+]);
 const HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE = "system.hosts.write";
 const HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE = "system.fs.mutate";
+const HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC = "system.process.exec";
 const FS_SCOPE_CAPABILITY_PREFIX = "system.fs.scope.";
+const PROCESS_SCOPE_CAPABILITY_PREFIX = "system.process.scope.";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object";
@@ -207,6 +215,7 @@ export function validatePluginInitPayload(payload: unknown): PluginInitPayload {
             if (
                 !KNOWN_PLUGIN_CAPABILITIES.has(capability as PluginCapability)
                 && !capability.startsWith(FS_SCOPE_CAPABILITY_PREFIX)
+                && !capability.startsWith(PROCESS_SCOPE_CAPABILITY_PREFIX)
             ) {
                 throw new Error(`Plugin init payload capability "${capability}" is not supported by this SDK version.`);
             }
@@ -350,6 +359,91 @@ function validateFilesystemMutateActionRequest(payload: Record<string, unknown>)
     return payload as FilesystemMutateActionRequest;
 }
 
+function validateProcessExecActionRequest(payload: Record<string, unknown>): ProcessExecActionRequest {
+    if (!isRecord(payload.payload)) {
+        throw new Error('Host privileged action "payload" must be an object.');
+    }
+
+    const candidatePayload = payload.payload as Record<string, unknown>;
+
+    if (typeof candidatePayload.scope !== "string" || candidatePayload.scope.trim().length === 0) {
+        throw new Error('Host privileged action payload field "scope" must be a non-empty string.');
+    }
+    if (!isValidScopeId(candidatePayload.scope)) {
+        throw new Error('Host privileged action payload field "scope" must match /^[a-z0-9][a-z0-9._-]*$/.');
+    }
+
+    if (typeof candidatePayload.command !== "string" || candidatePayload.command.trim().length === 0) {
+        throw new Error('Host privileged action payload field "command" must be a non-empty string.');
+    }
+
+    if (!isAbsolutePath(candidatePayload.command)) {
+        throw new Error('Host privileged action payload field "command" must be an absolute path.');
+    }
+
+    if (candidatePayload.args !== undefined) {
+        if (!Array.isArray(candidatePayload.args) || candidatePayload.args.some((arg) => typeof arg !== "string")) {
+            throw new Error('Host privileged action payload field "args" must be an array of strings when provided.');
+        }
+    }
+
+    if (candidatePayload.cwd !== undefined) {
+        if (typeof candidatePayload.cwd !== "string" || !isAbsolutePath(candidatePayload.cwd)) {
+            throw new Error('Host privileged action payload field "cwd" must be an absolute path when provided.');
+        }
+    }
+
+    if (candidatePayload.env !== undefined) {
+        if (!isRecord(candidatePayload.env)) {
+            throw new Error('Host privileged action payload field "env" must be an object when provided.');
+        }
+
+        for (const [key, value] of Object.entries(candidatePayload.env)) {
+            if (!/^[A-Z_][A-Z0-9_]*$/i.test(key)) {
+                throw new Error(`Host privileged action payload field "env" has invalid key "${key}".`);
+            }
+            if (typeof value !== "string") {
+                throw new Error(`Host privileged action payload field "env.${key}" must be a string.`);
+            }
+        }
+    }
+
+    if (candidatePayload.timeoutMs !== undefined) {
+        if (
+            typeof candidatePayload.timeoutMs !== "number"
+            || !Number.isFinite(candidatePayload.timeoutMs)
+            || candidatePayload.timeoutMs <= 0
+        ) {
+            throw new Error('Host privileged action payload field "timeoutMs" must be a positive number when provided.');
+        }
+    }
+
+    if (candidatePayload.input !== undefined && typeof candidatePayload.input !== "string") {
+        throw new Error('Host privileged action payload field "input" must be a string when provided.');
+    }
+
+    if (
+        candidatePayload.encoding !== undefined
+        && candidatePayload.encoding !== "utf8"
+        && candidatePayload.encoding !== "base64"
+    ) {
+        throw new Error('Host privileged action payload field "encoding" must be "utf8" or "base64" when provided.');
+    }
+
+    if (candidatePayload.dryRun !== undefined && typeof candidatePayload.dryRun !== "boolean") {
+        throw new Error('Host privileged action payload field "dryRun" must be a boolean when provided.');
+    }
+
+    if (
+        candidatePayload.reason !== undefined
+        && (typeof candidatePayload.reason !== "string" || candidatePayload.reason.trim().length === 0)
+    ) {
+        throw new Error('Host privileged action payload field "reason" must be a non-empty string when provided.');
+    }
+
+    return payload as ProcessExecActionRequest;
+}
+
 export function validateHostPrivilegedActionRequest(payload: unknown): HostPrivilegedActionRequest {
     if (!isRecord(payload)) {
         throw new Error("Host privileged action request must be an object.");
@@ -363,7 +457,11 @@ export function validateHostPrivilegedActionRequest(payload: unknown): HostPrivi
         return validateFilesystemMutateActionRequest(payload);
     }
 
+    if (payload.action === HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC) {
+        return validateProcessExecActionRequest(payload);
+    }
+
     throw new Error(
-        `Host privileged action "action" must be "${HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE}" or "${HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE}".`
+        `Host privileged action "action" must be "${HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE}", "${HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE}", or "${HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC}".`
     );
 }

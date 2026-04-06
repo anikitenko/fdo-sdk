@@ -16,11 +16,13 @@ export {
 export { pify } from "./utils/pify";
 export { runWithSudo } from "./utils/runWithSudo";
 export { emitDeprecationWarning, formatDeprecationMessage } from "./utils/deprecation";
-export { requireFilesystemScopeCapability } from "./utils/capabilities";
+export { requireFilesystemScopeCapability, requireProcessScopeCapability } from "./utils/capabilities";
 export {
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createHostsWriteActionRequest,
+    createProcessExecActionRequest,
+    createProcessScopeCapability,
     validatePrivilegedActionRequest,
 } from "./utils/privilegedActions";
 
@@ -45,24 +47,25 @@ export * from "./decorators/ErrorHandler";
 export class FDO_SDK {
     public static readonly API_VERSION: string = "1.0.0"
     static readonly TYPE_TAG = Symbol("FDO_SDK")
-    private readonly _logger: Logger = new Logger({ context: { component: "FDO_SDK" } })
+    private _logger: Logger = new Logger({ context: { component: "FDO_SDK" } })
+    private loggerScope: string = "global";
     private readonly communicator: Communicator = new Communicator()
 
     constructor() {
         PluginRegistry.registerPlugin(this)
         this.communicator.emit("init", {})
-        this._logger.log("FDO_SDK initialized!")
+        this.getLogger().log("FDO_SDK initialized!")
     }
 
     public init(): void {
         const error = new Error("Method 'init' must be implemented by plugin.")
-        this._logger.error(error)
+        this.getLogger().error(error)
         throw error
     }
 
     public render(): string {
         const error = new Error("Method 'render' must be implemented by plugin.")
-        this._logger.error(error)
+        this.getLogger().error(error)
         throw error
     }
 
@@ -100,35 +103,39 @@ export class FDO_SDK {
     }
 
     public log(message: string): void {
-        this._logger.log(message)
+        this.getLogger().log(message)
     }
 
     public error(error: Error): void {
-        this._logger.error(error)
+        this.getLogger().error(error)
     }
 
     public info(message: string, ...meta: unknown[]): void {
-        this._logger.info(message, ...meta)
+        this.getLogger().info(message, ...meta)
     }
 
     public warn(message: string, ...meta: unknown[]): void {
-        this._logger.warn(message, ...meta)
+        this.getLogger().warn(message, ...meta)
     }
 
     public debug(message: string, ...meta: unknown[]): void {
-        this._logger.debug(message, ...meta)
+        this.getLogger().debug(message, ...meta)
     }
 
     public verbose(message: string, ...meta: unknown[]): void {
-        this._logger.verbose(message, ...meta)
+        this.getLogger().verbose(message, ...meta)
     }
 
     public silly(message: string, ...meta: unknown[]): void {
-        this._logger.silly(message, ...meta)
+        this.getLogger().silly(message, ...meta)
     }
 
     public event(name: string, payload: Record<string, unknown> = {}): string {
-        return this._logger.event(name, payload)
+        return this.getLogger().event(name, payload)
+    }
+
+    public getLogDirectory(): string {
+        return this.getLogger().getLogDirectory();
     }
 
     private isThenable(value: unknown): value is Promise<unknown> {
@@ -139,6 +146,15 @@ export class FDO_SDK {
         const normalizedError = error instanceof Error
             ? error
             : new Error(`Async ${methodName} rejection: ${String(error)}`);
-        this._logger.error(normalizedError);
+        this.getLogger().error(normalizedError);
+    }
+
+    private getLogger(): Logger {
+        const pluginScope = PluginRegistry.getPluginScopeForLogging(this);
+        if (pluginScope !== this.loggerScope) {
+            this._logger = this._logger.withContext({ component: "FDO_SDK", pluginId: pluginScope });
+            this.loggerScope = pluginScope;
+        }
+        return this._logger;
     }
 }

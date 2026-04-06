@@ -37,11 +37,14 @@ export type PluginInitRequest = {
 };
 
 export type FilesystemScopeCapability = `system.fs.scope.${string}`;
+export type ProcessScopeCapability = `system.process.scope.${string}`;
 export type PluginCapability =
     | "storage.json"
     | "sudo.prompt"
     | "system.hosts.write"
-    | FilesystemScopeCapability;
+    | "system.process.exec"
+    | FilesystemScopeCapability
+    | ProcessScopeCapability;
 
 export type CapabilityConfiguration = {
     granted: PluginCapability[];
@@ -62,7 +65,8 @@ export type FilesystemMutationOperation =
 
 export type HostPrivilegedAction =
     | "system.hosts.write"
-    | "system.fs.mutate";
+    | "system.fs.mutate"
+    | "system.process.exec";
 
 export type HostsWriteActionRequest = {
     action: "system.hosts.write";
@@ -83,9 +87,26 @@ export type FilesystemMutateActionRequest = {
     };
 };
 
+export type ProcessExecActionRequest = {
+    action: "system.process.exec";
+    payload: {
+        scope: string;
+        command: string;
+        args?: string[];
+        cwd?: string;
+        env?: Record<string, string>;
+        timeoutMs?: number;
+        input?: string;
+        encoding?: "utf8" | "base64";
+        dryRun?: boolean;
+        reason?: string;
+    };
+};
+
 export type HostPrivilegedActionRequest =
     | HostsWriteActionRequest
-    | FilesystemMutateActionRequest;
+    | FilesystemMutateActionRequest
+    | ProcessExecActionRequest;
 
 export type UIMessageResponse = unknown | ErrorResponse;
 

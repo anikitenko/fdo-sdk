@@ -3,6 +3,7 @@ import {
     getCapabilityDiagnostics,
     requireCapability,
     requireFilesystemScopeCapability,
+    requireProcessScopeCapability,
     resetCapabilityStateForTests,
 } from "../../src/utils/capabilities";
 
@@ -39,5 +40,13 @@ describe("capabilities", () => {
 
         const diagnostics = getCapabilityDiagnostics();
         expect(diagnostics.usageCount["system.fs.scope.etc-hosts"]).toBe(1);
+    });
+
+    test("validates and checks process scope capabilities", () => {
+        configureCapabilities({ granted: ["system.process.scope.docker-cli"] });
+        expect(() => requireProcessScopeCapability("docker cli", "execute docker commands")).not.toThrow();
+
+        const diagnostics = getCapabilityDiagnostics();
+        expect(diagnostics.usageCount["system.process.scope.docker-cli"]).toBe(1);
     });
 });

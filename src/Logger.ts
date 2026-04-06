@@ -1,6 +1,7 @@
 import winston from 'winston'
 import DailyRotateFile from 'winston-daily-rotate-file'
 import path from "path";
+import fs from "fs";
 const { combine, timestamp, json, errors, prettyPrint } = winston.format;
 
 type LoggerContext = {
@@ -34,8 +35,8 @@ export class Logger {
             sessionId: options.context?.sessionId ?? process.env.FDO_SDK_SESSION_ID ?? Logger.createCorrelationId("session"),
         };
 
-        const pluginScope = this.sanitizePathSegment(this.context.pluginId ?? "global");
-        const logDir = path.join(this.logRoot, pluginScope);
+        const logDir = Logger.resolveLogDirectory(this.logRoot);
+        fs.mkdirSync(logDir, { recursive: true });
         this.logger = winston.createLogger({
             level: this.logLevel,
             defaultMeta: {
@@ -127,17 +128,17 @@ export class Logger {
         return correlationId;
     }
 
+    public getLogDirectory(): string {
+        return Logger.resolveLogDirectory(this.logRoot);
+    }
+
     public static createCorrelationId(prefix: string = "event"): string {
         correlationCounter += 1;
         return `${prefix}-${Date.now()}-${correlationCounter}`;
     }
 
-    private sanitizePathSegment(value: string): string {
-        return value
-            .trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9._-]+/g, "-")
-            .replace(/^-+|-+$/g, "") || "global";
+    public static resolveLogDirectory(logRoot: string): string {
+        return path.resolve(logRoot);
     }
 }
 

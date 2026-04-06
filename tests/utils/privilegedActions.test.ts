@@ -2,6 +2,8 @@ import {
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createHostsWriteActionRequest,
+    createProcessExecActionRequest,
+    createProcessScopeCapability,
     validatePrivilegedActionRequest,
 } from "../../src";
 
@@ -14,6 +16,10 @@ describe("privileged action helpers", () => {
         expect(() => createFilesystemScopeCapability("___")).toThrow(
             "Filesystem scope id must contain at least one alphanumeric character."
         );
+    });
+
+    test("creates normalized process scope capability", () => {
+        expect(createProcessScopeCapability(" Docker CLI ")).toBe("system.process.scope.docker-cli");
     });
 
     test("builds hosts write requests through validator", () => {
@@ -54,5 +60,31 @@ describe("privileged action helpers", () => {
                 operations: [{ type: "writeFile", path: "/tmp/test", content: "x" }],
             },
         })).not.toThrow();
+    });
+
+    test("builds process exec requests through validator", () => {
+        expect(createProcessExecActionRequest({
+            action: "system.process.exec",
+            payload: {
+                scope: "docker-cli",
+                command: "/usr/local/bin/docker",
+                args: ["ps", "--format", "json"],
+                cwd: "/Users/test/project",
+                timeoutMs: 5000,
+                dryRun: true,
+                reason: "list containers",
+            },
+        })).toEqual({
+            action: "system.process.exec",
+            payload: {
+                scope: "docker-cli",
+                command: "/usr/local/bin/docker",
+                args: ["ps", "--format", "json"],
+                cwd: "/Users/test/project",
+                timeoutMs: 5000,
+                dryRun: true,
+                reason: "list containers",
+            },
+        });
     });
 });
