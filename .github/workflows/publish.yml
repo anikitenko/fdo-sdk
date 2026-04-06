@@ -3,6 +3,7 @@ name: Publish
 on:
   push:
     tags:
+      - "fdo-sdk-v*"
       - "v*"
   workflow_dispatch:
 
