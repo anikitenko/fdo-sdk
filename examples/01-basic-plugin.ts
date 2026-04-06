@@ -3,6 +3,9 @@
  * 
  * This example demonstrates the minimal requirements to create a working FDO plugin.
  * It covers the core plugin lifecycle (initialization and rendering) and basic metadata structure.
+ *
+ * This is a learning example, not the primary production authoring entry point.
+ * For real plugin work, start from the fixture set in `examples/fixtures/` first.
  * 
  * Compatible with SDK v1.x
  * 
@@ -29,6 +32,10 @@ import { FDO_SDK, FDOInterface, PluginMetadata, DOMText, DOMNested } from "@anik
  * 2. Implement the FDOInterface interface
  * 3. Define metadata (name, version, author, description, icon)
  * 4. Implement init() and render() methods
+ *
+ * For production-oriented scaffolding, prefer:
+ * - `fixtures/minimal-plugin.fixture.ts` for a baseline plugin
+ * - `fixtures/operator-*.fixture.ts` for DevOps/SRE/operator workflows
  */
 export default class BasicPlugin extends FDO_SDK implements FDOInterface {
   /**
@@ -117,12 +124,19 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
         // What's Next section
         domNested.createBlockDiv([
           domText.createHText(3, 'What\'s Next?'),
-          domText.createPText('This is a basic plugin example. To learn more advanced features:'),
+          domText.createPText('This is a learning example. For production-oriented authoring, start from the canonical fixture set first:'),
+          domNested.createList([
+            domNested.createListItem(['Use fixtures/minimal-plugin.fixture.ts for the smallest stable scaffold']),
+            domNested.createListItem(['Use operator fixtures for kubectl, terraform, or host-specific operational tooling']),
+            domNested.createListItem(['Read docs/SAFE_PLUGIN_AUTHORING.md and docs/OPERATOR_PLUGIN_PATTERNS.md before expanding capabilities'])
+          ]),
+          domText.createPText('After choosing the right fixture baseline, use the numbered examples to study individual SDK features:'),
           domNested.createList([
             domNested.createListItem(['See example 02 for interactive UI with buttons and forms']),
             domNested.createListItem(['See example 03 for data persistence']),
             domNested.createListItem(['See example 04 for UI extensions (quick actions and side panels)']),
-            domNested.createListItem(['See example 05 for advanced DOM generation and styling'])
+            domNested.createListItem(['See example 05 for advanced DOM generation and styling']),
+            domNested.createListItem(['See example 08 and example 09 only when you need lower-level privileged transport details'])
           ])
         ], { 
           style: {
@@ -163,9 +177,11 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
  * 4. The render() method returns the UI string for the plugin host pipeline
  * 5. Use this.log() for informational messages and this.error() for error logging
  * 6. Always handle errors in init() and render() to prevent plugin failures
+ * 7. For real plugin work, choose the right fixture first instead of copying a learning example by default
  * 
  * Next Steps:
- * - Copy this file to your project
+ * - Choose the closest fixture in `examples/fixtures/` as your starting point
+ * - Use this file only to understand the minimum lifecycle contract
  * - Customize the metadata with your plugin information
  * - Modify the render() method to display your own UI
  * - Add your initialization logic to the init() method

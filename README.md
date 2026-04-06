@@ -29,6 +29,12 @@ Plugin metadata is also part of the host contract. In particular, `metadata.icon
 
 For the detailed render/runtime contract, see [docs/RENDER_RUNTIME_CONTRACT.md](./docs/RENDER_RUNTIME_CONTRACT.md).
 
+Roadmaps:
+
+- production hardening and completed durability work: [docs/PRODUCTION_GRADE_TODO.md](./docs/PRODUCTION_GRADE_TODO.md)
+- longer-term platform vision for DevOps/SRE/operator workflows: [docs/REVOLUTIONARY_PLUGIN_SYSTEM_TODO.md](./docs/REVOLUTIONARY_PLUGIN_SYSTEM_TODO.md)
+- concrete FDO host/editor/AI handoff for the current Phase 1 golden path: [docs/PHASE_1_FDO_ALIGNMENT_PROMPT.md](./docs/PHASE_1_FDO_ALIGNMENT_PROMPT.md)
+
 ## Features
 
 ### DOM Element Generation
@@ -123,13 +129,16 @@ new MyPlugin();
 
 ### Example Usage
 
-See `examples/example_plugin.ts` for a basic plugin example.
+See `examples/fixtures/minimal-plugin.fixture.ts` for the primary minimal plugin scaffold.
+See `examples/01-basic-plugin.ts` for the teaching-oriented basic lifecycle example.
 
 See `examples/dom_elements_plugin.ts` for comprehensive examples of using the new DOM element creation capabilities including tables, media, semantic HTML, lists, and form controls.
 
-See `examples/08-privileged-actions-plugin.ts` for host privileged action request flow using `requestPrivilegedAction(...)` with correlation IDs and stable response envelope handling.
+See `examples/08-privileged-actions-plugin.ts` for the low-level host privileged action request flow using `requestPrivilegedAction(...)` with correlation IDs and stable response envelope handling.
 
-See `examples/09-operator-plugin.ts` for a Docker/Kubernetes-style operator pattern built on scoped host process execution.
+See `examples/09-operator-plugin.ts` for a curated operator helper example for a known tool family built on scoped host process execution.
+
+For FDO-side Monaco/editor/AI alignment on these example priorities, use `docs/PHASE_1_FDO_ALIGNMENT_PROMPT.md`.
 
 The SDK also provides curated operator presets for common DevOps/SRE tooling such as Docker, kubectl, Helm, Terraform, Ansible, AWS CLI, gcloud, Azure CLI, Podman, Kustomize, GitHub CLI, Git, Vault, and Nomad, while still supporting generic custom scopes for host-specific tools.
 
