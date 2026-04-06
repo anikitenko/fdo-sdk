@@ -2,6 +2,7 @@ import {
   FDOInterface,
   FDO_SDK,
   PluginMetadata,
+  PluginRegistry,
   createOperatorToolActionRequest,
   createOperatorToolCapabilityPreset,
   createScopedWorkflowRequest,
@@ -26,6 +27,10 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
     return this._metadata;
   }
 
+  declareCapabilities() {
+    return createOperatorToolCapabilityPreset("terraform");
+  }
+
   init(): void {
     const request = createOperatorToolActionRequest("terraform", {
       command: "/usr/local/bin/terraform",
@@ -36,9 +41,13 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
     });
 
     this.info("Terraform operator fixture initialized", {
+      declaredCapabilities: this.declareCapabilities(),
       requestedCapabilities: createOperatorToolCapabilityPreset("terraform"),
       request,
     });
+
+    PluginRegistry.registerHandler("terraform.previewPlan", async () => this.previewPlan());
+    PluginRegistry.registerHandler("terraform.previewApplyWorkflow", async () => this.previewAndApplyWorkflow());
   }
 
   render(): string {
@@ -47,7 +56,46 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
         <h1>${this._metadata.name}</h1>
         <p>Use curated capability and request helpers for known tool families.</p>
         <p>For multi-step preview/apply flows, prefer <code>requestScopedWorkflow(...)</code> over plugin-private orchestration.</p>
+        <div style={{ display: "flex", gap: "12px", marginTop: "12px", flexWrap: "wrap" }}>
+          <button id="terraform-preview-plan">Preview Plan</button>
+          <button id="terraform-preview-apply-workflow">Preview+Apply Workflow</button>
+        </div>
+        <pre id="terraform-workflow-result" style={{ marginTop: "16px", whiteSpace: "pre-wrap" }}></pre>
       </div>
+    `;
+  }
+
+  renderOnLoad(): string {
+    return `
+      () => {
+        const previewPlanButton = document.getElementById("terraform-preview-plan");
+        const previewApplyWorkflowButton = document.getElementById("terraform-preview-apply-workflow");
+        const output = document.getElementById("terraform-workflow-result");
+        if (!previewPlanButton || !previewApplyWorkflowButton || !output) return;
+
+        const runHandler = async (handler) => {
+          output.textContent = "Running...";
+          try {
+            const result = await window.createBackendReq("UI_MESSAGE", {
+              handler,
+              content: {},
+            });
+            output.textContent = JSON.stringify(result, null, 2);
+          } catch (error) {
+            output.textContent = JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+            }, null, 2);
+          }
+        };
+
+        previewPlanButton.addEventListener("click", () => {
+          void runHandler("terraform.previewPlan");
+        });
+
+        previewApplyWorkflowButton.addEventListener("click", () => {
+          void runHandler("terraform.previewApplyWorkflow");
+        });
+      }
     `;
   }
 

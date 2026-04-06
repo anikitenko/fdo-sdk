@@ -25,6 +25,7 @@ Primary authoring entry points:
 
 Use the operator fixtures for production-oriented DevOps/SRE/plugin authoring work.
 Use the non-operator fixtures for lifecycle, error-handling, storage, and UI composition baselines.
+For privileged/operator fixtures, prefer declaring expected capabilities in code via `declareCapabilities()` so host preflight checks can compare declared vs granted capabilities early.
 
 ## Getting Started
 
