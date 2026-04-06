@@ -18,6 +18,7 @@ The examples are numbered to indicate learning progression:
 6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
 7. **07-injected-libraries-demo.ts** - Demonstrates all automatically injected libraries and helper functions
 8. **08-privileged-actions-plugin.ts** - Host privileged action flow (`createBackendReq`) with `correlationId` and stable response handling
+9. **09-operator-plugin.ts** - Docker/Kubernetes-style operator plugin pattern using scoped host process execution helpers
 
 For Docker-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli` rather than raw shell execution.
 

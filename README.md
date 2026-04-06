@@ -129,6 +129,8 @@ See `examples/dom_elements_plugin.ts` for comprehensive examples of using the ne
 
 See `examples/08-privileged-actions-plugin.ts` for host privileged action request flow (`createBackendReq`) with correlation IDs and stable response envelope handling.
 
+See `examples/09-operator-plugin.ts` for a Docker/Kubernetes-style operator pattern built on scoped host process execution.
+
 ## Capability And Privileged Actions Model
 
 The SDK uses explicit host-granted capabilities from `PLUGIN_INIT.content.capabilities` (validated at runtime).
@@ -199,6 +201,8 @@ Examples of suitable process scopes:
 - `system.process.scope.terraform`
 
 This keeps the plugin ecosystem expressive enough for serious operational tooling while keeping FDO host as the real security boundary.
+
+For a dedicated authoring guide, see [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md).
 
 ## Storage Notes
 
@@ -331,6 +335,7 @@ git push origin main --follow-tags
 - See [docs/BUNDLE_BOUNDARY_REVIEW.md](./docs/BUNDLE_BOUNDARY_REVIEW.md) for current FDO-aligned dependency/bundle boundary decisions
 - See [docs/API_STABILITY.md](./docs/API_STABILITY.md) for stable vs internal API rules and semver expectations
 - See [docs/SAFE_PLUGIN_AUTHORING.md](./docs/SAFE_PLUGIN_AUTHORING.md) for backend/UI/runtime-safe authoring practices, logging, and storage usage
+- See [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md) for Docker/Kubernetes/Helm/Terraform style plugin patterns
 - See [docs/EXTENSION_POINTS.md](./docs/EXTENSION_POINTS.md) for supported plugin extension points and anti-patterns
 - See [docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md](./docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md) for privileged action request/response contracts, scope model, and host enforcement guidance
 

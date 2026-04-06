@@ -25,6 +25,12 @@ export {
     createProcessScopeCapability,
     validatePrivilegedActionRequest,
 } from "./utils/privilegedActions";
+export {
+    createPrivilegedActionCorrelationId,
+    isPrivilegedActionErrorResponse,
+    isPrivilegedActionSuccessResponse,
+    unwrapPrivilegedActionResponse,
+} from "./utils/privilegedResponses";
 
 export * from "./FDOInterface";
 export * from "./PluginMetadata";

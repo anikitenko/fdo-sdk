@@ -108,6 +108,23 @@ export type HostPrivilegedActionRequest =
     | FilesystemMutateActionRequest
     | ProcessExecActionRequest;
 
+export type PrivilegedActionSuccessResponse<TResult = unknown> = {
+    ok: true;
+    correlationId: string;
+    result?: TResult;
+};
+
+export type PrivilegedActionErrorResponse = {
+    ok: false;
+    correlationId: string;
+    error: string;
+    code?: string;
+};
+
+export type PrivilegedActionResponse<TResult = unknown> =
+    | PrivilegedActionSuccessResponse<TResult>
+    | PrivilegedActionErrorResponse;
+
 export type UIMessageResponse = unknown | ErrorResponse;
 
 export type PluginInitResponse = {
