@@ -131,6 +131,14 @@ See `examples/08-privileged-actions-plugin.ts` for host privileged action reques
 
 See `examples/09-operator-plugin.ts` for a Docker/Kubernetes-style operator pattern built on scoped host process execution.
 
+The SDK also provides curated operator presets for common DevOps/SRE tooling such as Docker, kubectl, Helm, Terraform, Ansible, AWS CLI, gcloud, Azure CLI, Podman, Kustomize, GitHub CLI, Git, Vault, and Nomad, while still supporting generic custom scopes for host-specific tools.
+
+For production-oriented scaffolding, also use these operator fixtures:
+
+- `examples/fixtures/operator-kubernetes-plugin.fixture.ts`
+- `examples/fixtures/operator-terraform-plugin.fixture.ts`
+- `examples/fixtures/operator-custom-tool-plugin.fixture.ts`
+
 ## Capability And Privileged Actions Model
 
 The SDK uses explicit host-granted capabilities from `PLUGIN_INIT.content.capabilities` (validated at runtime).
@@ -160,6 +168,17 @@ Public helpers exported from root package:
 - `createProcessScopeCapability(...)`
 - `createPrivilegedActionBackendRequest(...)`
 - `requestPrivilegedAction(...)`
+- `createScopedProcessExecActionRequest(...)`
+- `requestScopedProcessExec(...)`
+- `createProcessCapabilityBundle(...)`
+- `createFilesystemCapabilityBundle(...)`
+- `describeCapability(...)`
+- `parseMissingCapabilityError(...)`
+- `getOperatorToolPreset(...)`
+- `listOperatorToolPresets(...)`
+- `createOperatorToolCapabilityPreset(...)`
+- `createOperatorToolActionRequest(...)`
+- `requestOperatorTool(...)`
 
 Design rule:
 
@@ -201,8 +220,20 @@ Examples of suitable process scopes:
 - `system.process.scope.kubectl`
 - `system.process.scope.helm`
 - `system.process.scope.terraform`
+- `system.process.scope.ansible`
+- `system.process.scope.aws-cli`
+- `system.process.scope.gcloud`
+- `system.process.scope.azure-cli`
+- `system.process.scope.podman`
+- `system.process.scope.kustomize`
+- `system.process.scope.gh`
+- `system.process.scope.git`
+- `system.process.scope.vault`
+- `system.process.scope.nomad`
 
 This keeps the plugin ecosystem expressive enough for serious operational tooling while keeping FDO host as the real security boundary.
+
+For operator UX and diagnostics, the SDK also provides structured capability remediation helpers so hosts, AI tools, and plugins can distinguish missing broad capabilities from missing narrow scope capabilities without ad hoc regex logic.
 
 For a dedicated authoring guide, see [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md).
 

@@ -20,7 +20,7 @@ The examples are numbered to indicate learning progression:
 8. **08-privileged-actions-plugin.ts** - Host privileged action flow using `requestPrivilegedAction(...)` with correlation ids and stable response handling
 9. **09-operator-plugin.ts** - Docker/Kubernetes-style operator plugin pattern using scoped host process execution helpers
 
-For Docker-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli` rather than raw shell execution.
+For operator-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli`, `system.process.scope.kubectl`, `system.process.scope.terraform`, or another explicit tool-family scope rather than raw shell execution.
 
 ## Scenario Reference Fixtures
 
@@ -36,6 +36,19 @@ Use these four files as the canonical production-oriented reference set:
    Pattern: advanced semantic/table/action UI composition with DOM helper classes.
 
 For new plugin authoring and AI-assisted scaffolding/refactoring, prefer these fixtures first.
+
+Operator-oriented reference fixtures:
+
+1. **fixtures/operator-kubernetes-plugin.fixture.ts**
+   Pattern: curated `kubectl` operator preset for cluster-console style plugins.
+2. **fixtures/operator-terraform-plugin.fixture.ts**
+   Pattern: curated `terraform` operator preset for plan/apply style plugins.
+3. **fixtures/operator-custom-tool-plugin.fixture.ts**
+   Pattern: generic scoped process execution for host-specific/internal tools not covered by curated presets.
+
+For operator-style plugin generation and AI-assisted scaffolding:
+- use curated operator fixtures for known tool families
+- use the custom-tool fixture for internal runners and host-specific scopes
 
 ## Additional Examples
 

@@ -103,6 +103,8 @@ export type ProcessExecActionRequest = {
     };
 };
 
+export type ProcessExecActionPayloadInput = Omit<ProcessExecActionRequest["payload"], "scope">;
+
 export type HostPrivilegedActionRequest =
     | HostsWriteActionRequest
     | FilesystemMutateActionRequest
@@ -134,6 +136,57 @@ export type RequestPrivilegedActionOptions = {
     correlationId?: string;
     handler?: string;
     correlationIdPrefix?: string;
+};
+
+export type OperatorToolPresetId =
+    | "docker-cli"
+    | "kubectl"
+    | "helm"
+    | "terraform"
+    | "ansible"
+    | "aws-cli"
+    | "gcloud"
+    | "azure-cli"
+    | "podman"
+    | "kustomize"
+    | "gh"
+    | "git"
+    | "vault"
+    | "nomad";
+
+export type OperatorToolPresetDefinition = {
+    id: OperatorToolPresetId;
+    label: string;
+    description: string;
+    scopeId: string;
+    capabilities: ["system.process.exec", ProcessScopeCapability];
+    suggestedCommands: string[];
+    typicalUseCases: string[];
+};
+
+export type CapabilityCategory =
+    | "storage"
+    | "sudo"
+    | "hosts"
+    | "filesystem-scope"
+    | "process"
+    | "process-scope"
+    | "unknown";
+
+export type CapabilityDescriptor = {
+    capability: string;
+    label: string;
+    description: string;
+    category: CapabilityCategory;
+};
+
+export type MissingCapabilityDiagnostic = {
+    capability: PluginCapability | string;
+    action: string;
+    category: CapabilityCategory;
+    label: string;
+    description: string;
+    remediation: string;
 };
 
 export type UIMessageResponse = unknown | ErrorResponse;

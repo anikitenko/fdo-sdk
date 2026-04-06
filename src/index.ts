@@ -16,7 +16,15 @@ export {
 export { pify } from "./utils/pify";
 export { runWithSudo } from "./utils/runWithSudo";
 export { emitDeprecationWarning, formatDeprecationMessage } from "./utils/deprecation";
-export { requireFilesystemScopeCapability, requireProcessScopeCapability } from "./utils/capabilities";
+export {
+    createCapabilityBundle,
+    createFilesystemCapabilityBundle,
+    createProcessCapabilityBundle,
+    describeCapability,
+    parseMissingCapabilityError,
+    requireFilesystemScopeCapability,
+    requireProcessScopeCapability,
+} from "./utils/capabilities";
 export {
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
@@ -35,6 +43,15 @@ export {
     createPrivilegedActionBackendRequest,
     requestPrivilegedAction,
 } from "./utils/privilegedTransport";
+export {
+    createOperatorToolActionRequest,
+    createOperatorToolCapabilityPreset,
+    createScopedProcessExecActionRequest,
+    getOperatorToolPreset,
+    listOperatorToolPresets,
+    requestOperatorTool,
+    requestScopedProcessExec,
+} from "./utils/operatorTooling";
 
 export * from "./FDOInterface";
 export * from "./PluginMetadata";

@@ -16,7 +16,11 @@ This backlog is based on the current SDK implementation as of 2026-03-24. It foc
 - [x] Added runtime validation for plugin metadata, serialized render payloads, inbound host messages, and `UI_MESSAGE` payloads.
 - [x] Added an integration-style test that drives `PLUGIN_INIT` and `PLUGIN_RENDER` through `Communicator`, `PluginRegistry`, and a real `FDO_SDK` subclass.
 - [x] Added host privileged action SDK contracts and validators for `system.hosts.write` and `system.fs.mutate`, including scoped capability typing (`system.fs.scope.<scope-id>`).
-- [x] Added privileged action developer UX helpers and reference examples for `createBackendReq` + `correlationId` flow with stable response envelope handling.
+- [x] Added privileged action developer UX helpers and reference examples for typed transport helpers, correlation IDs, and stable response envelope handling.
+- [x] Added host privileged action support for scoped process execution (`system.process.exec`, `system.process.scope.<scope-id>`) with typed request/response helpers and operator-focused authoring docs.
+- [x] Added first-class privileged action transport helpers (`requestPrivilegedAction`, `createPrivilegedActionBackendRequest`) so plugin authors no longer hand-roll raw host IPC envelopes.
+- [x] Added higher-level operator UX helpers for curated DevOps/SRE tool families and generic custom scopes, including capability bundles, structured missing-capability diagnostics, and curated operator presets.
+- [x] Added production-oriented operator fixtures for known tool families (`kubectl`, `terraform`) and host-specific custom scopes to improve authoring guidance and AI grounding.
 
 ## Completed In FDO Host Review
 
@@ -87,8 +91,7 @@ This backlog is based on the current SDK implementation as of 2026-03-24. It foc
 
 - [x] Document the real render contract: the SDK emits JSX-like strings for the FDO React host, not plain server-rendered HTML.
   Current state: the SDK reads like an HTML string builder, but the FDO app sanitizes plugin output, wraps it in a fragment, Babel-transforms it, and renders it as a React component inside the iframe.
-  Status note: this host contract has been verified in FDO and reflected in FDO's AI coding guidance, but the SDK docs themselves still need to say it explicitly.
-  Action: document this explicitly so plugin authors and AI tools know they are targeting a React-hosted JSX DSL, not raw `innerHTML`.
+  Completed: SDK docs now explicitly describe the React-hosted iframe render pipeline so plugin authors and AI tools target the actual host contract rather than raw `innerHTML`.
 
 - [x] Add escaping and syntax-safety rules for JSX string generation.
   Completed: JSX escaping is now centralized in `DOM` for attribute values and text-node contexts (including quotes, braces, angle brackets, ampersands, and script-like content), with regression coverage added in `DOM`/`DOMText` tests.
@@ -139,6 +142,9 @@ This backlog is based on the current SDK implementation as of 2026-03-24. It foc
 
 - [x] Convert examples into scenario-based reference fixtures.
   Completed: canonical fixtures now exist under `examples/fixtures/` for minimal, error-handling, storage, and advanced UI scenarios, each with concise pattern intent; examples docs now point AI/plugin authors to this fixture set first.
+
+- [x] Add operator-style golden-path fixtures and helper patterns for DevOps/SRE plugins.
+  Completed: the SDK now provides curated operator fixtures for Kubernetes and Terraform plus a generic custom-tool fixture, along with transport helpers, operator presets, capability bundles, and missing-capability diagnostics for AI-friendly production authoring flows.
 
 ## P3: Future Hardening
 

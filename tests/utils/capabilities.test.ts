@@ -1,4 +1,9 @@
 import {
+    createCapabilityBundle,
+    createFilesystemCapabilityBundle,
+    createProcessCapabilityBundle,
+    describeCapability,
+    parseMissingCapabilityError,
     configureCapabilities,
     getCapabilityDiagnostics,
     requireCapability,
@@ -48,5 +53,65 @@ describe("capabilities", () => {
 
         const diagnostics = getCapabilityDiagnostics();
         expect(diagnostics.usageCount["system.process.scope.docker-cli"]).toBe(1);
+    });
+
+    test("creates deduplicated capability bundles", () => {
+        expect(createCapabilityBundle([
+            "system.process.exec",
+            "system.process.scope.kubectl",
+            "system.process.exec",
+        ])).toEqual([
+            "system.process.exec",
+            "system.process.scope.kubectl",
+        ]);
+    });
+
+    test("creates filesystem and process capability bundles", () => {
+        expect(createFilesystemCapabilityBundle("etc hosts")).toEqual([
+            "system.fs.scope.etc-hosts",
+            "system.hosts.write",
+        ]);
+        expect(createProcessCapabilityBundle("kubectl")).toEqual([
+            "system.process.exec",
+            "system.process.scope.kubectl",
+        ]);
+    });
+
+    test("describes broad and scoped capabilities", () => {
+        expect(describeCapability("system.process.exec")).toEqual({
+            capability: "system.process.exec",
+            label: "Scoped Tool Execution",
+            description: "Allows host-mediated execution of allowlisted operational tools when paired with a process scope capability.",
+            category: "process",
+        });
+
+        expect(describeCapability("system.process.scope.kubectl")).toEqual({
+            capability: "system.process.scope.kubectl",
+            label: "Process Scope: kubectl",
+            description: 'Allows scoped process execution inside the "kubectl" host policy.',
+            category: "process-scope",
+        });
+    });
+
+    test("parses missing capability errors into structured remediation", () => {
+        let thrownError: unknown;
+        try {
+            requireCapability("system.process.exec", "execute scoped operator tools");
+        } catch (error) {
+            thrownError = error;
+        }
+
+        expect(parseMissingCapabilityError(thrownError)).toEqual({
+            capability: "system.process.exec",
+            action: "execute scoped operator tools",
+            category: "process",
+            label: "Scoped Tool Execution",
+            description: "Allows host-mediated execution of allowlisted operational tools when paired with a process scope capability.",
+            remediation: 'Grant "system.process.exec" in the host capability configuration before plugin initialization.',
+        });
+    });
+
+    test("returns null for non-capability errors", () => {
+        expect(parseMissingCapabilityError(new Error("something else"))).toBeNull();
     });
 });
