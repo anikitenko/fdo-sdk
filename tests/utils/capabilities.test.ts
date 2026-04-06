@@ -2,6 +2,7 @@ import {
     createCapabilityBundle,
     createFilesystemCapabilityBundle,
     createProcessCapabilityBundle,
+    createWorkflowCapabilityBundle,
     describeCapability,
     parseMissingCapabilityError,
     configureCapabilities,
@@ -9,6 +10,7 @@ import {
     requireCapability,
     requireFilesystemScopeCapability,
     requireProcessScopeCapability,
+    requireWorkflowProcessCapabilities,
     resetCapabilityStateForTests,
 } from "../../src/utils/capabilities";
 
@@ -75,6 +77,19 @@ describe("capabilities", () => {
             "system.process.exec",
             "system.process.scope.kubectl",
         ]);
+        expect(createWorkflowCapabilityBundle("terraform")).toEqual([
+            "system.process.exec",
+            "system.process.scope.terraform",
+        ]);
+    });
+
+    test("requires existing process capabilities for scoped workflows", () => {
+        configureCapabilities({ granted: ["system.process.exec", "system.process.scope.terraform"] });
+        expect(() => requireWorkflowProcessCapabilities("terraform", "run a scoped workflow")).not.toThrow();
+
+        const diagnostics = getCapabilityDiagnostics();
+        expect(diagnostics.usageCount["system.process.exec"]).toBe(1);
+        expect(diagnostics.usageCount["system.process.scope.terraform"]).toBe(1);
     });
 
     test("describes broad and scoped capabilities", () => {

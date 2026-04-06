@@ -66,7 +66,8 @@ export type FilesystemMutationOperation =
 export type HostPrivilegedAction =
     | "system.hosts.write"
     | "system.fs.mutate"
-    | "system.process.exec";
+    | "system.process.exec"
+    | "system.workflow.run";
 
 export type HostsWriteActionRequest = {
     action: "system.hosts.write";
@@ -105,10 +106,87 @@ export type ProcessExecActionRequest = {
 
 export type ProcessExecActionPayloadInput = Omit<ProcessExecActionRequest["payload"], "scope">;
 
+export type ScopedWorkflowKind = "process-sequence";
+export type ScopedWorkflowStepPhase = "inspect" | "preview" | "mutate" | "apply" | "cleanup";
+export type ScopedWorkflowStepErrorBehavior = "abort" | "continue";
+
+export type ScopedWorkflowConfirmation = {
+    message: string;
+    requiredForStepIds?: string[];
+};
+
+export type ScopedWorkflowProcessStep = {
+    id: string;
+    title: string;
+    phase?: ScopedWorkflowStepPhase;
+    command: string;
+    args?: string[];
+    cwd?: string;
+    env?: Record<string, string>;
+    timeoutMs?: number;
+    input?: string;
+    encoding?: "utf8" | "base64";
+    reason?: string;
+    onError?: ScopedWorkflowStepErrorBehavior;
+};
+
+export type ScopedWorkflowRunActionRequest = {
+    action: "system.workflow.run";
+    payload: {
+        scope: string;
+        kind: ScopedWorkflowKind;
+        title: string;
+        summary?: string;
+        dryRun?: boolean;
+        steps: ScopedWorkflowProcessStep[];
+        confirmation?: ScopedWorkflowConfirmation;
+    };
+};
+
+export type ScopedWorkflowPayloadInput = Omit<ScopedWorkflowRunActionRequest["payload"], "scope">;
+
+export type ScopedWorkflowSummary = {
+    totalSteps: number;
+    completedSteps: number;
+    failedSteps: number;
+    skippedSteps: number;
+};
+
+export type ScopedWorkflowProcessStepResultData = {
+    command: string;
+    args: string[];
+    cwd?: string;
+    exitCode?: number | null;
+    stdout?: string;
+    stderr?: string;
+    durationMs?: number;
+    dryRun?: boolean;
+};
+
+export type ScopedWorkflowStepResult = {
+    stepId: string;
+    title: string;
+    status: "ok" | "error" | "skipped";
+    correlationId?: string;
+    result?: ScopedWorkflowProcessStepResultData;
+    error?: string;
+    code?: string;
+};
+
+export type ScopedWorkflowResult = {
+    workflowId: string;
+    scope: string;
+    kind: ScopedWorkflowKind;
+    status: "completed" | "partial" | "failed";
+    summary: ScopedWorkflowSummary;
+    steps: ScopedWorkflowStepResult[];
+};
+
 export type HostPrivilegedActionRequest =
     | HostsWriteActionRequest
     | FilesystemMutateActionRequest
-    | ProcessExecActionRequest;
+    | ProcessExecActionRequest
+    | ScopedWorkflowRunActionRequest;
 
 export type PrivilegedActionSuccessResponse<TResult = unknown> = {
     ok: true;

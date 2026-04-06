@@ -20,10 +20,12 @@ export {
     createCapabilityBundle,
     createFilesystemCapabilityBundle,
     createProcessCapabilityBundle,
+    createWorkflowCapabilityBundle,
     describeCapability,
     parseMissingCapabilityError,
     requireFilesystemScopeCapability,
     requireProcessScopeCapability,
+    requireWorkflowProcessCapabilities,
 } from "./utils/capabilities";
 export {
     createFilesystemMutateActionRequest,
@@ -31,6 +33,7 @@ export {
     createHostsWriteActionRequest,
     createProcessExecActionRequest,
     createProcessScopeCapability,
+    createWorkflowRunActionRequest,
     validatePrivilegedActionRequest,
 } from "./utils/privilegedActions";
 export {
@@ -52,6 +55,15 @@ export {
     requestOperatorTool,
     requestScopedProcessExec,
 } from "./utils/operatorTooling";
+export {
+    createScopedWorkflowRequest,
+    requestScopedWorkflow,
+} from "./utils/workflowTooling";
+export {
+    createWorkflowFailureDiagnostic,
+    getFailedWorkflowSteps,
+    summarizeWorkflowResult,
+} from "./utils/workflowDiagnostics";
 
 export * from "./FDOInterface";
 export * from "./PluginMetadata";

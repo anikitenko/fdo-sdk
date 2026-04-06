@@ -3,6 +3,7 @@ import {
     HostPrivilegedActionRequest,
     HostsWriteActionRequest,
     ProcessExecActionRequest,
+    ScopedWorkflowRunActionRequest,
 } from "../types";
 import { validateHostPrivilegedActionRequest } from "./contracts";
 
@@ -47,6 +48,12 @@ export function createProcessExecActionRequest(
     request: ProcessExecActionRequest
 ): ProcessExecActionRequest {
     return validateHostPrivilegedActionRequest(request) as ProcessExecActionRequest;
+}
+
+export function createWorkflowRunActionRequest(
+    request: ScopedWorkflowRunActionRequest
+): ScopedWorkflowRunActionRequest {
+    return validateHostPrivilegedActionRequest(request) as ScopedWorkflowRunActionRequest;
 }
 
 export function validatePrivilegedActionRequest(request: unknown): HostPrivilegedActionRequest {

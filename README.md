@@ -180,6 +180,7 @@ Public helpers exported from root package:
 - `createScopedProcessExecActionRequest(...)`
 - `requestScopedProcessExec(...)`
 - `createProcessCapabilityBundle(...)`
+- `createWorkflowCapabilityBundle(...)`
 - `createFilesystemCapabilityBundle(...)`
 - `describeCapability(...)`
 - `parseMissingCapabilityError(...)`
@@ -188,12 +189,16 @@ Public helpers exported from root package:
 - `createOperatorToolCapabilityPreset(...)`
 - `createOperatorToolActionRequest(...)`
 - `requestOperatorTool(...)`
+- `createWorkflowRunActionRequest(...)`
+- `createScopedWorkflowRequest(...)`
+- `requestScopedWorkflow(...)`
 
 Design rule:
 
 - plugin runtime filesystem writes remain constrained by host policy (`PLUGIN_HOME`)
 - external privileged writes must be host-mediated, scoped, and auditable
 - external command execution must be host-mediated, scoped, and auditable
+- first-slice scoped workflows reuse existing process capabilities (`system.process.exec` plus `system.process.scope.<scope-id>`) rather than adding a second broad workflow permission
 
 ## Operator-Style Plugins
 
@@ -222,6 +227,8 @@ Preferred pattern:
 - define a host scope for each tool family
 - allow exact executables, cwd roots, env keys, timeout ceilings, and argument patterns
 - audit every privileged request with plugin identity and correlation id
+- use `requestScopedWorkflow(...)` when a plugin needs a typed multi-step preview/apply or inspect/act flow instead of plugin-private orchestration
+- expect workflow step results to expose typed process outcome data (`command`, `args`, `exitCode`, `stdout`, `stderr`, `durationMs`) rather than opaque blobs
 
 Examples of suitable process scopes:
 
