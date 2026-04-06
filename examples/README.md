@@ -17,9 +17,9 @@ Primary authoring entry points:
 4. **fixtures/advanced-ui-plugin.fixture.ts**
    Pattern: advanced semantic/table/action UI composition with DOM helper classes.
 5. **fixtures/operator-kubernetes-plugin.fixture.ts**
-   Pattern: curated `kubectl` operator preset for cluster-console style plugins.
+   Pattern: curated `kubectl` operator preset for cluster-console style plugins, including inspect/act workflow modeling.
 6. **fixtures/operator-terraform-plugin.fixture.ts**
-   Pattern: curated `terraform` operator preset for plan/apply style plugins.
+   Pattern: curated `terraform` operator preset for plan/apply style plugins, including preview/apply workflow modeling.
 7. **fixtures/operator-custom-tool-plugin.fixture.ts**
    Pattern: generic scoped process execution for host-specific/internal tools not covered by curated presets.
 

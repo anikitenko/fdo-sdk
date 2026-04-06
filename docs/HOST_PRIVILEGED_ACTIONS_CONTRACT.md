@@ -11,6 +11,7 @@ Allow narrowly scoped privileged operations without granting plugins broad files
 - `system.hosts.write`
 - `system.fs.mutate`
 - `system.process.exec`
+- `system.workflow.run`
 
 Validated by SDK helper:
 
@@ -116,6 +117,37 @@ const payload = createPrivilegedActionBackendRequest(request, {
 }
 ```
 
+```ts
+{
+  action: "system.workflow.run",
+  payload: {
+    scope: string,      // host-defined scope id, e.g. "terraform"
+    kind: "process-sequence",
+    title: string,
+    summary?: string,
+    dryRun?: boolean,
+    steps: Array<{
+      id: string,
+      title: string,
+      phase?: "inspect" | "preview" | "mutate" | "apply" | "cleanup",
+      command: string,  // absolute executable path
+      args?: string[],
+      cwd?: string,
+      env?: Record<string, string>,
+      timeoutMs?: number,
+      input?: string,
+      encoding?: "utf8" | "base64",
+      reason?: string,
+      onError?: "abort" | "continue"
+    }>,
+    confirmation?: {
+      message: string,
+      requiredForStepIds?: string[]
+    }
+  }
+}
+```
+
 ## Capability Requirement
 
 - Host should only execute this action when capability `system.hosts.write` is granted for that plugin.
@@ -123,6 +155,9 @@ const payload = createPrivilegedActionBackendRequest(request, {
   - broad feature capability: `system.hosts.write` (or host-defined equivalent for privileged FS API)
   - scope capability: `system.fs.scope.<scope-id>`
 - For `system.process.exec`, host should require both:
+  - broad feature capability: `system.process.exec`
+  - scope capability: `system.process.scope.<scope-id>`
+- For `system.workflow.run`, first-slice host policy should reuse the same capability pair:
   - broad feature capability: `system.process.exec`
   - scope capability: `system.process.scope.<scope-id>`
 
@@ -133,10 +168,45 @@ const payload = createPrivilegedActionBackendRequest(request, {
 - constrain writes to `/etc/hosts` only
 - support tagged sections to avoid uncontrolled file mutation
 - log/audit each request and outcome with plugin identity and correlation id
+- for `system.workflow.run`, log/audit:
+  - workflow correlation id
+  - workflow id
+  - plugin identity
+  - scope id
+  - workflow title/kind
+  - per-step stepId/title/status
+  - per-step correlation id when available
+  - confirmation decision for approval-gated steps
 - keep an allowlist mapping from `scope` -> permitted absolute roots and operation types
 - reject any operation whose target path is outside the mapped scope roots
 - keep an allowlist mapping from `scope` -> permitted executable absolute paths, cwd roots, env keys, timeout policy, and argument patterns
 - reject any process execution request outside the mapped command policy
+- reject any workflow step outside the mapped process policy for the selected scope
+
+## Workflow Response Expectations
+
+For `system.workflow.run`, hosts should return:
+
+- the stable privileged response envelope with workflow-level `correlationId`
+- a normalized workflow summary
+- per-step results with typed process result data where available:
+  - `command`
+  - `args`
+  - `cwd`
+  - `exitCode`
+  - `stdout`
+  - `stderr`
+  - `durationMs`
+  - `dryRun`
+
+When a workflow is partial or failed, hosts should preserve:
+
+- failed `stepId`
+- failed step `title`
+- step-level `correlationId` when available
+- stable `error` and `code`
+
+This is required so hosts and SDK-side diagnostics helpers can render useful failure summaries without log scraping.
 
 ## Recommended Host Scope Model
 

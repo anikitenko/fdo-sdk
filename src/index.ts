@@ -59,6 +59,11 @@ export {
     createScopedWorkflowRequest,
     requestScopedWorkflow,
 } from "./utils/workflowTooling";
+export {
+    createWorkflowFailureDiagnostic,
+    getFailedWorkflowSteps,
+    summarizeWorkflowResult,
+} from "./utils/workflowDiagnostics";
 
 export * from "./FDOInterface";
 export * from "./PluginMetadata";
