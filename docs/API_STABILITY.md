@@ -27,6 +27,8 @@ This document defines which SDK surfaces are stable contracts versus internal im
   - `renderOnLoad()`
   - `serializeRender()`
   - `serializeRenderOnLoad()`
+- Optional declared capability surface:
+  - `declareCapabilities()`
 - Public plugin contracts:
   - `FDOInterface`
   - `PluginMetadata`

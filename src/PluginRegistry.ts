@@ -21,12 +21,13 @@ import { createDefaultStore } from "./StoreDefault";
 import { createJsonStore } from "./StoreJson";
 import { validatePluginMetadata, validateSerializedRenderPayload } from "./utils/contracts";
 import { NotificationManager } from "./utils/NotificationManager";
-import { configureCapabilities, getCapabilityDiagnostics, requireCapability } from "./utils/capabilities";
+import { configureCapabilities, createCapabilityBundle, getCapabilityDiagnostics, requireCapability } from "./utils/capabilities";
 import { emitDeprecationWarning } from "./utils/deprecation";
 
 type PluginWithMetadata = FDO_SDK & { metadata: PluginMetadata };
 type PluginWithQuickActions = FDO_SDK & { defineQuickActions: () => QuickAction[] };
 type PluginWithSidePanel = FDO_SDK & { defineSidePanel: () => SidePanelConfig };
+type PluginWithDeclaredCapabilities = FDO_SDK & { declareCapabilities: () => CapabilityConfiguration["granted"] };
 
 export class PluginRegistry {
     public static readonly DIAGNOSTICS_HANDLER = "__sdk.getDiagnostics";
@@ -151,6 +152,7 @@ export class PluginRegistry {
         this.refreshLoggerContext();
         this._logger.event("plugin.init.start");
         try {
+            this.logDeclaredCapabilityPreflight();
             this.pluginInstance?.init(); // Safe call without `!`
             this.refreshLoggerContext();
             this.diagnosticsState.initCount += 1;
@@ -240,6 +242,11 @@ export class PluginRegistry {
         const quickActionsCount = this.getQuickActions().length;
         const sidePanelConfig = this.getSidePanelConfig();
         const permissions = getCapabilityDiagnostics();
+        const declaredCapabilities = this.getDeclaredCapabilities();
+        const grantedSet = new Set(permissions.granted);
+        const declaredSet = new Set(declaredCapabilities);
+        const missingDeclared = declaredCapabilities.filter((capability) => !grantedSet.has(capability));
+        const undeclaredGranted = permissions.granted.filter((capability) => !declaredSet.has(capability));
 
         return {
             apiVersion: FDO_SDK.API_VERSION,
@@ -269,6 +276,11 @@ export class PluginRegistry {
                     capabilities: store.capabilities,
                     version: store.getVersion?.(),
                 })),
+                declaration: {
+                    declared: declaredCapabilities,
+                    missing: missingDeclared,
+                    undeclaredGranted,
+                },
                 permissions,
             },
             notifications: {
@@ -456,6 +468,46 @@ export class PluginRegistry {
 
     private static hasSidePanel(plugin: FDO_SDK): plugin is PluginWithSidePanel {
         return "defineSidePanel" in plugin;
+    }
+
+    private static hasDeclaredCapabilities(plugin: FDO_SDK): plugin is PluginWithDeclaredCapabilities {
+        return "declareCapabilities" in plugin && typeof (plugin as PluginWithDeclaredCapabilities).declareCapabilities === "function";
+    }
+
+    private static getDeclaredCapabilities(): CapabilityConfiguration["granted"] {
+        if (!this.pluginInstance || !this.hasDeclaredCapabilities(this.pluginInstance)) {
+            return [];
+        }
+
+        const declared = this.pluginInstance.declareCapabilities();
+        if (!Array.isArray(declared) || declared.some((capability) => typeof capability !== "string")) {
+            throw new Error("Plugin declareCapabilities() must return an array of capability strings.");
+        }
+
+        return createCapabilityBundle([...declared]);
+    }
+
+    private static logDeclaredCapabilityPreflight(): void {
+        const declaredCapabilities = this.getDeclaredCapabilities();
+        if (declaredCapabilities.length === 0) {
+            return;
+        }
+
+        const grantedCapabilities = getCapabilityDiagnostics().granted;
+        const grantedSet = new Set(grantedCapabilities);
+        const missingCapabilities = declaredCapabilities.filter((capability) => !grantedSet.has(capability));
+
+        this._logger.event("plugin.capabilities.declared", {
+            declaredCapabilities,
+            grantedCapabilities,
+            missingCapabilities,
+        });
+
+        if (missingCapabilities.length > 0) {
+            this._logger.warn(
+                `Plugin declared capabilities that are not currently granted: ${missingCapabilities.join(", ")}.`
+            );
+        }
     }
 }
 

@@ -84,6 +84,13 @@ Privileged SDK features are capability-gated. The host should grant capabilities
 
 Without capability grants, these operations throw explicit permission errors by design.
 
+Best practice for operator-style and privileged plugins:
+
+- declare expected capabilities in code via `declareCapabilities()`
+- treat that declaration as an early intent manifest for host preflight and diagnostics
+- do not treat declared capabilities as actual grants; the host remains authoritative
+- keep runtime `requireCapability(...)` and scoped helper enforcement for real authorization
+
 For system-level changes such as `/etc/hosts`, use a host-mediated action contract with strict payload validation and host-side confirmation/auditing.
 For Docker-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli` and a host allowlist for exact command paths and argument patterns.
 
@@ -148,6 +155,16 @@ This lets plugin authors and AI tooling distinguish:
 - missing narrow scope capability such as `system.process.scope.kubectl`
 
 This is the model AI tooling should recommend when a plugin needs to behave like Docker Desktop, a Kubernetes console, or another operational dashboard.
+
+For production-grade UX, operator plugins should also expose:
+
+```ts
+declareCapabilities() {
+  return createOperatorToolCapabilityPreset("kubectl");
+}
+```
+
+This allows hosts to compare declared capabilities with granted capabilities during preflight, before a user reaches a rare or deep action path.
 
 ## Error-Path Safety
 

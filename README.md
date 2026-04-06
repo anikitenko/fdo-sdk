@@ -219,6 +219,7 @@ Recommended backend model for these plugins:
 - operational actions go through host-mediated privileged contracts
 - process execution uses `system.process.exec` plus a narrow scope such as `system.process.scope.docker-cli`
 - filesystem mutations use `system.fs.mutate` plus a narrow scope such as `system.fs.scope.<scope-id>`
+- plugins should declare expected capabilities in code via `declareCapabilities()` so host preflight checks can run before rare action paths are triggered
 
 Do not model these plugins around generic unrestricted shell access.
 
@@ -229,6 +230,7 @@ Preferred pattern:
 - audit every privileged request with plugin identity and correlation id
 - use `requestScopedWorkflow(...)` when a plugin needs a typed multi-step preview/apply or inspect/act flow instead of plugin-private orchestration
 - expect workflow step results to expose typed process outcome data (`command`, `args`, `exitCode`, `stdout`, `stderr`, `durationMs`) rather than opaque blobs
+- implement `declareCapabilities()` for operator plugins so declared vs granted capabilities can be compared during preflight and diagnostics
 
 Examples of suitable process scopes:
 

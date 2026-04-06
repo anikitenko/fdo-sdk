@@ -146,6 +146,43 @@ describe("PluginRegistry", () => {
         expect(output).toEqual({ render: undefined, onLoad: undefined });
     });
 
+    test("includes declared capability diagnostics and missing preflight information", () => {
+        class DeclaredCapabilitiesPlugin extends FDO_SDK {
+            get metadata() {
+                return {
+                    id: "declared-capabilities-plugin",
+                    name: "Declared Capabilities Plugin",
+                    version: "1.0.0",
+                    author: "Test",
+                    description: "Declares expected capabilities",
+                    icon: "cog",
+                };
+            }
+
+            declareCapabilities() {
+                return ["system.process.exec", "system.process.scope.terraform"] as const;
+            }
+
+            init() {}
+            render(): any { return "<div>ok</div>"; }
+        }
+
+        const warnSpy = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+        PluginRegistry.configureCapabilities({ granted: ["system.process.exec"] });
+        PluginRegistry.registerPlugin(new DeclaredCapabilitiesPlugin());
+        PluginRegistry.callInit();
+
+        const diagnostics = PluginRegistry.getDiagnostics();
+        expect(diagnostics.capabilities.declaration).toEqual({
+            declared: ["system.process.exec", "system.process.scope.terraform"],
+            missing: ["system.process.scope.terraform"],
+            undeclaredGranted: [],
+        });
+        expect(warnSpy).toHaveBeenCalledWith(
+            'Plugin declared capabilities that are not currently granted: system.process.scope.terraform.'
+        );
+    });
+
     test("callInit and callRenderer with plugin instance", () => {
         const mockPlugin = {
             init: vi.fn(),

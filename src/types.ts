@@ -383,6 +383,11 @@ export type PluginDiagnostics = {
         quickActionsCount: number;
         hasSidePanel: boolean;
         stores: PluginStoreDiagnostic[];
+        declaration: {
+            declared: PluginCapability[];
+            missing: PluginCapability[];
+            undeclaredGranted: PluginCapability[];
+        };
         permissions: {
             granted: PluginCapability[];
             usageCount: Record<string, number>;
