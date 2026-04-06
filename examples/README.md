@@ -17,9 +17,10 @@ The examples are numbered to indicate learning progression:
 5. **05-advanced-dom-plugin.ts** - Advanced DOM generation with styling
 6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
 7. **07-injected-libraries-demo.ts** - Demonstrates all automatically injected libraries and helper functions
-8. **08-privileged-actions-plugin.ts** - Host privileged action flow (`createBackendReq`) with `correlationId` and stable response handling
+8. **08-privileged-actions-plugin.ts** - Host privileged action flow using `requestPrivilegedAction(...)` with correlation ids and stable response handling
+9. **09-operator-plugin.ts** - Docker/Kubernetes-style operator plugin pattern using scoped host process execution helpers
 
-For Docker-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli` rather than raw shell execution.
+For operator-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli`, `system.process.scope.kubectl`, `system.process.scope.terraform`, or another explicit tool-family scope rather than raw shell execution.
 
 ## Scenario Reference Fixtures
 
@@ -36,6 +37,19 @@ Use these four files as the canonical production-oriented reference set:
 
 For new plugin authoring and AI-assisted scaffolding/refactoring, prefer these fixtures first.
 
+Operator-oriented reference fixtures:
+
+1. **fixtures/operator-kubernetes-plugin.fixture.ts**
+   Pattern: curated `kubectl` operator preset for cluster-console style plugins.
+2. **fixtures/operator-terraform-plugin.fixture.ts**
+   Pattern: curated `terraform` operator preset for plan/apply style plugins.
+3. **fixtures/operator-custom-tool-plugin.fixture.ts**
+   Pattern: generic scoped process execution for host-specific/internal tools not covered by curated presets.
+
+For operator-style plugin generation and AI-assisted scaffolding:
+- use curated operator fixtures for known tool families
+- use the custom-tool fixture for internal runners and host-specific scopes
+
 ## Additional Examples
 
 - **dom_elements_plugin.ts** - Comprehensive examples of DOM element creation
@@ -47,17 +61,17 @@ For new plugin authoring and AI-assisted scaffolding/refactoring, prefer these f
 For host-mediated privileged operations, use a stable response envelope and correlation IDs:
 
 ```ts
-const correlationId = "privileged-action-" + Date.now();
-const response = await window.createBackendReq("requestPrivilegedAction", {
-  correlationId,
-  request: createFilesystemMutateActionRequest({
-    action: "system.fs.mutate",
-    payload: {
-      scope: "etc-hosts",
-      dryRun: true,
-      operations: [{ type: "writeFile", path: "/etc/hosts", content: "# managed", encoding: "utf8" }]
-    }
-  })
+const request = createFilesystemMutateActionRequest({
+  action: "system.fs.mutate",
+  payload: {
+    scope: "etc-hosts",
+    dryRun: true,
+    operations: [{ type: "writeFile", path: "/etc/hosts", content: "# managed", encoding: "utf8" }]
+  }
+});
+
+const response = await requestPrivilegedAction(request, {
+  correlationIdPrefix: "etc-hosts",
 });
 
 if (response?.ok) {
