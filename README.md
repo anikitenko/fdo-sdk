@@ -180,6 +180,7 @@ Public helpers exported from root package:
 - `createScopedProcessExecActionRequest(...)`
 - `requestScopedProcessExec(...)`
 - `createProcessCapabilityBundle(...)`
+- `createWorkflowCapabilityBundle(...)`
 - `createFilesystemCapabilityBundle(...)`
 - `describeCapability(...)`
 - `parseMissingCapabilityError(...)`
@@ -197,6 +198,7 @@ Design rule:
 - plugin runtime filesystem writes remain constrained by host policy (`PLUGIN_HOME`)
 - external privileged writes must be host-mediated, scoped, and auditable
 - external command execution must be host-mediated, scoped, and auditable
+- first-slice scoped workflows reuse existing process capabilities (`system.process.exec` plus `system.process.scope.<scope-id>`) rather than adding a second broad workflow permission
 
 ## Operator-Style Plugins
 

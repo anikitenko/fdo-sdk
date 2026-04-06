@@ -57,6 +57,11 @@ export function requireProcessScopeCapability(scopeId: string, action: string): 
     requireScopedCapability(scopeId, action, PROCESS_SCOPE_CAPABILITY_PREFIX, "Process");
 }
 
+export function requireWorkflowProcessCapabilities(scopeId: string, action: string): void {
+    requireCapability("system.process.exec", action);
+    requireProcessScopeCapability(scopeId, action);
+}
+
 function requireScopedCapability(
     scopeId: string,
     action: string,
@@ -97,6 +102,10 @@ export function createProcessCapabilityBundle(scopeId: string): PluginCapability
         "system.process.exec",
         `${PROCESS_SCOPE_CAPABILITY_PREFIX}${normalizedScope}` as PluginCapability,
     ]);
+}
+
+export function createWorkflowCapabilityBundle(scopeId: string): PluginCapability[] {
+    return createProcessCapabilityBundle(scopeId);
 }
 
 export function describeCapability(capability: PluginCapability | string): CapabilityDescriptor {

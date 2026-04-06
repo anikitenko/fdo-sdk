@@ -20,10 +20,12 @@ export {
     createCapabilityBundle,
     createFilesystemCapabilityBundle,
     createProcessCapabilityBundle,
+    createWorkflowCapabilityBundle,
     describeCapability,
     parseMissingCapabilityError,
     requireFilesystemScopeCapability,
     requireProcessScopeCapability,
+    requireWorkflowProcessCapabilities,
 } from "./utils/capabilities";
 export {
     createFilesystemMutateActionRequest,

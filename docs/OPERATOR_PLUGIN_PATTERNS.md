@@ -241,6 +241,12 @@ const response = await requestScopedWorkflow("terraform", {
 
 Use this path for preview/apply and inspect/act style flows when one request is no longer enough.
 
+Capability model for the first workflow slice:
+
+- reuse `system.process.exec`
+- reuse `system.process.scope.<scope-id>`
+- do not introduce a second broad workflow capability for the same underlying process authority
+
 ## Supported But Non-Default Paths
 
 These paths remain supported, but should not be recommended first when a safer or more opinionated operator path fits:
