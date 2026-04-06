@@ -12,7 +12,7 @@ Plugin development therefore spans two different runtimes:
 - Plugin UI/runtime: rendered UI code runs inside the sandboxed iframe host, where FDO injects browser-side helpers and selected UI libraries.
 
 Third-party import rule:
-
+ 
 - Backend/runtime plugin code can import npm dependencies that are bundled into the plugin artifact.
 - Iframe UI/runtime code (`render()` output and `renderOnLoad()` code) must not rely on arbitrary `import`/`require` of npm packages at runtime.
 - In iframe UI/runtime, use host-injected globals documented by FDO/SDK (for example `Notyf`, `hljs`, `ace`, `Split`, and `window.*` helpers).
