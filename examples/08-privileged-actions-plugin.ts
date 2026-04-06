@@ -1,10 +1,4 @@
-import {
-    createFilesystemMutateActionRequest,
-    FDOInterface,
-    FDO_SDK,
-    isPrivilegedActionSuccessResponse,
-    requestPrivilegedAction,
-} from "../src";
+import { FDOInterface, FDO_SDK, createFilesystemMutateActionRequest } from "../src";
 
 export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
     get metadata() {
@@ -56,14 +50,14 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
                 if (!btn || !resultBox) return;
 
                 btn.addEventListener("click", async () => {
-                    let correlationId = "unknown";
+                    const correlationId = "privileged-action-" + Date.now();
                     try {
-                        const response = await (${requestPrivilegedAction.toString()})(${JSON.stringify(request)}, {
-                            correlationIdPrefix: "etc-hosts",
+                        const response = await window.createBackendReq("requestPrivilegedAction", {
+                            correlationId,
+                            request: ${JSON.stringify(request)},
                         });
-                        correlationId = response.correlationId;
 
-                        if (${isPrivilegedActionSuccessResponse.toString()}(response)) {
+                        if (response && response.ok) {
                             resultBox.textContent = JSON.stringify({
                                 status: "ok",
                                 correlationId: response.correlationId,

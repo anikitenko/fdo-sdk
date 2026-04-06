@@ -52,17 +52,17 @@ type PrivilegedActionResponse =
 ## Plugin-Side Usage Pattern
 
 ```ts
-const request = createFilesystemMutateActionRequest({
-  action: "system.fs.mutate",
-  payload: {
-    scope: "etc-hosts",
-    dryRun: true,
-    operations: [{ type: "writeFile", path: "/etc/hosts", content: "# managed", encoding: "utf8" }]
-  }
-});
-
-const response = await requestPrivilegedAction(request, {
-  correlationIdPrefix: "etc-hosts",
+const correlationId = "privileged-action-" + Date.now();
+const response = await window.createBackendReq("requestPrivilegedAction", {
+  correlationId,
+  request: createFilesystemMutateActionRequest({
+    action: "system.fs.mutate",
+    payload: {
+      scope: "etc-hosts",
+      dryRun: true,
+      operations: [{ type: "writeFile", path: "/etc/hosts", content: "# managed", encoding: "utf8" }]
+    }
+  })
 });
 
 if (response?.ok) {
@@ -70,14 +70,6 @@ if (response?.ok) {
 } else {
   // deterministic error path with correlationId + error + code
 }
-```
-
-If you need the stable request envelope without sending it yet:
-
-```ts
-const payload = createPrivilegedActionBackendRequest(request, {
-  correlationIdPrefix: "etc-hosts",
-});
 ```
 
 ```ts

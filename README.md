@@ -127,17 +127,7 @@ See `examples/example_plugin.ts` for a basic plugin example.
 
 See `examples/dom_elements_plugin.ts` for comprehensive examples of using the new DOM element creation capabilities including tables, media, semantic HTML, lists, and form controls.
 
-See `examples/08-privileged-actions-plugin.ts` for host privileged action request flow using `requestPrivilegedAction(...)` with correlation IDs and stable response envelope handling.
-
-See `examples/09-operator-plugin.ts` for a Docker/Kubernetes-style operator pattern built on scoped host process execution.
-
-The SDK also provides curated operator presets for common DevOps/SRE tooling such as Docker, kubectl, Helm, Terraform, Ansible, AWS CLI, gcloud, Azure CLI, Podman, Kustomize, GitHub CLI, Git, Vault, and Nomad, while still supporting generic custom scopes for host-specific tools.
-
-For production-oriented scaffolding, also use these operator fixtures:
-
-- `examples/fixtures/operator-kubernetes-plugin.fixture.ts`
-- `examples/fixtures/operator-terraform-plugin.fixture.ts`
-- `examples/fixtures/operator-custom-tool-plugin.fixture.ts`
+See `examples/08-privileged-actions-plugin.ts` for host privileged action request flow (`createBackendReq`) with correlation IDs and stable response envelope handling.
 
 ## Capability And Privileged Actions Model
 
@@ -166,19 +156,6 @@ Public helpers exported from root package:
 - `createFilesystemScopeCapability(...)`
 - `createProcessExecActionRequest(...)`
 - `createProcessScopeCapability(...)`
-- `createPrivilegedActionBackendRequest(...)`
-- `requestPrivilegedAction(...)`
-- `createScopedProcessExecActionRequest(...)`
-- `requestScopedProcessExec(...)`
-- `createProcessCapabilityBundle(...)`
-- `createFilesystemCapabilityBundle(...)`
-- `describeCapability(...)`
-- `parseMissingCapabilityError(...)`
-- `getOperatorToolPreset(...)`
-- `listOperatorToolPresets(...)`
-- `createOperatorToolCapabilityPreset(...)`
-- `createOperatorToolActionRequest(...)`
-- `requestOperatorTool(...)`
 
 Design rule:
 
@@ -220,22 +197,8 @@ Examples of suitable process scopes:
 - `system.process.scope.kubectl`
 - `system.process.scope.helm`
 - `system.process.scope.terraform`
-- `system.process.scope.ansible`
-- `system.process.scope.aws-cli`
-- `system.process.scope.gcloud`
-- `system.process.scope.azure-cli`
-- `system.process.scope.podman`
-- `system.process.scope.kustomize`
-- `system.process.scope.gh`
-- `system.process.scope.git`
-- `system.process.scope.vault`
-- `system.process.scope.nomad`
 
 This keeps the plugin ecosystem expressive enough for serious operational tooling while keeping FDO host as the real security boundary.
-
-For operator UX and diagnostics, the SDK also provides structured capability remediation helpers so hosts, AI tools, and plugins can distinguish missing broad capabilities from missing narrow scope capabilities without ad hoc regex logic.
-
-For a dedicated authoring guide, see [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md).
 
 ## Storage Notes
 
@@ -368,7 +331,6 @@ git push origin main --follow-tags
 - See [docs/BUNDLE_BOUNDARY_REVIEW.md](./docs/BUNDLE_BOUNDARY_REVIEW.md) for current FDO-aligned dependency/bundle boundary decisions
 - See [docs/API_STABILITY.md](./docs/API_STABILITY.md) for stable vs internal API rules and semver expectations
 - See [docs/SAFE_PLUGIN_AUTHORING.md](./docs/SAFE_PLUGIN_AUTHORING.md) for backend/UI/runtime-safe authoring practices, logging, and storage usage
-- See [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md) for Docker/Kubernetes/Helm/Terraform style plugin patterns
 - See [docs/EXTENSION_POINTS.md](./docs/EXTENSION_POINTS.md) for supported plugin extension points and anti-patterns
 - See [docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md](./docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md) for privileged action request/response contracts, scope model, and host enforcement guidance
 
