@@ -152,12 +152,23 @@ export type ScopedWorkflowSummary = {
     skippedSteps: number;
 };
 
+export type ScopedWorkflowProcessStepResultData = {
+    command: string;
+    args: string[];
+    cwd?: string;
+    exitCode?: number | null;
+    stdout?: string;
+    stderr?: string;
+    durationMs?: number;
+    dryRun?: boolean;
+};
+
 export type ScopedWorkflowStepResult = {
     stepId: string;
     title: string;
     status: "ok" | "error" | "skipped";
     correlationId?: string;
-    result?: unknown;
+    result?: ScopedWorkflowProcessStepResultData;
     error?: string;
     code?: string;
 };

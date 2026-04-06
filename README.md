@@ -228,6 +228,7 @@ Preferred pattern:
 - allow exact executables, cwd roots, env keys, timeout ceilings, and argument patterns
 - audit every privileged request with plugin identity and correlation id
 - use `requestScopedWorkflow(...)` when a plugin needs a typed multi-step preview/apply or inspect/act flow instead of plugin-private orchestration
+- expect workflow step results to expose typed process outcome data (`command`, `args`, `exitCode`, `stdout`, `stderr`, `durationMs`) rather than opaque blobs
 
 Examples of suitable process scopes:
 
