@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.2.0...fdo-sdk-v1.3.0) (2026-04-06)
+
+
+### Features
+
+* **docs:** align sdk authoring guidance around the phase 1 operator golden path ([#52](https://github.com/anikitenko/fdo-sdk/issues/52)) ([1cc14f4](https://github.com/anikitenko/fdo-sdk/commit/1cc14f4dbe8cd2151946b07179e0f181af6b026b))
+
 ## [1.2.0](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.1.3...fdo-sdk-v1.2.0) (2026-04-06)
 
 
