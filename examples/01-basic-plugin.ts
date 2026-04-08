@@ -22,7 +22,7 @@
  * 3. Show a brief description of what the plugin does
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, DOMText, DOMNested } from "@anikitenko/fdo-sdk";
+import { FDO_SDK, FDOInterface, PluginMetadata } from "@anikitenko/fdo-sdk";
 
 /**
  * BasicPlugin demonstrates the minimal plugin structure.
@@ -94,7 +94,7 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
    * The SDK and host transport serialize this value separately. Plugin code should
    * return the UI string directly from render().
    * 
-   * CUSTOMIZE HERE: Replace this simple HTML with your own UI
+   * CUSTOMIZE HERE: Replace this simple UI string with your own UI
    * 
    * COMMON PITFALL: The render() method should return quickly.
    * For complex UIs, consider using the DOM helper classes (see example 05)
@@ -104,57 +104,39 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
    */
   render(): string {
     try {
-      const domText = new DOMText();
-      const domNested = new DOMNested();
-      
-      // Create main container
-      const mainContent = domNested.createBlockDiv([
-        // Header section
-        domText.createHText(1, `Welcome to ${this._metadata.name}`),
-        domText.createPText([
-          domText.createStrongText('Version:'),
-          ` ${this._metadata.version}`
-        ].join('')),
-        domText.createPText([
-          domText.createStrongText('Author:'),
-          ` ${this._metadata.author}`
-        ].join('')),
-        domText.createPText(this._metadata.description),
-        
-        // What's Next section
-        domNested.createBlockDiv([
-          domText.createHText(3, 'What\'s Next?'),
-          domText.createPText('This is a learning example. For production-oriented authoring, start from the canonical fixture set first:'),
-          domNested.createList([
-            domNested.createListItem(['Use fixtures/minimal-plugin.fixture.ts for the smallest stable scaffold']),
-            domNested.createListItem(['Use operator fixtures for kubectl, terraform, or host-specific operational tooling']),
-            domNested.createListItem(['Read docs/SAFE_PLUGIN_AUTHORING.md and docs/OPERATOR_PLUGIN_PATTERNS.md before expanding capabilities'])
-          ]),
-          domText.createPText('After choosing the right fixture baseline, use the numbered examples to study individual SDK features:'),
-          domNested.createList([
-            domNested.createListItem(['See example 02 for interactive UI with buttons and forms']),
-            domNested.createListItem(['See example 03 for data persistence']),
-            domNested.createListItem(['See example 04 for UI extensions (quick actions and side panels)']),
-            domNested.createListItem(['See example 05 for advanced DOM generation and styling']),
-            domNested.createListItem(['See example 08 and example 09 only when you need lower-level privileged transport details'])
-          ])
-        ], { 
-          style: {
-            marginTop: '20px',
-            padding: '15px',
-            backgroundColor: '#f0f0f0',
-            borderRadius: '5px'
-          }
-        })
-      ], {
-        style: {
-          padding: '20px',
-          fontFamily: 'Arial, sans-serif'
-        }
-      });
-      
-      return mainContent;
-      
+      return `
+        <div style={{ padding: "20px", fontFamily: "system-ui, sans-serif", lineHeight: "1.5" }}>
+          <h1>Welcome to ${this._metadata.name}</h1>
+          <p><strong>Version:</strong> ${this._metadata.version}</p>
+          <p><strong>Author:</strong> ${this._metadata.author}</p>
+          <p>${this._metadata.description}</p>
+
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "15px",
+              backgroundColor: "#f0f0f0",
+              borderRadius: "5px"
+            }}
+          >
+            <h3>What's Next?</h3>
+            <p>This is a learning example. For production-oriented authoring, start from the canonical fixture set first:</p>
+            <ul>
+              <li>Use <code>fixtures/minimal-plugin.fixture.ts</code> for the smallest stable scaffold</li>
+              <li>Use operator fixtures for kubectl, terraform, or host-specific operational tooling</li>
+              <li>Read <code>docs/SAFE_PLUGIN_AUTHORING.md</code> and <code>docs/OPERATOR_PLUGIN_PATTERNS.md</code> before expanding capabilities</li>
+            </ul>
+            <p>After choosing the right fixture baseline, use the numbered examples to study individual SDK features:</p>
+            <ul>
+              <li>See example 02 for interactive UI with buttons and forms</li>
+              <li>See example 03 for data persistence</li>
+              <li>See example 04 for UI extensions (quick actions and side panels)</li>
+              <li>See example 05 for advanced DOM generation and styling</li>
+              <li>See example 08 and example 09 only when you need lower-level privileged transport details</li>
+            </ul>
+          </div>
+        </div>
+      `;
     } catch (error) {
       this.error(error as Error);
       
@@ -187,3 +169,5 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
  * - Add your initialization logic to the init() method
  * - Test your plugin in the FDO application
  */
+
+new BasicPlugin();

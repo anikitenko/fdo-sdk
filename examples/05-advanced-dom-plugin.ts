@@ -1,5 +1,4 @@
 import {
-  DOMButton,
   DOMInput,
   DOMLink,
   DOMNested,
@@ -33,20 +32,12 @@ export default class AdvancedDOMPlugin extends FDO_SDK implements FDOInterface {
   }
 
   render(): string {
-    const text = new DOMText();
-    const nested = new DOMNested();
-    const semantic = new DOMSemantic();
-    const table = new DOMTable();
-    const button = new DOMButton();
-    const input = new DOMInput("username-input", {
-      style: {
-        padding: "8px",
-        border: "1px solid #ccc",
-        borderRadius: "4px",
-        width: "280px",
-      },
-    });
-    const link = new DOMLink("docs-link", { style: { color: "#0b65d8", textDecoration: "none" } });
+    try {
+      const text = new DOMText();
+      const nested = new DOMNested();
+      const semantic = new DOMSemantic();
+      const table = new DOMTable();
+      const link = new DOMLink("docs-link", { style: { color: "#0b65d8", textDecoration: "none" } });
 
     const tableHeader = table.createTableHead([
       table.createTableRow([
@@ -85,38 +76,37 @@ export default class AdvancedDOMPlugin extends FDO_SDK implements FDOInterface {
       "health-table"
     );
 
-    const formSection = nested.createForm(
+      const configurationSection = nested.createBlockDiv(
       [
+        text.createPText(
+          "This section demonstrates DOM helper composition for labeled fields without introducing interactive iframe form behavior.",
+          { style: { color: "#667085" } }
+        ),
         text.createLabelText("Operator name", "username-input", {
           style: { display: "block", marginBottom: "6px", fontWeight: "600" },
         }),
-        input.createInput("text"),
+        new DOMInput(
+          "username-input",
+          {
+            style: {
+              padding: "8px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              width: "280px",
+            },
+          },
+          { defaultValue: "platform-team", readOnly: true }
+        ).createInput("text"),
         nested.createBlockDiv(
           [
-            button.createButton(
-              "Register Session",
-              () => {},
-              {
-                style: {
-                  marginTop: "12px",
-                  padding: "8px 12px",
-                  borderRadius: "4px",
-                  border: "1px solid #0b65d8",
-                  color: "#0b65d8",
-                  backgroundColor: "#eef5ff",
-                  cursor: "pointer",
-                },
-              },
-              "register-session-button"
+            text.createSmallText(
+              "The advanced DOM helpers are useful for structured UI composition. For interactive handler wiring, see example 02."
             ),
           ],
           { style: { marginTop: "8px" } }
         ),
       ],
       {
-        customAttributes: {
-          onsubmit: "event.preventDefault();",
-        },
         style: {
           padding: "12px",
           border: "1px solid #d9e2ef",
@@ -126,48 +116,63 @@ export default class AdvancedDOMPlugin extends FDO_SDK implements FDOInterface {
       }
     );
 
-    return semantic.createMain(
-      [
-        semantic.createHeader([
-          text.createHText(1, this._metadata.name),
-          text.createPText(this._metadata.description, { style: { color: "#667085" } }),
-        ]),
-        semantic.createSection(
-          [
-            text.createHText(2, "Health Table"),
-            dataTable,
-          ],
-          { style: { marginTop: "14px" } }
-        ),
-        semantic.createSection(
-          [
-            text.createHText(2, "Operator Form"),
-            formSection,
-          ],
-          { style: { marginTop: "18px" } }
-        ),
-        semantic.createFooter(
-          [
-            text.createPText("Need more details?"),
-            link.createLink("Open plugin author docs", "https://plugins.fdo.alexvwan.me"),
-          ],
-          {
-            style: {
-              marginTop: "20px",
-              paddingTop: "10px",
-              borderTop: "1px solid #e5e7eb",
-            },
-          }
-        ),
-      ],
-      {
-        style: {
-          padding: "20px",
-          fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
-          lineHeight: "1.5",
-        },
-      }
-    );
+      return semantic.createMain(
+        [
+          semantic.createHeader([
+            text.createHText(1, this._metadata.name),
+            text.createPText(this._metadata.description, { style: { color: "#667085" } }),
+          ]),
+          semantic.createSection(
+            [
+              text.createHText(2, "Health Table"),
+              dataTable,
+            ],
+            { style: { marginTop: "14px" } }
+          ),
+          semantic.createSection(
+            [
+              text.createHText(2, "Operator Form"),
+              configurationSection,
+            ],
+            { style: { marginTop: "18px" } }
+          ),
+          semantic.createFooter(
+            [
+              text.createPText("Need more details?"),
+              link.createLink("Open plugin author docs", "https://docs.sdk.fdo.alexvwan.me"),
+            ],
+            {
+              style: {
+                marginTop: "20px",
+                paddingTop: "10px",
+                borderTop: "1px solid #e5e7eb",
+              },
+            }
+          ),
+        ],
+        {
+          style: {
+            padding: "20px",
+            fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
+            lineHeight: "1.5",
+          },
+        }
+      );
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      const safeMessage = normalizedError.message
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      this.error(normalizedError);
+      return `
+        <div style="padding:20px;color:#b42318;background:#fef3f2;border:1px solid #fecdca;border-radius:6px;">
+          <h2 style="margin-top:0;">Error rendering plugin</h2>
+          <p>Advanced DOM example failed to render. Check plugin logs for details.</p>
+          <p><strong>Reason:</strong> ${safeMessage}</p>
+        </div>
+      `;
+    }
   }
 }
 

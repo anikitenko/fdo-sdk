@@ -188,4 +188,10 @@ describe("Logger", () => {
             })
         );
     });
+
+    test("should enable error stack serialization in the base logger format", () => {
+        new Logger();
+
+        expect(winston.format.errors).toHaveBeenCalledWith({ stack: true });
+    });
 });

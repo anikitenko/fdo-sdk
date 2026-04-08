@@ -37,7 +37,7 @@ When choosing an operator authoring pattern, prefer this order:
 
 This ordering is intentional. It is the default path AI tooling and documentation should recommend first.
 
-For FDO-side Monaco/editor/capability-UX/AI alignment on this ordering, use [docs/PHASE_1_FDO_ALIGNMENT_PROMPT.md](./PHASE_1_FDO_ALIGNMENT_PROMPT.md).
+This recommendation order is the public SDK authoring guidance and should be preserved across docs, examples, and host/editor integrations.
 
 ## Execution Pattern
 

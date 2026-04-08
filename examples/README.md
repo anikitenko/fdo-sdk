@@ -29,7 +29,7 @@ For privileged/operator fixtures, prefer declaring expected capabilities in code
 
 ## Getting Started
 
-For comprehensive documentation on using these examples, see the [Quick Start Guide](../specs/002-plugin-examples/quickstart.md).
+For the public examples and fixtures guide, see [../docs/EXAMPLES_AND_FIXTURES.md](../docs/EXAMPLES_AND_FIXTURES.md).
 
 ## Learning Examples
 
@@ -101,7 +101,7 @@ For complete documentation, see [Injected Libraries Documentation](../docs/INJEC
 
 Copy an example file to your project and customize it for your needs. Each example includes inline documentation explaining what each section does.
 
-For detailed instructions, troubleshooting, and best practices, refer to the [Quick Start Guide](../specs/002-plugin-examples/quickstart.md).
+For detailed guidance on stable fixtures, public docs, and authoring expectations, refer to [../docs/EXAMPLES_AND_FIXTURES.md](../docs/EXAMPLES_AND_FIXTURES.md).
 
 ## Troubleshooting
 
@@ -148,7 +148,7 @@ For detailed instructions, troubleshooting, and best practices, refer to the [Qu
 - **Solution**: Check that `defineQuickActions()` and `defineSidePanel()` return valid configurations
 - **Solution**: Ensure handlers are registered for all `message_type` values used in UI extensions
 
-For more detailed troubleshooting, see the [Quick Start Guide](../specs/002-plugin-examples/quickstart.md#troubleshooting).
+For the public fixture and examples guidance, see [../docs/EXAMPLES_AND_FIXTURES.md](../docs/EXAMPLES_AND_FIXTURES.md).
 
 ## Contributing
 
@@ -211,6 +211,6 @@ If you have questions about contributing, feel free to:
 
 - Open a GitHub issue with the "question" label
 - Check existing issues and discussions
-- Review the [SDK documentation](https://plugins.fdo.alexvwan.me)
+- Review the [SDK documentation](https://docs.sdk.fdo.alexvwan.me)
 
 Thank you for helping improve the FDO SDK examples!

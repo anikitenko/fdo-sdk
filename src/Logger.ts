@@ -45,6 +45,7 @@ export class Logger {
                 sessionId: this.context.sessionId,
             },
             format: combine(
+                errors({ stack: true }),
                 timestamp(),
                 json(),
                 prettyPrint()

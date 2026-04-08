@@ -9,27 +9,27 @@
  * 
  * Learning Objectives:
  * - Register and handle custom message handlers
- * - Create interactive UI elements (buttons, forms)
- * - Process user input and update the UI
+ * - Keep backend handlers in `init()` and browser logic in `renderOnLoad()`
+ * - Trigger backend handlers from iframe UI via `UI_MESSAGE`
+ * - Process user input and reflect handler results in the UI
  * - Handle asynchronous operations
  * - Implement proper error handling for user interactions
  * 
  * Expected Output:
  * When this plugin runs in the FDO application, it will:
- * 1. Display a form with a text input and submit button
+ * 1. Display a text input and action button for a simple form flow
  * 2. Show a counter with increment/decrement buttons
- * 3. Process button clicks and form submissions
- * 4. Update the UI dynamically based on user actions
+ * 3. Process button clicks through registered backend handlers
+ * 4. Update the UI dynamically based on handler responses
  * 5. Log all user interactions through SDK handlers
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry, DOMText, DOMNested, DOMButton, DOMInput } from "@anikitenko/fdo-sdk";
+import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry } from "@anikitenko/fdo-sdk";
 
 declare global {
   interface Window {
-    fdoSDK: {
-      sendMessage: (handler: string, data: any) => Promise<any>;
-    };
+    createBackendReq: (type: string, data?: any) => Promise<any>;
+    callHandler: (handler: string, content?: unknown) => Promise<any>;
   }
 }
 
@@ -79,15 +79,15 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
     try {
       this.log("InteractivePlugin initialized!");
 
-      PluginRegistry.registerHandler("incrementCounter", (data: any) => {
+      PluginRegistry.registerHandler("incrementCounter", (data: unknown) => {
         return this.handleIncrement(data);
       });
 
-      PluginRegistry.registerHandler("decrementCounter", (data: any) => {
+      PluginRegistry.registerHandler("decrementCounter", (data: unknown) => {
         return this.handleDecrement(data);
       });
 
-      PluginRegistry.registerHandler("submitForm", async (data: any) => {
+      PluginRegistry.registerHandler("submitForm", async (data: unknown) => {
         return await this.handleFormSubmit(data);
       });
 
@@ -103,7 +103,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
    * @param data - Data passed from the UI (can include button context, user info, etc.)
    * @returns Result object that can be used to update the UI
    */
-  private handleIncrement(data: any): any {
+  private handleIncrement(_data: unknown): any {
     try {
       this.counter++;
       this.log(`Counter incremented to ${this.counter}`);
@@ -129,7 +129,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
    * @param data - Data passed from the UI
    * @returns Result object
    */
-  private handleDecrement(data: any): any {
+  private handleDecrement(_data: unknown): any {
     try {
       this.counter--;
       this.log(`Counter decremented to ${this.counter}`);
@@ -161,14 +161,19 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
    * @param data - Form data from the UI
    * @returns Promise resolving to result object
    */
-  private async handleFormSubmit(data: any): Promise<any> {
+  private async handleFormSubmit(data: unknown): Promise<any> {
     try {
       this.log(`Form submitted with data: ${JSON.stringify(data)}`);
       
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      
-      const userName = data.userName || "Guest";
+      const userName =
+        typeof data === "object" &&
+        data !== null &&
+        "userName" in data &&
+        typeof (data as { userName?: unknown }).userName === "string"
+          ? (data as { userName: string }).userName
+          : "Guest";
       
       return {
         success: true,
@@ -196,199 +201,71 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
    */
   render(): string {
     try {
-      const domText = new DOMText();
-      const domNested = new DOMNested();
-      const domButton = new DOMButton();
-      const domInput = new DOMInput("userName", {
-        style: {
-          padding: '8px',
-          width: '300px',
-          marginBottom: '10px'
-        }
-      });
+      return `
+        <div style={{ padding: "20px", fontFamily: "system-ui, sans-serif", lineHeight: "1.5" }}>
+          <h1>${this._metadata.name}</h1>
+          <p>${this._metadata.description}</p>
 
-      // Create main container
-      const mainContent = domNested.createBlockDiv([
-        // Header section
-        domText.createHText(1, this._metadata.name),
-        domText.createPText(this._metadata.description),
-        
-        // Counter Example
-        domNested.createBlockDiv([
-          domText.createHText(3, 'Counter Example'),
-          domText.createPText([
-            'Current count: ',
-            domText.createStrongText(this.counter.toString())
-          ].join('')),
-          
-          domButton.createButton('Increment', 
-            () => window.fdoSDK.sendMessage('incrementCounter', {}),
-            {
-              style: {
-                padding: '10px 20px',
-                marginRight: '10px',
-                cursor: 'pointer'
-              }
-            }
-          ),
-          
-          domButton.createButton('Decrement',
-            () => window.fdoSDK.sendMessage('decrementCounter', {}),
-            {
-              style: {
-                padding: '10px 20px',
-                cursor: 'pointer'
-              }
-            }
-          ),
-          
-          domText.createPText(
-            'Click the buttons to increment or decrement the counter. The counter value is maintained in plugin state.',
-            {
-              style: {
-                marginTop: '10px',
-                fontSize: '12px',
-                color: '#666'
-              }
-            }
-          )
-        ], {
-          style: {
-            marginTop: '20px',
-            padding: '15px',
-            backgroundColor: '#f0f0f0',
-            borderRadius: '5px'
-          }
-        }),
-        
-        // Form Example
-        domNested.createBlockDiv([
-          domText.createHText(3, 'Form Example'),
-          domNested.createForm([
-            domText.createLabelText('Enter your name:', 'userName', {
-              style: {
-                display: 'block',
-                marginBottom: '5px'
-              }
-            }),
-            
-            domInput.createInput('text'),
-            
-            domButton.createButton('Submit', 
-              () => {},
-              {
-                style: {
-                  padding: '10px 20px',
-                  cursor: 'pointer',
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '3px'
-                }
-              })
-          ], {
-            customAttributes: {
-              onsubmit: 'event.preventDefault(); handleFormSubmit();'
-            }
-          }),
-          
-          domNested.createBlockDiv([], {
-            customAttributes: {
-              id: 'form-result'
-            },
-            style: {
-              marginTop: '10px'
-            }
-          }),
-          
-          domText.createPText(
-            'Enter your name and submit the form to see async handler processing.',
-            {
-              style: {
-                marginTop: '10px',
-                fontSize: '12px',
-                color: '#666'
-              }
-            }
-          )
-        ], {
-          style: {
-            marginTop: '20px',
-            padding: '15px',
-            backgroundColor: '#e8f4f8',
-            borderRadius: '5px'
-          }
-        }),
-        
-        `<script>
-          async function handleFormSubmit() {
-            const userName = document.getElementById('userName').value;
-            const resultDiv = document.getElementById('form-result');
-            
-            if (!userName || userName.trim() === '') {
-              resultDiv.innerHTML = '${domText.createPText("Please enter your name", { style: { color: 'red' } })}';
-              return;
-            }
-            
-            resultDiv.innerHTML = '${domText.createPText("Processing...", { style: { color: '#666' } })}';
-            
-            try {
-              const result = await window.fdoSDK.sendMessage('submitForm', { userName });
-              if (result?.success) {
-                resultDiv.innerHTML = '${domText.createPText("Form submitted successfully.", { style: { color: 'green' } })}';
-              } else {
-                resultDiv.innerHTML = '${domText.createPText("Form submission failed.", { style: { color: 'red' } })}';
-              }
-            } catch (error) {
-              resultDiv.innerHTML = '${domText.createPText("An error occurred while submitting the form.", { style: { color: 'red' } })}';
-            }
-          }
-        </script>`,
-        
-        // Key Concepts
-        domNested.createBlockDiv([
-          domText.createHText(3, 'Key Concepts'),
-          domNested.createList([
-            domNested.createListItem([
-              domText.createStrongText('Message Handlers:'),
-              ' Functions registered in init() that respond to UI events'
-            ]),
-            domNested.createListItem([
-              domText.createStrongText('Handler Registration:'),
-              ' Use PluginRegistry.registerHandler(name, function)'
-            ]),
-            domNested.createListItem([
-              domText.createStrongText('Async Patterns:'),
-              ' Handlers can be async for long-running operations'
-            ]),
-            domNested.createListItem([
-              domText.createStrongText('Error Handling:'),
-              ' Always wrap handler logic in try-catch blocks'
-            ]),
-            domNested.createListItem([
-              domText.createStrongText('State Management:'),
-              ' Use class properties for temporary state, storage for persistence'
-            ])
-          ])
-        ], {
-          style: {
-            marginTop: '20px',
-            padding: '15px',
-            backgroundColor: '#fff3cd',
-            borderRadius: '5px'
-          }
-        })
-      ], {
-        style: {
-          padding: '20px',
-          fontFamily: 'Arial, sans-serif'
-        }
-      });
-      
-      return mainContent;
-      
+          <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#f0f0f0", borderRadius: "5px" }}>
+            <h3>Counter Example</h3>
+            <p>Current count: <strong>${this.counter}</strong></p>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button id="increment-counter-btn" style={{ padding: "10px 20px", cursor: "pointer" }}>Increment</button>
+              <button id="decrement-counter-btn" style={{ padding: "10px 20px", cursor: "pointer" }}>Decrement</button>
+            </div>
+            <p style={{ marginTop: "10px", fontSize: "12px", color: "#666" }}>
+              Click the buttons to increment or decrement the counter. The counter value is maintained in plugin state.
+            </p>
+            <div id="counter-result" style={{ marginTop: "10px" }}></div>
+          </div>
+
+          <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#e8f4f8", borderRadius: "5px" }}>
+            <h3>Form Example</h3>
+            <div id="interactive-example-form">
+              <label htmlFor="userName" style={{ display: "block", marginBottom: "5px" }}>Enter your name:</label>
+              <input
+                id="userName"
+                type="text"
+                style={{ padding: "8px", width: "300px", marginBottom: "10px" }}
+              />
+              <div>
+                <button
+                  id="submit-form-btn"
+                  type="button"
+                  style={{
+                    padding: "10px 20px",
+                    cursor: "pointer",
+                    backgroundColor: "#007bff",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "3px"
+                  }}
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+            <div id="form-result" style={{ marginTop: "10px" }}></div>
+            <p style={{ marginTop: "10px", fontSize: "12px", color: "#666" }}>
+              Enter your name and submit the form to see async handler processing.
+            </p>
+          </div>
+
+          <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#fff3cd", borderRadius: "5px" }}>
+            <h3>Key Concepts</h3>
+            <ul>
+              <li><strong>Message Handlers:</strong> functions registered in <code>init()</code> that respond to UI events</li>
+              <li><strong>Handler Registration:</strong> use <code>PluginRegistry.registerHandler(name, fn)</code></li>
+              <li><strong>Async Patterns:</strong> handlers can be async for long-running operations</li>
+              <li><strong>Error Handling:</strong> wrap handler logic in try/catch blocks</li>
+              <li><strong>State Management:</strong> use class properties for temporary state and storage for persistence</li>
+            </ul>
+          </div>
+        </div>
+      `;
     } catch (error) {
       this.error(error as Error);
+
       return `
         <div style="padding: 20px; color: red;">
           <h2>Error rendering plugin</h2>
@@ -396,6 +273,87 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
         </div>
       `;
     }
+  }
+
+  renderOnLoad(): string {
+    return `
+      () => {
+        const callHandler = (handler, content = {}) =>
+          window.createBackendReq("UI_MESSAGE", { handler, content });
+
+        const incrementBtn = document.getElementById("increment-counter-btn");
+        const decrementBtn = document.getElementById("decrement-counter-btn");
+        const counterResult = document.getElementById("counter-result");
+        const formContainer = document.getElementById("interactive-example-form");
+        const submitFormButton = document.getElementById("submit-form-btn");
+        const formResult = document.getElementById("form-result");
+
+        const setCounterResult = (text, color = "#666") => {
+          if (!counterResult) return;
+          counterResult.textContent = text;
+          counterResult.style.color = color;
+        };
+
+        incrementBtn?.addEventListener('click', async () => {
+          try {
+            const result = await callHandler('incrementCounter', {});
+            if (result?.success) {
+              setCounterResult(result.message || ('Counter is now ' + result.counter), 'green');
+            } else {
+              setCounterResult(result?.error || 'Failed to increment counter', 'red');
+            }
+          } catch (error) {
+            setCounterResult('An error occurred while incrementing counter.', 'red');
+          }
+        });
+
+        decrementBtn?.addEventListener('click', async () => {
+          try {
+            const result = await callHandler('decrementCounter', {});
+            if (result?.success) {
+              setCounterResult(result.message || ('Counter is now ' + result.counter), 'green');
+            } else {
+              setCounterResult(result?.error || 'Failed to decrement counter', 'red');
+            }
+          } catch (error) {
+            setCounterResult('An error occurred while decrementing counter.', 'red');
+          }
+        });
+
+        const handleFormSubmit = async () => {
+          const userNameInput = document.getElementById("userName");
+          if (!formResult || !userNameInput) return;
+          const userName = userNameInput.value;
+
+          if (!userName || userName.trim() === '') {
+            formResult.textContent = 'Please enter your name';
+            formResult.style.color = 'red';
+            return;
+          }
+
+          formResult.textContent = 'Processing...';
+          formResult.style.color = '#666';
+
+          try {
+            const result = await callHandler('submitForm', { userName });
+            if (result?.success) {
+              formResult.textContent = 'Form submitted successfully.';
+              formResult.style.color = 'green';
+            } else {
+              formResult.textContent = 'Form submission failed.';
+              formResult.style.color = 'red';
+            }
+          } catch (error) {
+            formResult.textContent = 'An error occurred while submitting the form.';
+            formResult.style.color = 'red';
+          }
+        };
+
+        submitFormButton?.addEventListener("click", () => {
+          void handleFormSubmit();
+        });
+      }
+    `;
   }
 }
 
@@ -420,3 +378,5 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
  * - See example 04 for UI extensions (quick actions and side panels)
  * - See example 05 for advanced DOM generation with styling
  */
+
+new InteractivePlugin();

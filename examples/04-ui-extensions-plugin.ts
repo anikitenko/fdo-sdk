@@ -31,12 +31,7 @@ import {
   QuickActionMixin,
   SidePanelMixin,
   QuickAction,
-  SidePanelConfig,
-  DOMText,
-  DOMNested,
-  DOMButton,
-  DOMInput,
-  DOMLink
+  SidePanelConfig
 } from "@anikitenko/fdo-sdk";
 
 /**
@@ -88,28 +83,28 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
     try {
       this.log("UIExtensionsPlugin initialized!");
 
-      PluginRegistry.registerHandler("quickSearch", (data: any) => {
-        return this.handleQuickSearch(data);
+      PluginRegistry.registerHandler("quickSearch", (_data: unknown) => {
+        return this.handleQuickSearch();
       });
 
-      PluginRegistry.registerHandler("quickCreate", (data: any) => {
-        return this.handleQuickCreate(data);
+      PluginRegistry.registerHandler("quickCreate", (_data: unknown) => {
+        return this.handleQuickCreate();
       });
 
-      PluginRegistry.registerHandler("quickSettings", (data: any) => {
-        return this.handleQuickSettings(data);
+      PluginRegistry.registerHandler("quickSettings", (_data: unknown) => {
+        return this.handleQuickSettings();
       });
 
-      PluginRegistry.registerHandler("showDashboard", (data: any) => {
-        return this.handleShowDashboard(data);
+      PluginRegistry.registerHandler("showDashboard", (_data: unknown) => {
+        return this.handleShowDashboard();
       });
 
-      PluginRegistry.registerHandler("showReports", (data: any) => {
-        return this.handleShowReports(data);
+      PluginRegistry.registerHandler("showReports", (_data: unknown) => {
+        return this.handleShowReports();
       });
 
-      PluginRegistry.registerHandler("showSettings", (data: any) => {
-        return this.handleShowSettings(data);
+      PluginRegistry.registerHandler("showSettings", (_data: unknown) => {
+        return this.handleShowSettings();
       });
 
       
@@ -135,18 +130,18 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
           name: "Search Plugin Data",
           message_type: "quickSearch",
           subtitle: "Search through plugin data",
-          icon: "search.png"
+          icon: "search"
         },
         {
           name: "Create New Item",
           message_type: "quickCreate",
           subtitle: "Create a new item in the plugin",
-          icon: "create.png"
+          icon: "add"
         },
         {
           name: "Plugin Settings",
           message_type: "quickSettings",
-          icon: "settings.png"
+          icon: "cog"
         }
       ];
     } catch (error) {
@@ -168,7 +163,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
   defineSidePanel(): SidePanelConfig {
     try {
       return {
-        icon: "panel.png",
+        icon: "panel-table",
         label: "UI Extensions",
         submenu_list: [
           {
@@ -191,7 +186,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
     } catch (error) {
       this.error(error as Error);
       return {
-        icon: "panel.png",
+        icon: "panel-table",
         label: "UI Extensions",
         submenu_list: []
       };
@@ -204,7 +199,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * @param data - Data from the quick action
    * @returns Result object
    */
-  private handleQuickSearch(data: any): any {
+  private handleQuickSearch(): any {
     try {
       this.currentView = "search";
       this.log("Quick search triggered");
@@ -229,7 +224,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * @param data - Data from the quick action
    * @returns Result object
    */
-  private handleQuickCreate(data: any): any {
+  private handleQuickCreate(): any {
     try {
       this.currentView = "create";
       this.log("Quick create triggered");
@@ -254,7 +249,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * @param data - Data from the quick action
    * @returns Result object
    */
-  private handleQuickSettings(data: any): any {
+  private handleQuickSettings(): any {
     try {
       this.currentView = "settings";
       this.log("Quick settings triggered");
@@ -279,7 +274,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * @param data - Data from the side panel
    * @returns Result object
    */
-  private handleShowDashboard(data: any): any {
+  private handleShowDashboard(): any {
     try {
       this.currentView = "dashboard";
       this.log("Dashboard view triggered from side panel");
@@ -304,7 +299,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * @param data - Data from the side panel
    * @returns Result object
    */
-  private handleShowReports(data: any): any {
+  private handleShowReports(): any {
     try {
       this.currentView = "reports";
       this.log("Reports view triggered from side panel");
@@ -329,7 +324,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * @param data - Data from the side panel
    * @returns Result object
    */
-  private handleShowSettings(data: any): any {
+  private handleShowSettings(): any {
     try {
       this.currentView = "settings";
       this.log("Settings view triggered from side panel");
@@ -357,69 +352,40 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    */
   render(): string {
     try {
-      const domText = new DOMText();
-      const domNested = new DOMNested();
+      return `
+        <div style={{ padding: "20px", fontFamily: "system-ui, sans-serif", lineHeight: "1.5" }}>
+          <h1>${this._metadata.name}</h1>
+          <p>${this._metadata.description}</p>
 
-      // Main container
-      const mainContent = domNested.createBlockDiv([
-        domText.createHText(1, this._metadata.name),
-        domText.createPText(this._metadata.description),
+          ${this.renderCurrentView()}
 
-        // Dynamic content based on current view
-        this.renderCurrentView(),
+          <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#fff3cd", borderRadius: "5px" }}>
+            <h3>UI Extensions</h3>
+            <p><strong>Quick Actions:</strong> Access quick actions from the FDO application's quick action menu.</p>
+            <ul>
+              <li>Search Plugin Data</li>
+              <li>Create New Item</li>
+              <li>Plugin Settings</li>
+            </ul>
 
-        // UI Extensions Info
-        domNested.createBlockDiv([
-          domText.createHText(3, "UI Extensions"),
-          domText.createPText([
-            domText.createStrongText("Quick Actions:"),
-            " Access quick actions from the FDO application's quick action menu"
-          ].join('')),
-          domNested.createList([
-            "Search Plugin Data",
-            "Create New Item",
-            "Plugin Settings"
-          ]),
-
-          domText.createPText([
-            domText.createStrongText("Side Panel:"),
-            " Access features from the side panel menu"
-          ].join(''), { style: { marginTop: '15px' } }),
-          domNested.createList([
-            "Dashboard",
-            "Reports",
-            "Settings"
-          ])
-        ], {
-          style: {
-            marginTop: '20px',
-            padding: '15px',
-            backgroundColor: '#fff3cd',
-            borderRadius: '5px'
-          }
-        })
-      ], {
-        style: {
-          padding: '20px',
-          fontFamily: 'Arial, sans-serif'
-        }
-      });
-
-      return mainContent;
+            <p style={{ marginTop: "15px" }}><strong>Side Panel:</strong> Access features from the side panel menu.</p>
+            <ul>
+              <li>Dashboard</li>
+              <li>Reports</li>
+              <li>Settings</li>
+            </ul>
+          </div>
+        </div>
+      `;
 
     } catch (error) {
       this.error(error as Error);
-      const errorDomText = new DOMText();
-      const errorDomNested = new DOMNested();
-      return errorDomNested.createBlockDiv([
-        errorDomText.createHText(2, "Error rendering plugin"),
-        errorDomText.createPText("An error occurred while rendering the plugin UI. Check the console for details.")
-      ], {
-        style: {
-          padding: '20px',
-          color: 'red'
-        }
-      });
+      return `
+        <div style="padding:20px;color:#b42318;background:#fef3f2;border:1px solid #fecdca;border-radius:6px;">
+          <h2 style="margin-top:0;">Error rendering plugin</h2>
+          <p>An error occurred while rendering the plugin UI. Check plugin logs for details.</p>
+        </div>
+      `;
     }
   }
 
@@ -447,265 +413,157 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * Render the default view.
    */
   private renderDefaultView(): string {
-    const domText = new DOMText();
-    const domNested = new DOMNested();
-
-    return domNested.createBlockDiv([
-      domText.createHText(3, "Welcome to UI Extensions Example"),
-      domText.createPText("This plugin demonstrates quick actions and side panel integration."),
-      domText.createPText("Try the following:"),
-      domNested.createList([
-        "Use the quick action menu to trigger quick actions",
-        "Use the side panel to navigate between views",
-        "See how different views are rendered based on UI extension triggers"
-      ])
-    ], {
-      style: {
-        marginTop: '20px',
-        padding: '15px',
-        backgroundColor: '#f0f0f0',
-        borderRadius: '5px'
-      }
-    });
+    return `
+      <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#f0f0f0", borderRadius: "5px" }}>
+        <h3>Welcome to UI Extensions Example</h3>
+        <p>This plugin demonstrates quick actions and side panel integration.</p>
+        <p>Try the following:</p>
+        <ul>
+          <li>Use the quick action menu to trigger quick actions</li>
+          <li>Use the side panel to navigate between views</li>
+          <li>See how different views are rendered based on UI extension triggers</li>
+        </ul>
+      </div>
+    `;
   }
 
   /**
    * Render the search view.
    */
   private renderSearchView(): string {
-    const domText = new DOMText();
-    const domNested = new DOMNested();
-    const domInput = new DOMInput("search", {
-      style: {
-        padding: '10px',
-        width: '400px',
-        marginTop: '10px'
-      }
-    });
-    const domButton = new DOMButton();
-
-    return domNested.createBlockDiv([
-      domText.createHText(3, "Search View"),
-      domText.createPText("This view was triggered by the \"Search Plugin Data\" quick action."),
-      domNested.createBlockDiv([
-        domInput.createInput("text"),
-        domButton.createButton("Search", () => {}, {
-          style: {
-            padding: '10px 20px',
-            marginLeft: '10px',
-            cursor: 'pointer'
-          }
-        })
-      ], {
-        style: {
-          display: 'flex',
-          alignItems: 'center'
-        }
-      })
-    ], {
-      style: {
-        marginTop: '20px',
-        padding: '15px',
-        backgroundColor: '#e8f4f8',
-        borderRadius: '5px'
-      }
-    });
+    return `
+      <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#e8f4f8", borderRadius: "5px" }}>
+        <h3>Search View</h3>
+        <p>This view was triggered by the "Search Plugin Data" quick action.</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <input
+            id="search-view-input"
+            type="text"
+            defaultValue=""
+            placeholder="Search plugin data"
+            style={{ padding: "10px", width: "400px", marginTop: "10px" }}
+          />
+          <button type="button" style={{ padding: "10px 20px", cursor: "pointer", marginTop: "10px" }}>
+            Search
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   /**
    * Render the create view.
    */
   private renderCreateView(): string {
-    const domText = new DOMText();
-    const domNested = new DOMNested();
-    const domInput = new DOMInput("create", {
-      style: {
-        padding: '10px',
-        width: '400px',
-        marginBottom: '10px'
-      }
-    });
-    const domButton = new DOMButton();
-
-    return domNested.createBlockDiv([
-      domText.createHText(3, "Create View"),
-      domText.createPText("This view was triggered by the \"Create New Item\" quick action."),
-      domNested.createForm([
-        domNested.createBlockDiv([
-          domInput.createInput("text")
-        ], {
-          style: {
-            marginBottom: '10px'
-          }
-        }),
-        domNested.createBlockDiv([
-          domInput.createTextarea()
-        ], {
-          style: {
-            marginBottom: '10px'
-          }
-        }),
-        domButton.createButton("Create", () => {}, {
-          style: {
-            padding: '10px 20px',
-            cursor: 'pointer'
-          }
-        })
-      ], {
-        style: { marginTop: '10px' }
-      })
-    ], {
-      style: {
-        marginTop: '20px',
-        padding: '15px',
-        backgroundColor: '#d4edda',
-        borderRadius: '5px'
-      }
-    });
+    return `
+      <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#d4edda", borderRadius: "5px" }}>
+        <h3>Create View</h3>
+        <p>This view was triggered by the "Create New Item" quick action.</p>
+        <div style={{ marginTop: "10px" }}>
+          <div style={{ marginBottom: "10px" }}>
+            <input
+              id="create-title-input"
+              type="text"
+              defaultValue=""
+              placeholder="Item title"
+              style={{ padding: "10px", width: "400px" }}
+            />
+          </div>
+          <div style={{ marginBottom: "10px" }}>
+            <textarea
+              id="create-description-input"
+              defaultValue=""
+              placeholder="Item description"
+              style={{ padding: "10px", width: "400px", minHeight: "100px" }}
+            />
+          </div>
+          <button type="button" style={{ padding: "10px 20px", cursor: "pointer" }}>
+            Create
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   /**
    * Render the dashboard view.
    */
   private renderDashboardView(): string {
-    const domText = new DOMText();
-    const domNested = new DOMNested();
+    const createMetricBlock = (title: string, value: string) => `
+      <div style={{ padding: "15px", backgroundColor: "white", borderRadius: "5px" }}>
+        <h4>${title}</h4>
+        <p style={{ fontSize: "24px", fontWeight: "bold" }}>${value}</p>
+      </div>
+    `;
 
-    const createMetricBlock = (title: string, value: string) => {
-      return domNested.createBlockDiv([
-        domText.createHText(4, title),
-        domText.createPText(value, {
-          style: {
-            fontSize: '24px',
-            fontWeight: 'bold'
-          }
-        })
-      ], {
-        style: {
-          padding: '15px',
-          backgroundColor: 'white',
-          borderRadius: '5px'
-        }
-      });
-    };
-
-    return domNested.createBlockDiv([
-      domText.createHText(3, "Dashboard View"),
-      domText.createPText("This view was triggered from the side panel \"Dashboard\" menu item."),
-      domNested.createBlockDiv([
-        createMetricBlock("Metric 1", "42"),
-        createMetricBlock("Metric 2", "87%")
-      ], {
-        style: {
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '15px',
-          marginTop: '15px'
-        }
-      })
-    ], {
-      style: {
-        marginTop: '20px',
-        padding: '15px',
-        backgroundColor: '#cfe2ff',
-        borderRadius: '5px'
-      }
-    });
+    return `
+      <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#cfe2ff", borderRadius: "5px" }}>
+        <h3>Dashboard View</h3>
+        <p>This view was triggered from the side panel "Dashboard" menu item.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginTop: "15px" }}>
+          ${createMetricBlock("Metric 1", "42")}
+          ${createMetricBlock("Metric 2", "87%")}
+        </div>
+      </div>
+    `;
   }
 
   /**
    * Render the reports view.
    */
   private renderReportsView(): string {
-    const domText = new DOMText();
-    const domNested = new DOMNested();
-    const domLink = new DOMLink("reports", {
-      style: { color: '#007bff' }
-    });
+    const createReportItem = (title: string) => `
+      <li>
+        ${title} - <a href="#" style={{ color: "#007bff" }}>View</a>
+      </li>
+    `;
 
-    const createReportItem = (title: string) => {
-      return domNested.createBlockDiv([
-        domText.createText(`${title} - `),
-        domText.createText(domLink.createLink("#", "View"))
-      ]);
-    };
-
-    return domNested.createBlockDiv([
-      domText.createHText(3, "Reports View"),
-      domText.createPText("This view was triggered from the side panel \"Reports\" menu item."),
-      domNested.createList([
-        createReportItem("Monthly Report"),
-        createReportItem("Quarterly Report"),
-        createReportItem("Annual Report")
-      ], {
-        style: { marginTop: '10px' }
-      })
-    ], {
-      style: {
-        marginTop: '20px',
-        padding: '15px',
-        backgroundColor: '#f8d7da',
-        borderRadius: '5px'
-      }
-    });
+    return `
+      <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#f8d7da", borderRadius: "5px" }}>
+        <h3>Reports View</h3>
+        <p>This view was triggered from the side panel "Reports" menu item.</p>
+        <ul style={{ marginTop: "10px" }}>
+          ${createReportItem("Monthly Report")}
+          ${createReportItem("Quarterly Report")}
+          ${createReportItem("Annual Report")}
+        </ul>
+      </div>
+    `;
   }
 
   /**
    * Render the settings view.
    */
   private renderSettingsView(): string {
-    const domText = new DOMText();
-    const domNested = new DOMNested();
-    const domInput = new DOMInput("settings", {});
-    const domButton = new DOMButton();
-
-    const createCheckboxOption = (label: string, checked: boolean = false) => {
-      return domNested.createBlockDiv([
-        domText.createLabelText(label, "settings-" + label.toLowerCase().replace(/\s+/g, '-'), {
-          style: { display: 'block', marginBottom: '10px' }
-        }),
-        domInput.createInput(checked ? "checkbox" : "checkbox")
-      ]);
-    };
-
-    return domNested.createBlockDiv([
-      domText.createHText(3, "Settings View"),
-      domText.createPText("This view can be triggered from either the quick action or side panel."),
-      domNested.createForm([
-        createCheckboxOption("Enable notifications", true),
-        createCheckboxOption("Auto-save"),
-        
-        domNested.createBlockDiv([
-          domText.createLabelText("Theme:", "settings-theme", {
-            style: { marginRight: '10px' }
-          }),
-          domInput.createSelect([
-            "Light",
-            "Dark",
-            "Auto"
-          ])
-        ], {
-          style: { marginBottom: '10px' }
-        }),
-        
-        domButton.createButton("Save Settings", () => {}, {
-          style: {
-            padding: '10px 20px',
-            marginTop: '10px',
-            cursor: 'pointer'
-          }
-        })
-      ], {
-        style: { marginTop: '10px' }
-      })
-    ], {
-      style: {
-        marginTop: '20px',
-        padding: '15px',
-        backgroundColor: '#e2e3e5',
-        borderRadius: '5px'
-      }
-    });
+    return `
+      <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#e2e3e5", borderRadius: "5px" }}>
+        <h3>Settings View</h3>
+        <p>This view can be triggered from either the quick action or side panel.</p>
+        <div style={{ marginTop: "10px" }}>
+          <div style={{ marginBottom: "10px" }}>
+            <label htmlFor="settings-notifications">
+              <input id="settings-notifications" type="checkbox" defaultChecked={true} /> Enable notifications
+            </label>
+          </div>
+          <div style={{ marginBottom: "10px" }}>
+            <label htmlFor="settings-autosave">
+              <input id="settings-autosave" type="checkbox" defaultChecked={false} /> Auto-save
+            </label>
+          </div>
+          <div style={{ marginBottom: "10px" }}>
+            <label htmlFor="settings-theme" style={{ marginRight: "10px" }}>Theme:</label>
+            <select id="settings-theme" defaultValue="Light">
+              <option value="Light">Light</option>
+              <option value="Dark">Dark</option>
+              <option value="Auto">Auto</option>
+            </select>
+          </div>
+          <button type="button" style={{ padding: "10px 20px", marginTop: "10px", cursor: "pointer" }}>
+            Save Settings
+          </button>
+        </div>
+      </div>
+    `;
   }
 }
 
@@ -731,3 +589,5 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
  * - Combine UI extensions with storage (example 03) for stateful plugins
  * - Use interactive handlers (example 02) with UI extensions for dynamic behavior
  */
+
+new UIExtensionsPlugin();

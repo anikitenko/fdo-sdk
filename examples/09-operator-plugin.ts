@@ -7,7 +7,7 @@ import {
     isPrivilegedActionSuccessResponse,
     PluginMetadata,
     requestOperatorTool,
-} from "../src";
+} from "@anikitenko/fdo-sdk";
 
 export default class OperatorPluginExample extends FDO_SDK implements FDOInterface {
     private readonly _metadata: PluginMetadata = {
@@ -102,3 +102,5 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
         `;
     }
 }
+
+new OperatorPluginExample();
