@@ -29,11 +29,12 @@ Plugin metadata is also part of the host contract. In particular, `metadata.icon
 
 For the detailed render/runtime contract, see [docs/RENDER_RUNTIME_CONTRACT.md](./docs/RENDER_RUNTIME_CONTRACT.md).
 
-Roadmaps:
+Further documentation:
 
-- production hardening and completed durability work: [docs/PRODUCTION_GRADE_TODO.md](./docs/PRODUCTION_GRADE_TODO.md)
-- longer-term platform vision for DevOps/SRE/operator workflows: [docs/REVOLUTIONARY_PLUGIN_SYSTEM_TODO.md](./docs/REVOLUTIONARY_PLUGIN_SYSTEM_TODO.md)
-- concrete FDO host/editor/AI handoff for the current Phase 1 golden path: [docs/PHASE_1_FDO_ALIGNMENT_PROMPT.md](./docs/PHASE_1_FDO_ALIGNMENT_PROMPT.md)
+- safe authoring guide: [docs/SAFE_PLUGIN_AUTHORING.md](./docs/SAFE_PLUGIN_AUTHORING.md)
+- operator plugin guidance: [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md)
+- examples and fixtures guide: [docs/EXAMPLES_AND_FIXTURES.md](./docs/EXAMPLES_AND_FIXTURES.md)
+- API stability policy: [docs/API_STABILITY.md](./docs/API_STABILITY.md)
 
 ## Features
 
@@ -138,7 +139,7 @@ See `examples/08-privileged-actions-plugin.ts` for the low-level host privileged
 
 See `examples/09-operator-plugin.ts` for a curated operator helper example for a known tool family built on scoped host process execution.
 
-For FDO-side Monaco/editor/AI alignment on these example priorities, use `docs/PHASE_1_FDO_ALIGNMENT_PROMPT.md`.
+For public SDK guidance, follow the fixture-first and curated-helper-first recommendation order documented in [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md).
 
 The SDK also provides curated operator presets for common DevOps/SRE tooling such as Docker, kubectl, Helm, Terraform, Ansible, AWS CLI, gcloud, Azure CLI, Podman, Kustomize, GitHub CLI, Git, Vault, and Nomad, while still supporting generic custom scopes for host-specific tools.
 

@@ -11,7 +11,7 @@
  * - Window helper functions (createBackendReq, waitForElement, etc.)
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata } from "../src";
+import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry } from "@anikitenko/fdo-sdk";
 
 export default class InjectedLibrariesDemoPlugin extends FDO_SDK implements FDOInterface {
     private readonly _metadata: PluginMetadata = {
@@ -28,6 +28,21 @@ export default class InjectedLibrariesDemoPlugin extends FDO_SDK implements FDOI
 
     init(): void {
         this.log("InjectedLibrariesDemoPlugin initialized!");
+        PluginRegistry.registerHandler("demo.getPluginInfo", async (content?: unknown) => {
+            const pluginId =
+                typeof content === "object" &&
+                content !== null &&
+                "id" in content &&
+                typeof (content as { id?: unknown }).id === "string"
+                    ? (content as { id: string }).id
+                    : "unknown-plugin";
+            return {
+                pluginId,
+                pluginName: this.metadata.name,
+                sdkPattern: "UI_MESSAGE",
+                runtime: "backend-handler",
+            };
+        });
     }
 
     render(): string {
@@ -299,14 +314,17 @@ export default class MyPlugin extends FDO_SDK implements FDOInterface {
                     output.innerHTML = 'Sending backend request...';
                     
                     try {
-                        // This would normally call a backend handler
-                        // For demo purposes, we'll simulate it
-                        const result = await window.createBackendReq('getPluginInfo', { 
-                            id: 'demo-plugin' 
+                        // Production plugins should route UI calls through UI_MESSAGE
+                        // to a registered backend handler.
+                        const result = await window.createBackendReq('UI_MESSAGE', {
+                            handler: 'demo.getPluginInfo',
+                            content: {
+                                id: 'demo-plugin'
+                            }
                         });
                         output.innerHTML = \`<strong>Backend Response:</strong><br><pre>\${JSON.stringify(result, null, 2)}</pre>\`;
                     } catch (error) {
-                        output.innerHTML = \`<strong>Error:</strong> Backend request failed (expected in demo mode)\`;
+                        output.innerHTML = \`<strong>Error:</strong> Backend request failed\`;
                     }
                 }
                 
@@ -375,3 +393,5 @@ export default class MyPlugin extends FDO_SDK implements FDOInterface {
         `;
     }
 }
+
+new InjectedLibrariesDemoPlugin();

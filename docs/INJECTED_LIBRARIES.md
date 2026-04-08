@@ -147,19 +147,24 @@ These helper functions are injected into the iframe UI runtime `window` object.
 
 ### `createBackendReq(type, data)`
 
-Creates a request to your plugin's backend handler.
+Creates a request to your plugin's backend transport.
 
 **Parameters:**
-- `type` (string): The function name to call on the backend
+- `type` (string): The backend transport type
 - `data` (any, optional): The data to send to the backend
 
 **Returns:** `Promise<any>` - The response from the backend
 
 **Example:**
 ```javascript
-const result = await window.createBackendReq('getUserData', { userId: 123 });
+const result = await window.createBackendReq("UI_MESSAGE", {
+    handler: "plugin.getUserData",
+    content: { userId: 123 }
+});
 console.log(result);
 ```
+
+For production plugins, register handlers in `init()` and call them through `UI_MESSAGE`. Do not assume arbitrary handler names are transport types.
 
 ### `waitForElement(selector, callback, timeout)`
 
@@ -317,11 +322,10 @@ export default class GridLayoutPlugin extends FDO_SDK {
 
 ```javascript
 export default class DataPlugin extends FDO_SDK {
-    async fetchData() {
-        const data = await window.createBackendReq('getData', { 
-            filter: 'active' 
+    init() {
+        PluginRegistry.registerHandler("data.getActive", async (content) => {
+            return { filter: content?.filter ?? "active", items: [] };
         });
-        return data;
     }
     
     render() {
@@ -330,8 +334,9 @@ export default class DataPlugin extends FDO_SDK {
             <script>
                 window.waitForElement('#data-container', async (element) => {
                     try {
-                        const data = await window.createBackendReq('getData', { 
-                            filter: 'active' 
+                        const data = await window.createBackendReq("UI_MESSAGE", {
+                            handler: "data.getActive",
+                            content: { filter: "active" }
                         });
                         element.innerHTML = JSON.stringify(data, null, 2);
                     } catch (error) {

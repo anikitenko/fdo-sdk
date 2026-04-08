@@ -26,7 +26,7 @@
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
   },
-  "homepage": "https://plugins.fdo.alexvwan.me",
+  "homepage": "https://docs.sdk.fdo.alexvwan.me",
   "bugs": {
     "url": "https://github.com/anikitenko/fdo-sdk/issues"
   },
@@ -56,13 +56,14 @@
     "test:examples": "tsc --project examples/tsconfig.json --noEmit",
     "verify:types:local": "node scripts/verify-types-local.mjs",
     "verify:types:pack": "node scripts/verify-types-pack.mjs",
+    "verify:docs": "node scripts/verify-docs.mjs",
     "verify:pack": "npm run verify:types:pack",
     "prepack": "npm run build && npm run verify:types:local",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose",
     "coverage:open": "npx opn coverage/lcov-report/index.html || true",
-    "prepublishOnly": "npm test && npm run test:examples && npm run build && npm run verify:pack"
+    "prepublishOnly": "npm test && npm run test:examples && npm run verify:docs && npm run build && npm run verify:pack"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",

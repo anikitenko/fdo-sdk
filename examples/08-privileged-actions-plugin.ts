@@ -4,7 +4,7 @@ import {
     FDO_SDK,
     isPrivilegedActionSuccessResponse,
     requestPrivilegedAction,
-} from "../src";
+} from "@anikitenko/fdo-sdk";
 
 export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
     get metadata() {
@@ -93,3 +93,5 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
         `;
     }
 }
+
+new PrivilegedActionsPlugin();

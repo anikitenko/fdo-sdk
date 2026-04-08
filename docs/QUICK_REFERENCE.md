@@ -7,8 +7,11 @@ These helpers and libraries are for the iframe UI runtime. Do not assume they ex
 ## Window Helpers (Always Available)
 
 ```typescript
-// Backend Communication
-const response = await window.createBackendReq('methodName', { data });
+// Backend Communication through a registered backend handler
+const response = await window.createBackendReq("UI_MESSAGE", {
+  handler: "plugin.handlerName",
+  content: { data },
+});
 
 // DOM Utilities
 window.waitForElement('#my-element', (el) => { /* ... */ });

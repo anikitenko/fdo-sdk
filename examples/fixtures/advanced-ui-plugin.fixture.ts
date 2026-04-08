@@ -31,11 +31,12 @@ export default class AdvancedUIFixturePlugin extends FDO_SDK implements FDOInter
   }
 
   render(): string {
-    const text = new DOMText();
-    const semantic = new DOMSemantic();
-    const nested = new DOMNested();
-    const table = new DOMTable();
-    const button = new DOMButton();
+    try {
+      const text = new DOMText();
+      const semantic = new DOMSemantic();
+      const nested = new DOMNested();
+      const table = new DOMTable();
+      const button = new DOMButton();
 
     const statusTable = table.createTable(
       [
@@ -58,35 +59,44 @@ export default class AdvancedUIFixturePlugin extends FDO_SDK implements FDOInter
       }
     );
 
-    return semantic.createMain(
-      [
-        semantic.createHeader([
-          text.createHText(1, this._metadata.name),
-          text.createPText(this._metadata.description),
-        ]),
-        semantic.createSection([statusTable], { style: { marginTop: "12px" } }),
-        semantic.createFooter(
-          [
-            nested.createBlockDiv(
-              [
-                button.createButton("Refresh", () => {}, {
-                  style: {
-                    padding: "8px 12px",
-                    border: "1px solid #2c5cc5",
-                    color: "#2c5cc5",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  },
-                }),
-              ],
-              { style: { marginTop: "12px" } }
-            ),
-          ],
-          { style: { marginTop: "8px" } }
-        ),
-      ],
-      { style: { padding: "16px" } }
-    );
+      return semantic.createMain(
+        [
+          semantic.createHeader([
+            text.createHText(1, this._metadata.name),
+            text.createPText(this._metadata.description),
+          ]),
+          semantic.createSection([statusTable], { style: { marginTop: "12px" } }),
+          semantic.createFooter(
+            [
+              nested.createBlockDiv(
+                [
+                  button.createButton("Refresh", () => {}, {
+                    style: {
+                      padding: "8px 12px",
+                      border: "1px solid #2c5cc5",
+                      color: "#2c5cc5",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    },
+                  }),
+                ],
+                { style: { marginTop: "12px" } }
+              ),
+            ],
+            { style: { marginTop: "8px" } }
+          ),
+        ],
+        { style: { padding: "16px" } }
+      );
+    } catch (error) {
+      this.error(error as Error);
+      return `
+        <div style="padding:16px;color:#b42318;background:#fef3f2;border:1px solid #fecdca;border-radius:6px;">
+          <h2 style="margin-top:0;">Fixture render fallback</h2>
+          <p>Advanced UI fixture failed to render. Check plugin logs for details.</p>
+        </div>
+      `;
+    }
   }
 }
 

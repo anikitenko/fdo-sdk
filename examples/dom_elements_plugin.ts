@@ -23,11 +23,12 @@ export default class DOMElementsExamplePlugin extends FDO_SDK implements FDOInte
     }
 
     render(): string {
-        const domTable = new DOMTable();
-        const domMedia = new DOMMedia();
-        const domSemantic = new DOMSemantic();
-        const domNested = new DOMNested();
-        const domInput = new DOMInput("example-select", {});
+        try {
+            const domTable = new DOMTable();
+            const domMedia = new DOMMedia();
+            const domSemantic = new DOMSemantic();
+            const domNested = new DOMNested();
+            const domInput = new DOMInput("example-select", {});
 
         const tableHeader1 = domTable.createTableHeader(["Name"], {}, undefined, { scope: "col" });
         const tableHeader2 = domTable.createTableHeader(["Age"], {}, undefined, { scope: "col" });
@@ -125,6 +126,17 @@ export default class DOMElementsExamplePlugin extends FDO_SDK implements FDOInte
             footer
         ]);
 
-        return mainContent;
+            return mainContent;
+        } catch (error) {
+            this.error(error as Error);
+            return `
+                <div style="padding:20px;color:#b42318;background:#fef3f2;border:1px solid #fecdca;border-radius:6px;">
+                    <h2 style="margin-top:0;">Error rendering plugin</h2>
+                    <p>DOM elements example failed to render. Check plugin logs for details.</p>
+                </div>
+            `;
+        }
     }
 }
+
+new DOMElementsExamplePlugin();

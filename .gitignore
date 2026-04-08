@@ -212,3 +212,5 @@ dist
 # npm audit files
 .*-audit.json
 
+# Local-only working docs
+docs-local/
