@@ -22,7 +22,7 @@ describe("DOMSemantic coverage extras 2", () => {
             // @ts-ignore - dynamic method call for testing
             const out = (dom as any)[m]([], { style: { padding: '1px' } }, 'fixed-id');
             expect(out).toContain('id="fixed-id"');
-            expect(out).toMatch(/className="[^"]+"/);
+            expect(out).toMatch(/class="[^"]+"/);
         });
     });
 });

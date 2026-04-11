@@ -1,4 +1,6 @@
 import {
+    ClipboardReadActionRequest,
+    ClipboardWriteActionRequest,
     FilesystemMutateActionRequest,
     HostPrivilegedActionRequest,
     HostsWriteActionRequest,
@@ -36,6 +38,14 @@ export function createProcessScopeCapability(scopeId: string): `system.process.s
 
 export function createHostsWriteActionRequest(request: HostsWriteActionRequest): HostsWriteActionRequest {
     return validateHostPrivilegedActionRequest(request) as HostsWriteActionRequest;
+}
+
+export function createClipboardReadActionRequest(request: ClipboardReadActionRequest): ClipboardReadActionRequest {
+    return validateHostPrivilegedActionRequest(request) as ClipboardReadActionRequest;
+}
+
+export function createClipboardWriteActionRequest(request: ClipboardWriteActionRequest): ClipboardWriteActionRequest {
+    return validateHostPrivilegedActionRequest(request) as ClipboardWriteActionRequest;
 }
 
 export function createFilesystemMutateActionRequest(

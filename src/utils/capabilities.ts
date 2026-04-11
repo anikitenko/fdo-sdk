@@ -127,6 +127,24 @@ export function describeCapability(capability: PluginCapability | string): Capab
         };
     }
 
+    if (capability === "system.clipboard.write") {
+        return {
+            capability,
+            label: "Clipboard Write",
+            description: "Allows the plugin to request host-mediated clipboard writes.",
+            category: "clipboard",
+        };
+    }
+
+    if (capability === "system.clipboard.read") {
+        return {
+            capability,
+            label: "Clipboard Read",
+            description: "Allows the plugin to request host-mediated clipboard reads.",
+            category: "clipboard",
+        };
+    }
+
     if (capability === "system.hosts.write") {
         return {
             capability,

@@ -93,6 +93,20 @@ describe("capabilities", () => {
     });
 
     test("describes broad and scoped capabilities", () => {
+        expect(describeCapability("system.clipboard.read")).toEqual({
+            capability: "system.clipboard.read",
+            label: "Clipboard Read",
+            description: "Allows the plugin to request host-mediated clipboard reads.",
+            category: "clipboard",
+        });
+
+        expect(describeCapability("system.clipboard.write")).toEqual({
+            capability: "system.clipboard.write",
+            label: "Clipboard Write",
+            description: "Allows the plugin to request host-mediated clipboard writes.",
+            category: "clipboard",
+        });
+
         expect(describeCapability("system.process.exec")).toEqual({
             capability: "system.process.exec",
             label: "Scoped Tool Execution",

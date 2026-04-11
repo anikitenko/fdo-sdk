@@ -8,6 +8,8 @@ Allow narrowly scoped privileged operations without granting plugins broad files
 
 ## Current Actions
 
+- `system.clipboard.read`
+- `system.clipboard.write`
 - `system.hosts.write`
 - `system.fs.mutate`
 - `system.process.exec`
@@ -17,13 +19,38 @@ Validated by SDK helper:
 
 - `validateHostPrivilegedActionRequest(...)`
 - helpers for developer UX:
+  - `createClipboardReadActionRequest(request)`
+  - `createClipboardWriteActionRequest(request)`
   - `createFilesystemScopeCapability(scopeId)`
   - `createHostsWriteActionRequest(request)`
   - `createFilesystemMutateActionRequest(request)`
   - `createProcessScopeCapability(scopeId)`
   - `createProcessExecActionRequest(request)`
+  - `createClipboardReadRequest(reason?)`
+  - `createClipboardWriteRequest(text, reason?)`
+  - `requestClipboardRead(reasonOrOptions?, options?)`
+  - `requestClipboardWrite(text, reasonOrOptions?, options?)`
 
 ## Request Shape
+
+```ts
+{
+  action: "system.clipboard.read",
+  payload: {
+    reason?: string
+  }
+}
+```
+
+```ts
+{
+  action: "system.clipboard.write",
+  payload: {
+    text: string,
+    reason?: string
+  }
+}
+```
 
 ```ts
 {
@@ -150,6 +177,10 @@ const payload = createPrivilegedActionBackendRequest(request, {
 
 ## Capability Requirement
 
+- For `system.clipboard.read`, host should require:
+  - broad feature capability: `system.clipboard.read`
+- For `system.clipboard.write`, host should require:
+  - broad feature capability: `system.clipboard.write`
 - Host should only execute this action when capability `system.hosts.write` is granted for that plugin.
 - For `system.fs.mutate`, host should require both:
   - broad feature capability: `system.hosts.write` (or host-defined equivalent for privileged FS API)
@@ -163,6 +194,11 @@ const payload = createPrivilegedActionBackendRequest(request, {
 
 ## Security Requirements For Hosts
 
+- use the Electron clipboard API only in the trusted host process or another explicitly trusted host boundary
+- do not grant plugins raw clipboard access without host mediation
+- consider clipboard read more sensitive than clipboard write and gate it independently
+- log/audit clipboard reads with plugin identity, correlation id, and reason when available
+- log/audit clipboard writes with plugin identity, correlation id, and reason when available
 - enforce explicit user confirmation for non-dry-run writes
 - avoid shell interpolation; write through structured file logic
 - constrain writes to `/etc/hosts` only

@@ -41,6 +41,8 @@ export type ProcessScopeCapability = `system.process.scope.${string}`;
 export type PluginCapability =
     | "storage.json"
     | "sudo.prompt"
+    | "system.clipboard.read"
+    | "system.clipboard.write"
     | "system.hosts.write"
     | "system.process.exec"
     | FilesystemScopeCapability
@@ -64,10 +66,27 @@ export type FilesystemMutationOperation =
     | { type: "remove"; path: string; recursive?: boolean; force?: boolean };
 
 export type HostPrivilegedAction =
+    | "system.clipboard.read"
+    | "system.clipboard.write"
     | "system.hosts.write"
     | "system.fs.mutate"
     | "system.process.exec"
     | "system.workflow.run";
+
+export type ClipboardReadActionRequest = {
+    action: "system.clipboard.read";
+    payload: {
+        reason?: string;
+    };
+};
+
+export type ClipboardWriteActionRequest = {
+    action: "system.clipboard.write";
+    payload: {
+        text: string;
+        reason?: string;
+    };
+};
 
 export type HostsWriteActionRequest = {
     action: "system.hosts.write";
@@ -183,6 +202,8 @@ export type ScopedWorkflowResult = {
 };
 
 export type HostPrivilegedActionRequest =
+    | ClipboardReadActionRequest
+    | ClipboardWriteActionRequest
     | HostsWriteActionRequest
     | FilesystemMutateActionRequest
     | ProcessExecActionRequest
@@ -245,6 +266,7 @@ export type OperatorToolPresetDefinition = {
 export type CapabilityCategory =
     | "storage"
     | "sudo"
+    | "clipboard"
     | "hosts"
     | "filesystem-scope"
     | "process"

@@ -19,7 +19,7 @@ describe("DOMButton", () => {
 
         const button = domButton.createButton(label, mockOnClick, options, "test-button");
 
-        expect(button.toString()).toBe(`<button id="test-button" className="pure-button custom-class go11" onClick={() => {}}>Click Me</button>`);
+        expect(button.toString()).toBe(`<button id="test-button" class="pure-button custom-class go11" onClick={() => {}}>Click Me</button>`);
     });
 
     it("should apply default class when disableDefaultClass is not set", () => {

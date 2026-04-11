@@ -20,7 +20,7 @@ describe("DOMSemantic customAttributes coverage", () => {
             const out = fn.call(dom, [], { customAttributes: { 'data-s': '1' }, style: { margin: '0' } }, 's-id');
             expect(out).toContain('data-s="1"');
             expect(out).toContain('id="s-id"');
-            expect(out).toMatch(/className="[^"]+"/);
+            expect(out).toMatch(/class="[^"]+"/);
         });
     });
 });

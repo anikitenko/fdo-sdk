@@ -10,18 +10,22 @@ Primary authoring entry points:
 
 1. **fixtures/minimal-plugin.fixture.ts**
    Pattern: smallest valid plugin scaffold with stable lifecycle behavior.
+   Teaching intent: metadata, `init()`, and `render()` only, with no extra runtime concepts mixed in.
 2. **fixtures/error-handling-plugin.fixture.ts**
    Pattern: deterministic `@handleError` behavior with safe render fallback UI.
+   Teaching intent: init-time handler registration, real `UI_MESSAGE` calls, and a render fallback that remains safe in mixed runtime conditions.
 3. **fixtures/storage-plugin.fixture.ts**
    Pattern: plugin-scoped default/json store usage with graceful JSON-store unavailability handling.
-4. **fixtures/advanced-ui-plugin.fixture.ts**
-   Pattern: advanced semantic/table/action UI composition with DOM helper classes.
-5. **fixtures/operator-kubernetes-plugin.fixture.ts**
+   Teaching intent: backend storage handlers, session fallback when JSON storage is unavailable, and real UI_MESSAGE-driven storage actions.
+4. **fixtures/operator-kubernetes-plugin.fixture.ts**
    Pattern: curated `kubectl` operator preset for cluster-console style plugins, including inspect/act workflow modeling.
-6. **fixtures/operator-terraform-plugin.fixture.ts**
+   Teaching intent: declared preset capabilities, backend-built operator/workflow envelopes, and host-mediated execution through the privileged-action boundary.
+5. **fixtures/operator-terraform-plugin.fixture.ts**
    Pattern: curated `terraform` operator preset for plan/apply style plugins, including preview/apply workflow modeling.
-7. **fixtures/operator-custom-tool-plugin.fixture.ts**
+   Teaching intent: declared preset capabilities, backend-built plan/workflow envelopes, and host-mediated execution through the privileged-action boundary.
+6. **fixtures/operator-custom-tool-plugin.fixture.ts**
    Pattern: generic scoped process execution for host-specific/internal tools not covered by curated presets.
+   Teaching intent: broad execution plus a narrow custom process scope, backend-built scoped-process envelopes, and host-mediated execution through the privileged-action boundary.
 
 Use the operator fixtures for production-oriented DevOps/SRE/plugin authoring work.
 Use the non-operator fixtures for lifecycle, error-handling, storage, and UI composition baselines.
@@ -44,16 +48,12 @@ The examples are still numbered to indicate learning progression:
 4. **04-ui-extensions-plugin.ts** - Quick actions and side panel integration
 5. **05-advanced-dom-plugin.ts** - Advanced DOM generation with styling
 6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
-7. **07-injected-libraries-demo.ts** - Demonstrates all automatically injected libraries and helper functions
+7. **07-injected-libraries-demo.ts** - Demonstrates host-injected iframe libraries, browser-only helpers, the `UI_MESSAGE` bridge pattern, and host-mediated clipboard read/write flows
 8. **08-privileged-actions-plugin.ts** - Low-level host privileged action flow using `requestPrivilegedAction(...)` with correlation ids and stable response handling
-9. **09-operator-plugin.ts** - Curated operator helper example for a known tool family using `requestOperatorTool(...)`
+9. **09-operator-plugin.ts** - Curated operator helper example for a known tool family using operator request builders, declared preset capabilities, and host-mediated execution
+10. **10-system-file-plugin.ts** - Generic scoped filesystem mutation for a system file other than `/etc/hosts`, using `system.fs.mutate` and the same low-level privileged transport pattern as `08`
 
 For operator-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli`, `system.process.scope.kubectl`, `system.process.scope.terraform`, or another explicit tool-family scope rather than raw shell execution.
-
-## Additional Examples
-
-- **dom_elements_plugin.ts** - Comprehensive examples of DOM element creation
-- **metadata-template.ts** - Template for plugin metadata structure
 
 ## Privileged Action Envelope Pattern
 
@@ -132,7 +132,24 @@ For detailed guidance on stable fixtures, public docs, and authoring expectation
 - **Solution**: Check that `render()` returns a valid HTML string
 - **Solution**: Verify DOM helper classes are used correctly (example 05)
 - **Solution**: Check browser console for JavaScript errors
-- **Solution**: Ensure `renderHTML()` is called when using DOM helpers
+- **Solution**: Ensure `renderHTML()` is called when DOM helpers generate styled output. This is mandatory for helper-generated goober CSS to be emitted with the markup.
+- **Solution**: Do not embed raw JSON snapshots directly in `render()`. For result panels, render a placeholder first and populate it after iframe initialization through backend/UI calls.
+
+### Choosing DOM Helpers vs Plain Markup
+
+- **Rule**: DOM helpers are the preferred SDK pattern for general structured UI
+- **Exception**: Some teaching examples intentionally use plain markup to isolate a different lesson, such as iframe-injected libraries or the backend bridge contract
+- **Learning path from `01` to `09`**:
+  - `01` uses plain markup to teach the minimal lifecycle contract
+  - `02` uses plain markup to teach handlers, `renderOnLoad()`, and `UI_MESSAGE`
+  - `03` uses plain markup to teach storage and backend/UI separation
+  - `04` uses plain markup to teach quick actions and side-panel routing
+  - `05` teaches DOM helpers directly
+  - `06` uses plain markup to keep error handling and fallback behavior clear
+  - `07` uses plain markup to teach injected libraries and iframe helpers
+  - `08` uses plain markup to teach low-level privileged-action transport
+  - `09` uses plain markup to teach the curated operator-helper path without mixing in unrelated UI abstraction
+  - `10` uses plain markup to teach generic scoped filesystem mutation for non-hosts system files
 
 ### Message Handlers Not Working
 

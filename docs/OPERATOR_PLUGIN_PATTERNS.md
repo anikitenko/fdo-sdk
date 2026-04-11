@@ -241,6 +241,99 @@ const response = await requestScopedWorkflow("terraform", {
 
 Use this path for preview/apply and inspect/act style flows when one request is no longer enough.
 
+## Many Commands And Troubleshooting Runbooks
+
+Do not model a serious troubleshooting plugin around ten separate UI buttons or around raw shell chaining.
+
+Use this decision rule instead:
+
+1. one command: `requestOperatorTool(...)`
+2. several independent read-only commands collected by one backend method: loop over `requestOperatorTool(...)` or `requestScopedProcessExec(...)` in backend code
+3. one named multi-step troubleshooting runbook with ordering, shared summary, audit visibility, or step-level failure handling: `requestScopedWorkflow(...)`
+
+This distinction matters because a real troubleshooting runbook is not just "many commands". It is one operator flow with:
+
+- a shared intent
+- ordered steps
+- step-level auditability
+- a normalized summary
+- clear failure and remediation points
+
+If the commands are just independent inspections, a backend loop is acceptable:
+
+```ts
+const commands = [
+  ["sts", "get-caller-identity"],
+  ["ec2", "describe-instances"],
+  ["ecs", "list-clusters"],
+] as const;
+
+const results = [];
+for (const args of commands) {
+  results.push(
+    await requestOperatorTool("aws-cli", {
+      command: "/usr/local/bin/aws",
+      args: [...args, "--output", "json"],
+      timeoutMs: 5000,
+      dryRun: true,
+      reason: `inspect aws state: ${args.join(" ")}`,
+    })
+  );
+}
+```
+
+If the commands are one troubleshooting runbook, prefer a workflow:
+
+```ts
+const response = await requestScopedWorkflow("aws-cli", {
+  kind: "process-sequence",
+  title: "AWS troubleshooting workflow",
+  summary: "Collect identity, EC2, ECS, and CloudWatch diagnostics",
+  dryRun: true,
+  steps: [
+    {
+      id: "whoami",
+      title: "Get caller identity",
+      phase: "inspect",
+      command: "/usr/local/bin/aws",
+      args: ["sts", "get-caller-identity", "--output", "json"],
+      timeoutMs: 5000,
+      reason: "inspect current AWS identity",
+      onError: "abort",
+    },
+    {
+      id: "ec2",
+      title: "Describe EC2 instances",
+      phase: "inspect",
+      command: "/usr/local/bin/aws",
+      args: ["ec2", "describe-instances", "--output", "json"],
+      timeoutMs: 5000,
+      reason: "inspect EC2 state",
+      onError: "continue",
+    },
+    {
+      id: "ecs",
+      title: "List ECS clusters",
+      phase: "inspect",
+      command: "/usr/local/bin/aws",
+      args: ["ecs", "list-clusters", "--output", "json"],
+      timeoutMs: 5000,
+      reason: "inspect ECS state",
+      onError: "continue",
+    },
+  ],
+});
+```
+
+For AWS-style troubleshooting plugins, best practice is:
+
+- declare capabilities up front with `declareCapabilities()`
+- prefer `createOperatorToolCapabilityPreset("aws-cli")` for the capability bundle
+- keep the CLI scope narrow (`system.process.scope.aws-cli`)
+- keep orchestration in backend code, not in iframe UI code
+- avoid `sh -c`, shell interpolation, and ad hoc command chaining
+- promote the sequence to `requestScopedWorkflow(...)` once it becomes a real runbook rather than a bag of unrelated commands
+
 Capability model for the first workflow slice:
 
 - reuse `system.process.exec`

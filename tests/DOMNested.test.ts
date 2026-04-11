@@ -30,7 +30,7 @@ describe("DOMNested", () => {
         const text = domText.createHText(1, "Hello World", {}, "test-text");
         const nested = domNested.createBlockDiv([button, text], {}, "test-div");
 
-        expect(nested.toString()).toBe(`<div id="test-div" className="go11"><button id="test-button" className="pure-button custom-class go11" onClick={() => {}}>Click Me</button><h1 id="test-text" className="go11">Hello World</h1></div>`);
+        expect(nested.toString()).toBe(`<div id="test-div" class="go11"><button id="test-button" class="pure-button custom-class go11" onClick={() => {}}>Click Me</button><h1 id="test-text" class="go11">Hello World</h1></div>`);
     });
 
     test("createBlockDiv with no options", () => {
@@ -47,7 +47,7 @@ describe("DOMNested", () => {
         const child1 = domNested.createListItem(["Hello"], {}, "hello");
         const child2 = domNested.createListItem(["World"], {}, "world");
         const list = domNested.createList([child1, child2], {}, "list");
-        expect(list.toString()).toBe(`<ul id="list" className="go11"><li id="hello" className="go11">Hello</li><li id="world" className="go11">World</li></ul>`);
+        expect(list.toString()).toBe(`<ul id="list" class="go11"><li id="hello" class="go11">Hello</li><li id="world" class="go11">World</li></ul>`);
     });
 
     test("ul element with no options", () => {
@@ -73,7 +73,7 @@ describe("DOMNested", () => {
     it("should create a fieldset", () => {
         const legend = domNested.createLegend(["Legend"], {}, "legend");
         const fieldset = domNested.createFieldset([legend], {}, "fieldset");
-        expect(fieldset.toString()).toBe(`<fieldset id="fieldset" className="go11"><legend id="legend" className="go11">Legend</legend></fieldset>`);
+        expect(fieldset.toString()).toBe(`<fieldset id="fieldset" class="go11"><legend id="legend" class="go11">Legend</legend></fieldset>`);
     });
 
     test("fieldset element with no options", () => {
@@ -98,7 +98,7 @@ describe("DOMNested", () => {
 
     it("should create a form", () => {
         const form = domNested.createForm([], {}, "form");
-        expect(form.toString()).toBe(`<form id="form" className="go11"></form>`);
+        expect(form.toString()).toBe(`<form id="form" class="go11"></form>`);
     })
 
     test("form element with no options", () => {
@@ -120,35 +120,35 @@ describe("DOMNested", () => {
         const output = domNested.createBlockDiv(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "block-div" } }, "test-id");
         expect(output).toContain(`data-testid="block-div"`);
         expect(output).toContain(`id="test-id"`);
-        expect(output).toContain(`className=`);
+        expect(output).toContain(`class=`);
     });
 
     it("should create list with custom attributes", () => {
         const output = domNested.createList(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "list" } }, "test-id");
         expect(output).toContain(`data-testid="list"`);
         expect(output).toContain(`id="test-id"`);
-        expect(output).toContain(`className=`);
+        expect(output).toContain(`class=`);
     });
 
     it("should create fieldset with custom attributes", () => {
         const output = domNested.createFieldset(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "fieldset" } }, "test-id");
         expect(output).toContain(`data-testid="fieldset"`);
         expect(output).toContain(`id="test-id"`);
-        expect(output).toContain(`className=`);
+        expect(output).toContain(`class=`);
     });
 
     it("should create legend with custom attributes", () => {
         const output = domNested.createLegend(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "legend" } }, "test-id");
         expect(output).toContain(`data-testid="legend"`);
         expect(output).toContain(`id="test-id"`);
-        expect(output).toContain(`className=`);
+        expect(output).toContain(`class=`);
     });
 
     it("should create form with custom attributes", () => {
         const output = domNested.createForm(["test"], { classes: ["test-class"], customAttributes: { "data-testid": "form" } }, "test-id");
         expect(output).toContain(`data-testid="form"`);
         expect(output).toContain(`id="test-id"`);
-        expect(output).toContain(`className=`);
+        expect(output).toContain(`class=`);
     });
 
     it("should handle empty children arrays", () => {

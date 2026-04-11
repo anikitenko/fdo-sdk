@@ -21,5 +21,6 @@ describe("Advanced DOM example", () => {
 
         expect(() => plugin.render()).not.toThrow();
         expect(plugin.render()).toContain("Advanced DOM Example");
+        expect(plugin.render()).toContain("plugin-script-placeholder");
     });
 });

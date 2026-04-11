@@ -1,4 +1,6 @@
 import {
+    createClipboardReadActionRequest,
+    createClipboardWriteActionRequest,
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createHostsWriteActionRequest,
@@ -33,6 +35,36 @@ describe("privileged action helpers", () => {
             action: "system.hosts.write",
             payload: {
                 records: [{ address: "127.0.0.1", hostname: "local.test" }],
+            },
+        });
+    });
+
+    test("builds clipboard write requests through validator", () => {
+        expect(createClipboardWriteActionRequest({
+            action: "system.clipboard.write",
+            payload: {
+                text: "copied from example 07",
+                reason: "copy editor content",
+            },
+        })).toEqual({
+            action: "system.clipboard.write",
+            payload: {
+                text: "copied from example 07",
+                reason: "copy editor content",
+            },
+        });
+    });
+
+    test("builds clipboard read requests through validator", () => {
+        expect(createClipboardReadActionRequest({
+            action: "system.clipboard.read",
+            payload: {
+                reason: "read clipboard for demo",
+            },
+        })).toEqual({
+            action: "system.clipboard.read",
+            payload: {
+                reason: "read clipboard for demo",
             },
         });
     });

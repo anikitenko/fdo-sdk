@@ -14,7 +14,7 @@ describe("DOMMisc", () => {
 
     it("should create a divider with correct default options", () => {
         const divider = domMisc.divider({classes: ["test"]}, "test");
-        expect(divider.toString()).toBe(`<hr id="test" className="test go2473750146"></hr>`)
+        expect(divider.toString()).toBe(`<hr id="test" class="test go2473750146"></hr>`)
     })
 
     test("divider with no options or id", () => {
@@ -50,10 +50,10 @@ describe("DOMMisc", () => {
         }, "divider-123");
 
         expect(output).toContain("id=\"divider-123\"");
-        expect(output).toContain("className=\"go");
-        expect(output).toMatch(/<hr id="divider-123" className="go\d+"><\/hr>/);
+        expect(output).toContain("class=\"go");
+        expect(output).toMatch(/<hr id="divider-123" class="go\d+"><\/hr>/);
         expect(output.match(/go\d+/)).not.toBeNull();
-        expect(output).toMatch(/className="go[0-9]+"/);
+        expect(output).toMatch(/class="go[0-9]+"/);
     });
 
     test("divider with options.style = undefined", () => {
@@ -105,7 +105,7 @@ describe("DOMMisc", () => {
 
     test("divider with custom style", () => {
         const output = domMisc.divider({ style: { padding: "5px" } }, "divider-123");
-        expect(output).toMatch(/<hr id="divider-123" className="go\d+"><\/hr>/);
+        expect(output).toMatch(/<hr id="divider-123" class="go\d+"><\/hr>/);
     });
 
     test("divider with disableDefaultClass and custom ID", () => {
@@ -120,6 +120,6 @@ describe("DOMMisc", () => {
 
     test("divider with custom style (truthy branch)", () => {
         const output = domMisc.divider({ style: { padding: "5px" } });
-        expect(output).toMatch(/className="go\d+"/);
+        expect(output).toMatch(/class="go\d+"/);
     });
 })

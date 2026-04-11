@@ -8,7 +8,7 @@ This document defines the real runtime contract for FDO plugins built with `@ani
 - Your plugin UI runs in a sandboxed iframe host managed by FDO.
 - `render()` returns UI source for the FDO iframe pipeline.
 - That output is not the same thing as raw `innerHTML` inserted directly into the host page.
-- SDK DOM helpers generate UI strings intended for that iframe-hosted render pipeline.
+- SDK DOM helpers generate raw HTML strings intended for that iframe-hosted render pipeline.
 
 ## Two Runtimes
 
@@ -62,6 +62,126 @@ Because of that:
 - "React component source" is also not quite right from the plugin author's perspective
 - the safest description is: JSX-like UI strings for the FDO iframe host pipeline
 
+For DOM helpers specifically:
+
+- helper APIs may accept compatibility aliases like `className`, `htmlFor`, and `readOnly`
+- emitted helper output should still use raw HTML attribute names like `class`, `for`, and `readonly`
+- when both forms are supplied, the native HTML form wins explicitly so output does not depend on object key iteration order
+
+## JSX-Compatibility Rules For `render()`
+
+In practice, the FDO host transform treats `render()` output as JSX-compatible UI source, not as unconstrained raw `innerHTML`.
+
+That means some markup that would be valid in loose HTML can still fail in the host render pipeline.
+
+Common failure cases:
+
+- raw void tags such as `<br>` instead of `<br />`
+- raw `<style>` blocks inside `render()`
+- literal JavaScript/object syntax inside `<code>` blocks without escaping JSX-sensitive characters
+- other raw text that contains unescaped `{` / `}` in JSX-visible positions
+- display-only strings that match host fail-fast guard patterns, for example sensitive runtime tokens such as `process.` or other blocked runtime-access markers
+- raw JSON or object-literal content embedded directly into JSX-visible markup, especially inside `<pre>` blocks
+
+Practical rules:
+
+- prefer JSX-safe void tags such as `<br />`
+- avoid inline `<style>` blocks in `render()`; prefer DOM helpers plus `renderHTML(...)`, host CSS classes, or inline element styles when needed
+- if you show code samples in `<code>` or `<pre>` blocks, escape literal braces as `&#123;` and `&#125;`
+- avoid embedding raw guard-sensitive runtime tokens in display text when a plain-language description is enough
+- if you want to show structured JSON results, render a safe placeholder first and populate the result panel after iframe initialization through backend/UI calls
+- do not assume "browser HTML parsing would accept this" means the FDO host transform will accept it
+
+Example: use JSX-safe markup
+
+```ts
+render(): string {
+  return `
+    <div>
+      <strong>Status</strong><br />
+      Ready
+    </div>
+  `;
+}
+```
+
+Example: escape code-sample braces
+
+```ts
+render(): string {
+  return `
+    <pre><code class="language-javascript">function greet(name) &#123;
+  return "Hello";
+&#125;</code></pre>
+  `;
+}
+```
+
+Do not rely on this shape:
+
+```ts
+render(): string {
+  return `
+    <style>
+      .demo { padding: 20px; }
+    </style>
+    <pre><code>function greet(name) { return "Hello"; }</code></pre>
+  `;
+}
+```
+
+Another practical example:
+
+```ts
+render(): string {
+  return `
+    <p>Declared capabilities: broad host tool execution plus the narrow Docker CLI scope.</p>
+  `;
+}
+```
+
+Prefer that over embedding raw display text such as:
+
+```ts
+render(): string {
+  return `
+    <p><code>["system.process.exec", "system.process.scope.docker-cli"]</code></p>
+  `;
+}
+```
+
+Even though that second example is only display text, some host fail-fast guards may conservatively match the `process.` token and reject the render source.
+
+For JSON/result panels, prefer this shape:
+
+```ts
+render(): string {
+  return `
+    <pre id="result-box">Snapshot will load after initialization...</pre>
+  `;
+}
+
+renderOnLoad(): string {
+  return `
+    (() => {
+      const output = document.getElementById("result-box");
+      // fetch data through UI_MESSAGE and then:
+      output.textContent = JSON.stringify({ ok: true }, null, 2);
+    })();
+  `;
+}
+```
+
+Do not rely on embedding raw JSON directly in `render()`:
+
+```ts
+render(): string {
+  return `
+    <pre>{ "ok": true }</pre>
+  `;
+}
+```
+
 The SDK now keeps that separation explicit:
 
 - `render()` returns the plugin's UI string
@@ -100,6 +220,13 @@ You should treat them as:
 - helpers for the FDO UI render pipeline
 - not proof that the host inserts raw HTML directly
 - not proof that every browser/runtime feature is available everywhere
+
+If helper-generated output uses goober-backed styles/classes, `renderHTML(...)` is mandatory on the final render output. Without it, the helper-generated class names can be present while the extracted CSS is missing from the returned UI string.
+
+Practical rule:
+
+- helper-composed styled output: `return helper.renderHTML(content)`
+- plain manual JSX-like markup with no helper-generated styling: return the markup directly
 
 ## Trusted Markup vs Safe Text
 
@@ -172,6 +299,7 @@ If you use `errorUIRenderer` or any custom render fallback:
 - Use `render()` to provide UI for the iframe host pipeline.
 - Use injected `window.*` helpers only from UI-facing code paths.
 - Use SDK DOM helpers when they match the existing workspace style.
+- When DOM helpers generate styled output, call `renderHTML(...)` on the final helper markup before returning from `render()`.
 - Do not move UI-runtime assumptions into backend/bootstrap code.
 
 ## Guidance For AI Tools

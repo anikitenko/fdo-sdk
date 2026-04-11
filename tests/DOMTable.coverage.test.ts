@@ -10,7 +10,7 @@ describe("DOMTable coverage extras", () => {
     it("should generate a style class when style option provided", () => {
         const table = domTable.createTable([], { style: { color: 'red' } });
         // className attribute should be present and non-empty
-        expect(table).toMatch(/className="[^"]+"/);
+        expect(table).toMatch(/class="[^"]+"/);
     });
 
     it("should render onClick via otherProps in header", () => {

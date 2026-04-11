@@ -17,6 +17,51 @@ If you need a new UI library in iframe code, it must be added by FDO host inject
 
 Backend/plugin runtime code can still import npm dependencies that are bundled with the plugin artifact.
 
+## Teaching Boundary: Injected Libraries vs DOM Helpers
+
+SDK DOM helpers are still a best practice for general SDK-native structured UI because they give authors a typed, reusable way to build consistent markup and styling.
+
+But this injected-libraries guide serves a different purpose:
+
+- teach iframe-only host-injected globals
+- teach browser-only runtime behavior
+- teach the `UI_MESSAGE` backend bridge pattern
+
+So examples in this guide may intentionally use plain markup plus `renderOnLoad()` wiring instead of DOM helpers, in order to keep the lesson focused.
+
+Use this rule:
+
+- general SDK-native structured UI: DOM helpers are preferred
+- injected-library/runtime-boundary teaching: plain markup is acceptable when it keeps the example focused
+
+If you do use styled DOM helpers in `render()`, `renderHTML(...)` remains mandatory so the extracted goober CSS is emitted with the markup.
+
+## Important Boundary: JSX-Compatible Markup
+
+Even when you use plain markup in injected-library examples, remember that `render()` output is consumed by the FDO host transform, not inserted as unconstrained raw HTML.
+
+That means the safest mental model is:
+
+- plain markup is acceptable here for teaching focus
+- but it still needs to be JSX-compatible for the host render pipeline
+
+Examples of what to prefer:
+
+- `<br />` instead of `<br>`
+- inline element styles or DOM-helper styling instead of raw `<style>` blocks in `render()`
+- escaped code samples inside `<code>` blocks, for example `&#123;` and `&#125;`
+
+Examples of what to avoid:
+
+- raw `<style>` tags in `render()`
+- raw object/function braces inside code samples shown directly in JSX-visible markup
+
+Clipboard note:
+
+- if UI code wants to copy data outside the iframe sandbox, prefer a host-mediated clipboard path
+- if UI code wants to read clipboard data, also prefer a host-mediated clipboard path
+- in the SDK, use the clipboard privileged-action contract instead of assuming direct Electron clipboard access from plugin UI code
+
 ## Table of Contents
 
 - [CSS Libraries](#css-libraries)

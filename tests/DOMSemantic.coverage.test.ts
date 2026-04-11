@@ -22,6 +22,7 @@ describe("DOMSemantic coverage extras", () => {
     it("renderHTML injects style and script placeholders", () => {
         const out = dom.renderHTML('<div>Hi</div>');
         expect(out).toContain('plugin-script-placeholder');
-        expect(out).toMatch(/<style>\{`[\s\S]*`\}<\/style>/);
+        expect(out).toMatch(/<style>[\s\S]*<\/style>/);
+        expect(out).not.toContain('{`');
     });
 });
