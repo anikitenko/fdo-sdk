@@ -163,7 +163,7 @@ describe("SDK contract validators", () => {
         expect(() => validateHostPrivilegedActionRequest({
             action: "system.shell.exec",
             payload: { records: [] },
-        })).toThrow('Host privileged action "action" must be "system.hosts.write", "system.fs.mutate", "system.process.exec", or "system.workflow.run".');
+        })).toThrow('Host privileged action "action" must be "system.clipboard.read", "system.clipboard.write", "system.hosts.write", "system.fs.mutate", "system.process.exec", or "system.workflow.run".');
         expect(() => validateHostPrivilegedActionRequest({
             action: "system.hosts.write",
             payload: { records: [] },
