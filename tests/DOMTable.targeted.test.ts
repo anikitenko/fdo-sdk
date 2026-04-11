@@ -12,7 +12,7 @@ describe("DOMTable targeted coverage", () => {
         const table = dom.createTable(nestedChildren as any[], { style: { color: 'green' }, classes: ['a'] , customAttributes: { 'data-x': '1' } }, 'table-id');
         expect(table).toContain('id="table-id"');
         expect(table).toContain('data-x="1"');
-        expect(table).toContain('className="');
+        expect(table).toContain('class="');
     });
 
     it("createTableHead: exercise onAttributes and boolean attribute in otherProps", () => {

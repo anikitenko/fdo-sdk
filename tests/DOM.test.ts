@@ -74,6 +74,36 @@ describe("DOM", () => {
         expect(className).toBe("mocked-class");
     });
 
+    test("createClassFromStyle should mask window when document is unavailable", () => {
+        const originalWindow = (globalThis as { window?: unknown }).window;
+        const originalDocument = (globalThis as { document?: unknown }).document;
+        (globalThis as { window?: unknown }).window = {};
+        delete (globalThis as { document?: unknown }).document;
+
+        const gooberMock = gooberCss as vi.MockedFunction<typeof gooberCss>;
+        gooberMock.mockImplementation(() => {
+            if (typeof (globalThis as { window?: unknown }).window === "object" &&
+                typeof (globalThis as { document?: unknown }).document === "undefined") {
+                throw new ReferenceError("document is not defined");
+            }
+            return "mocked-class";
+        });
+
+        expect(() => (dom as any).createClassFromStyle({ color: "red" })).not.toThrow();
+
+        if (typeof originalWindow === "undefined") {
+            delete (globalThis as { window?: unknown }).window;
+        } else {
+            (globalThis as { window?: unknown }).window = originalWindow;
+        }
+
+        if (typeof originalDocument === "undefined") {
+            delete (globalThis as { document?: unknown }).document;
+        } else {
+            (globalThis as { document?: unknown }).document = originalDocument;
+        }
+    });
+
     test("flattenChildren should flatten deeply nested arrays", () => {
         const children = [[["text1"], "text2"], [[null, "text3"]], undefined];
         const result = (dom as any).flattenChildren(children);
@@ -123,9 +153,10 @@ describe("DOM", () => {
         expect(extractCss).toHaveBeenCalled();
 
         // Check the structure of the output
-        expect(result).toContain("<style>{\`mocked-css\`}</style>"); // Style tag with extracted CSS
+        expect(result).toContain("<style>mocked-css</style>"); // Style tag with extracted CSS
         expect(result).toContain("<div>Hello</div>"); // Original element
         expect(result).toContain('<script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>'); // Script placeholder
+        expect(result).not.toContain("{`");
 
         // Verify the order of elements
         const styleIndex = result.indexOf("<style>");
@@ -136,7 +167,16 @@ describe("DOM", () => {
         expect(elementIndex).toBeLessThan(scriptIndex); // Element should come before the script
 
         // Verify the complete string
-        expect(result).toBe(`<style>{\`mocked-css\`}</style><div>Hello</div><script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>`);
+        expect(result).toBe(`<style>mocked-css</style><div>Hello</div><script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>`);
+    });
+
+    test("renderHTML should keep an explicit empty style tag when no CSS is extracted", () => {
+        const extractCssMock = extractCss as vi.MockedFunction<typeof extractCss>;
+        extractCssMock.mockReturnValueOnce("");
+
+        const result = dom.renderHTML("<div>Empty CSS</div>");
+
+        expect(result).toBe(`<style></style><div>Empty CSS</div><script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>`);
     });
 
     test("createAttributes should return attributes without event handlers", () => {
@@ -144,7 +184,7 @@ describe("DOM", () => {
         const attributes = (dom as any).createAttributes(props);
 
         expect(attributes.toString()).toContain(`id=\"test\"`);
-        expect(attributes.toString()).toContain(`className=\"box\"`);
+        expect(attributes.toString()).toContain(`class=\"box\"`);
         expect(attributes.toString()).not.toContain(`onClick`);
     });
 
@@ -152,7 +192,7 @@ describe("DOM", () => {
         const props = { id: "test", class: "box", onClick: vi.fn() };
         const attributes = (dom as any).createAttributes(props);
 
-        expect(attributes).toBe(`id="test" className="box"`);
+        expect(attributes).toBe(`id="test" class="box"`);
     });
 
     test("createAttributes should handle boolean attributes correctly", () => {
@@ -169,7 +209,7 @@ describe("DOM", () => {
         expect(attributes).toContain("checked");
         expect(attributes).not.toContain("disabled");
         expect(attributes).toContain("required");
-        expect(attributes).not.toContain("readOnly");
+        expect(attributes).not.toContain("readonly");
         expect(attributes).toContain("hidden");
         expect(attributes).toContain(`data-custom="true"`); // Custom boolean attributes use string format
     });
@@ -183,7 +223,54 @@ describe("DOM", () => {
         expect(attributes).toContain(
             `title="x&quot;y&#39;z &amp; &lt;tag&gt; &#123;value&#125; &lt;/tag&gt;"`
         );
-        expect(attributes).toContain(`htmlFor="field-id"`);
+        expect(attributes).toContain(`for="field-id"`);
+    });
+
+    test("createAttributes should normalize JSX-style aliases to HTML attributes", () => {
+        const attributes = (dom as any).createAttributes({
+            className: "box",
+            htmlFor: "field-id",
+            readOnly: true,
+        });
+
+        expect(attributes).toContain(`class="box"`);
+        expect(attributes).toContain(`for="field-id"`);
+        expect(attributes).toContain(`readonly`);
+        expect(attributes).not.toContain(`className=`);
+        expect(attributes).not.toContain(`htmlFor=`);
+        expect(attributes).not.toContain(`readOnly`);
+    });
+
+    test("createAttributes should not emit duplicate attributes for HTML and JSX aliases", () => {
+        const attributes = (dom as any).createAttributes({
+            class: "html-class",
+            className: "jsx-class",
+            for: "first",
+            htmlFor: "second",
+            readonly: false,
+            readOnly: true,
+        });
+
+        expect(attributes).toContain(`class="html-class"`);
+        expect(attributes).toContain(`for="first"`);
+        expect(attributes.match(/\bclass=/g)).toHaveLength(1);
+        expect(attributes.match(/\bfor=/g)).toHaveLength(1);
+        expect(attributes).not.toContain(`readonly`);
+    });
+
+    test("createAttributes should prefer native HTML aliases over JSX aliases explicitly", () => {
+        const attributes = (dom as any).createAttributes({
+            className: "jsx-class",
+            class: "html-class",
+            htmlFor: "jsx-field",
+            for: "html-field",
+            readOnly: true,
+            readonly: false,
+        });
+
+        expect(attributes).toContain(`class="html-class"`);
+        expect(attributes).toContain(`for="html-field"`);
+        expect(attributes).not.toContain(`readonly`);
     });
 
     test("createOnAttributes should return only event handlers as stringified functions", () => {
@@ -199,7 +286,7 @@ describe("DOM", () => {
     test("createElement should create elements with various configurations", () => {
         // Test case 1: Element with both attributes and children
         const element1 = dom.createElement("div", { id: "test", "class": "box" }, "Content");
-        expect(element1.toString()).toBe(`<div id="test" className="box">Content</div>`);
+        expect(element1.toString()).toBe(`<div id="test" class="box">Content</div>`);
 
         // Test case 2: Element with no attributes
         const element2 = dom.createElement("span", {}, "Hello");
@@ -211,7 +298,7 @@ describe("DOM", () => {
 
         // Test case 4: Element with both regular attributes and event handlers
         const element4 = dom.createElement("button", { onClick: () => {}, className: "mock"}, "Content");
-        expect(element4.toString()).toBe(`<button className="mock" onClick={() => {}}>Content</button>`);
+        expect(element4.toString()).toBe(`<button class="mock" onClick={() => {}}>Content</button>`);
     });
 
     test("should create keyframe and return the generated class name", () => {
@@ -246,7 +333,7 @@ describe("DOM", () => {
         }, "Content");
 
         // Verify the element has the keyframe class
-        expect(element.toString()).toBe(`<button className="mocked-keyframe" onClick={() => {}}>Content</button>`);
+        expect(element.toString()).toBe(`<button class="mocked-keyframe" onClick={() => {}}>Content</button>`);
     });
 
     test("should create keyframe with complex animation steps", () => {

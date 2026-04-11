@@ -25,6 +25,14 @@ The supported lifecycle contract is synchronous:
 - `renderOnLoad()` optionally returns an on-load string
 - the SDK serializes those values for host transport separately
 
+DOM helper rule:
+
+- if `render()` uses SDK DOM helpers that generate goober-backed classes/styles, wrap the final helper output with `renderHTML(...)`
+- this is mandatory for styled DOM-helper output, because helper-generated class names are only useful when the extracted CSS is emitted with the markup
+- returning raw DOM-helper markup without `renderHTML(...)` can leave the UI unstyled even though class names are present
+- DOM helpers emit raw HTML attribute names such as `class`, `for`, and `readonly`; JSX-style aliases such as `className`, `htmlFor`, and `readOnly` are accepted as input for compatibility and normalized to HTML output
+- if both the HTML form and JSX-style alias are provided for the same attribute, the HTML form wins explicitly (`class` over `className`, `for` over `htmlFor`, `readonly` over `readOnly`)
+
 Plugin metadata is also part of the host contract. In particular, `metadata.icon` must be a valid BlueprintJS v6 icon name because FDO uses BlueprintJS v6 in the host application.
 
 For the detailed render/runtime contract, see [docs/RENDER_RUNTIME_CONTRACT.md](./docs/RENDER_RUNTIME_CONTRACT.md).
@@ -130,14 +138,16 @@ new MyPlugin();
 
 ### Example Usage
 
-See `examples/fixtures/minimal-plugin.fixture.ts` for the primary minimal plugin scaffold.
+See `examples/fixtures/minimal-plugin.fixture.ts` for the primary minimal plugin scaffold: metadata, `init()`, and `render()` only, with no extra bridge or UI-helper concepts mixed in.
 See `examples/01-basic-plugin.ts` for the teaching-oriented basic lifecycle example.
 
-See `examples/dom_elements_plugin.ts` for comprehensive examples of using the new DOM element creation capabilities including tables, media, semantic HTML, lists, and form controls.
+See `examples/05-advanced-dom-plugin.ts` for the numbered DOM-helper learning example.
 
 See `examples/08-privileged-actions-plugin.ts` for the low-level host privileged action request flow using `requestPrivilegedAction(...)` with correlation IDs and stable response envelope handling.
 
 See `examples/09-operator-plugin.ts` for a curated operator helper example for a known tool family built on scoped host process execution.
+
+See `examples/10-system-file-plugin.ts` for the next logical low-level filesystem example after `/etc/hosts`: a scoped `system.fs.mutate` flow targeting another system file (`/etc/motd`) through the same host-mediated privileged transport path.
 
 For public SDK guidance, follow the fixture-first and curated-helper-first recommendation order documented in [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md).
 
@@ -157,6 +167,8 @@ Core capabilities:
 
 - `storage.json` - required for `PluginRegistry.useStore("json")`
 - `sudo.prompt` - required for `runWithSudo(...)`
+- `system.clipboard.read` - required for host-mediated clipboard reads
+- `system.clipboard.write` - required for host-mediated clipboard writes
 - `system.hosts.write` - required for host-mediated hosts updates and scoped privileged fs API
 - `system.fs.scope.<scope-id>` - host-defined scoped permission for `system.fs.mutate`
 - `system.process.exec` - required for host-mediated process execution
@@ -164,6 +176,8 @@ Core capabilities:
 
 Privileged action contracts:
 
+- `system.clipboard.read`
+- `system.clipboard.write`
 - `system.hosts.write`
 - `system.fs.mutate`
 - `system.process.exec`
@@ -171,6 +185,8 @@ Privileged action contracts:
 Public helpers exported from root package:
 
 - `validateHostPrivilegedActionRequest(...)`
+- `createClipboardReadActionRequest(...)`
+- `createClipboardWriteActionRequest(...)`
 - `createHostsWriteActionRequest(...)`
 - `createFilesystemMutateActionRequest(...)`
 - `createFilesystemScopeCapability(...)`
@@ -178,6 +194,10 @@ Public helpers exported from root package:
 - `createProcessScopeCapability(...)`
 - `createPrivilegedActionBackendRequest(...)`
 - `requestPrivilegedAction(...)`
+- `createClipboardReadRequest(...)`
+- `createClipboardWriteRequest(...)`
+- `requestClipboardRead(...)`
+- `requestClipboardWrite(...)`
 - `createScopedProcessExecActionRequest(...)`
 - `requestScopedProcessExec(...)`
 - `createProcessCapabilityBundle(...)`
@@ -232,6 +252,14 @@ Preferred pattern:
 - use `requestScopedWorkflow(...)` when a plugin needs a typed multi-step preview/apply or inspect/act flow instead of plugin-private orchestration
 - expect workflow step results to expose typed process outcome data (`command`, `args`, `exitCode`, `stdout`, `stderr`, `durationMs`) rather than opaque blobs
 - implement `declareCapabilities()` for operator plugins so declared vs granted capabilities can be compared during preflight and diagnostics
+
+Rule of thumb for many commands:
+
+- one command: `requestOperatorTool(...)`
+- many independent inspections gathered by one backend method: loop in backend code
+- one named troubleshooting runbook or inspect/act sequence: `requestScopedWorkflow(...)`
+
+For example, an AWS troubleshooting plugin that needs 10+ CLI calls should not default to ten UI actions or raw shell chaining. Keep orchestration in backend code, declare capabilities for `aws-cli`, and promote the sequence to `requestScopedWorkflow(...)` once it becomes one logical operator run rather than a bag of unrelated commands.
 
 Examples of suitable process scopes:
 

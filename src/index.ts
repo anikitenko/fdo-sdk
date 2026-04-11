@@ -28,6 +28,8 @@ export {
     requireWorkflowProcessCapabilities,
 } from "./utils/capabilities";
 export {
+    createClipboardReadActionRequest,
+    createClipboardWriteActionRequest,
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createHostsWriteActionRequest,
@@ -36,6 +38,12 @@ export {
     createWorkflowRunActionRequest,
     validatePrivilegedActionRequest,
 } from "./utils/privilegedActions";
+export {
+    createClipboardReadRequest,
+    createClipboardWriteRequest,
+    requestClipboardRead,
+    requestClipboardWrite,
+} from "./utils/clipboardTooling";
 export {
     createPrivilegedActionCorrelationId,
     isPrivilegedActionErrorResponse,

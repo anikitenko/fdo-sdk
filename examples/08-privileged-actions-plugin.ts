@@ -1,95 +1,128 @@
 import {
     createFilesystemMutateActionRequest,
+    createFilesystemScopeCapability,
+    createPrivilegedActionBackendRequest,
     FDOInterface,
     FDO_SDK,
-    isPrivilegedActionSuccessResponse,
-    requestPrivilegedAction,
+    PluginCapability,
+    PluginRegistry,
+    PluginMetadata,
 } from "@anikitenko/fdo-sdk";
 
 export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
-    get metadata() {
-        return {
-            name: "PrivilegedActionsPlugin",
-            version: "1.0.0",
-            author: "FDO Team",
-            description: "Demonstrates the low-level host privileged action request flow with correlation IDs.",
-            icon: "shield",
-        };
+    private readonly _metadata: PluginMetadata = {
+        name: "PrivilegedActionsPlugin",
+        version: "1.0.0",
+        author: "FDO Team",
+        description: "Demonstrates the low-level host privileged action request flow with correlation IDs.",
+        icon: "shield",
+    };
+
+    get metadata(): PluginMetadata {
+        return this._metadata;
+    }
+
+    declareCapabilities(): PluginCapability[] {
+        return [
+            "system.hosts.write",
+            createFilesystemScopeCapability("etc-hosts"),
+        ];
     }
 
     init(): void {
-        // Host handler name is host-defined. Keep it stable and document it in host integration docs.
         this.log("PrivilegedActionsPlugin initialized");
+
+        PluginRegistry.registerHandler("privileged.buildDryRunRequest", async () => {
+            const request = createFilesystemMutateActionRequest({
+                action: "system.fs.mutate",
+                payload: {
+                    scope: "etc-hosts",
+                    dryRun: true,
+                    reason: "preview managed hosts block update",
+                    operations: [
+                        {
+                            type: "writeFile",
+                            path: "/etc/hosts",
+                            content: "# managed by fdo plugin",
+                            encoding: "utf8",
+                        },
+                    ],
+                },
+            });
+
+            return createPrivilegedActionBackendRequest(request, {
+                correlationIdPrefix: "etc-hosts",
+            });
+        });
     }
 
     render(): string {
-        return `<div style="padding: 16px;">
-            <h2>Privileged Actions Demo</h2>
-            <p>This file demonstrates the low-level transport helper path.</p>
-            <p>Prefer curated operator fixtures and <code>requestOperatorTool(...)</code> first when a known tool family fits.</p>
-            <p>Click to request a dry-run scoped filesystem mutation in host runtime.</p>
-            <button id="run-privileged-action">Run Dry-Run</button>
-            <pre id="result-box"></pre>
-        </div>`;
+        return `
+            <div style="padding: 16px;">
+                <h2>Privileged Actions Demo</h2>
+                <p>This example teaches the low-level host privileged action path.</p>
+                <p>Prefer curated operator fixtures and <code>requestOperatorTool(...)</code> first when a known tool family fits.</p>
+                <p>This example intentionally stays low-level: backend code builds a validated privileged-action envelope, and the iframe sends that envelope to the host privileged-action handler.</p>
+                <p>Declared capabilities: <code>system.hosts.write</code> and <code>system.fs.scope.etc-hosts</code>.</p>
+                <button id="run-privileged-action" class="pure-button pure-button-primary">Run Dry-Run</button>
+                <pre id="result-box" style="margin-top: 12px; padding: 12px; background: #f5f5f5; border-radius: 4px; min-height: 120px;">Result will appear here...</pre>
+            </div>
+        `;
     }
 
     renderOnLoad(): string {
-        const request = createFilesystemMutateActionRequest({
-            action: "system.fs.mutate",
-            payload: {
-                scope: "etc-hosts",
-                dryRun: true,
-                reason: "preview managed hosts block update",
-                operations: [
-                    {
-                        type: "writeFile",
-                        path: "/etc/hosts",
-                        content: "# managed by fdo plugin",
-                        encoding: "utf8",
-                    },
-                ],
-            },
-        });
-
         return `
-            () => {
-                const btn = document.getElementById("run-privileged-action");
+            (() => {
+                const button = document.getElementById("run-privileged-action");
                 const resultBox = document.getElementById("result-box");
-                if (!btn || !resultBox) return;
 
-                btn.addEventListener("click", async () => {
-                    let correlationId = "unknown";
+                if (!button || !resultBox) {
+                    return;
+                }
+
+                const setResult = (value) => {
+                    resultBox.textContent = typeof value === "string"
+                        ? value
+                        : JSON.stringify(value, null, 2);
+                };
+
+                button.addEventListener("click", async () => {
+                    setResult("Building privileged-action envelope...");
+
                     try {
-                        const response = await (${requestPrivilegedAction.toString()})(${JSON.stringify(request)}, {
-                            correlationIdPrefix: "etc-hosts",
+                        const envelope = await window.createBackendReq("UI_MESSAGE", {
+                            handler: "privileged.buildDryRunRequest",
+                            content: {},
                         });
-                        correlationId = response.correlationId;
 
-                        if (${isPrivilegedActionSuccessResponse.toString()}(response)) {
-                            resultBox.textContent = JSON.stringify({
+                        const typedEnvelope = envelope;
+                        const response = await window.createBackendReq("requestPrivilegedAction", typedEnvelope);
+
+                        if (response && response.ok) {
+                            setResult({
                                 status: "ok",
                                 correlationId: response.correlationId,
                                 result: response.result ?? null,
-                            }, null, 2);
+                            });
                             return;
                         }
 
-                        resultBox.textContent = JSON.stringify({
+                        setResult({
                             status: "error",
-                            correlationId: response?.correlationId ?? correlationId,
+                            correlationId: response?.correlationId ?? typedEnvelope?.correlationId ?? "unknown",
                             error: response?.error ?? "Unknown host error",
                             code: response?.code ?? "UNKNOWN",
-                        }, null, 2);
+                        });
                     } catch (error) {
-                        resultBox.textContent = JSON.stringify({
+                        const message = error instanceof Error ? error.message : String(error);
+                        setResult({
                             status: "error",
-                            correlationId,
-                            error: error instanceof Error ? error.message : String(error),
+                            error: message,
                             code: "IPC_FAILURE",
-                        }, null, 2);
+                        });
                     }
                 });
-            }
+            })();
         `;
     }
 }

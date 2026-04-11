@@ -27,9 +27,13 @@ export interface PluginInitPayload {
 const KNOWN_PLUGIN_CAPABILITIES = new Set<PluginCapability>([
     "storage.json",
     "sudo.prompt",
+    "system.clipboard.read",
+    "system.clipboard.write",
     "system.hosts.write",
     "system.process.exec",
 ]);
+const HOST_PRIVILEGED_ACTION_SYSTEM_CLIPBOARD_READ = "system.clipboard.read";
+const HOST_PRIVILEGED_ACTION_SYSTEM_CLIPBOARD_WRITE = "system.clipboard.write";
 const HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE = "system.hosts.write";
 const HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE = "system.fs.mutate";
 const HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC = "system.process.exec";
@@ -285,6 +289,44 @@ function validateHostsWriteActionRequest(payload: Record<string, unknown>): Host
 
     if (tag !== undefined && (typeof tag !== "string" || tag.trim().length === 0)) {
         throw new Error('Host privileged action payload field "tag" must be a non-empty string when provided.');
+    }
+
+    return payload as HostPrivilegedActionRequest;
+}
+
+function validateClipboardReadActionRequest(payload: Record<string, unknown>): HostPrivilegedActionRequest {
+    if (!isRecord(payload.payload)) {
+        throw new Error('Host privileged action "payload" must be an object.');
+    }
+
+    const candidatePayload = payload.payload as Record<string, unknown>;
+
+    if (
+        candidatePayload.reason !== undefined
+        && (typeof candidatePayload.reason !== "string" || candidatePayload.reason.trim().length === 0)
+    ) {
+        throw new Error('Host privileged action payload field "reason" must be a non-empty string when provided.');
+    }
+
+    return payload as HostPrivilegedActionRequest;
+}
+
+function validateClipboardWriteActionRequest(payload: Record<string, unknown>): HostPrivilegedActionRequest {
+    if (!isRecord(payload.payload)) {
+        throw new Error('Host privileged action "payload" must be an object.');
+    }
+
+    const candidatePayload = payload.payload as Record<string, unknown>;
+
+    if (typeof candidatePayload.text !== "string" || candidatePayload.text.length === 0) {
+        throw new Error('Host privileged action payload field "text" must be a non-empty string.');
+    }
+
+    if (
+        candidatePayload.reason !== undefined
+        && (typeof candidatePayload.reason !== "string" || candidatePayload.reason.trim().length === 0)
+    ) {
+        throw new Error('Host privileged action payload field "reason" must be a non-empty string when provided.');
     }
 
     return payload as HostPrivilegedActionRequest;
@@ -615,6 +657,14 @@ export function validateHostPrivilegedActionRequest(payload: unknown): HostPrivi
         return validateHostsWriteActionRequest(payload);
     }
 
+    if (payload.action === HOST_PRIVILEGED_ACTION_SYSTEM_CLIPBOARD_READ) {
+        return validateClipboardReadActionRequest(payload);
+    }
+
+    if (payload.action === HOST_PRIVILEGED_ACTION_SYSTEM_CLIPBOARD_WRITE) {
+        return validateClipboardWriteActionRequest(payload);
+    }
+
     if (payload.action === HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE) {
         return validateFilesystemMutateActionRequest(payload);
     }
@@ -628,6 +678,6 @@ export function validateHostPrivilegedActionRequest(payload: unknown): HostPrivi
     }
 
     throw new Error(
-        `Host privileged action "action" must be "${HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE}", "${HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE}", "${HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC}", or "${HOST_PRIVILEGED_ACTION_SYSTEM_WORKFLOW_RUN}".`
+        `Host privileged action "action" must be "${HOST_PRIVILEGED_ACTION_SYSTEM_CLIPBOARD_READ}", "${HOST_PRIVILEGED_ACTION_SYSTEM_CLIPBOARD_WRITE}", "${HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE}", "${HOST_PRIVILEGED_ACTION_SYSTEM_FS_MUTATE}", "${HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC}", or "${HOST_PRIVILEGED_ACTION_SYSTEM_WORKFLOW_RUN}".`
     );
 }

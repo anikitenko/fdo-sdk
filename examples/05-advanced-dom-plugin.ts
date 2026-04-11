@@ -116,7 +116,7 @@ export default class AdvancedDOMPlugin extends FDO_SDK implements FDOInterface {
       }
     );
 
-      return semantic.createMain(
+      const content = semantic.createMain(
         [
           semantic.createHeader([
             text.createHText(1, this._metadata.name),
@@ -158,6 +158,8 @@ export default class AdvancedDOMPlugin extends FDO_SDK implements FDOInterface {
           },
         }
       );
+
+      return semantic.renderHTML(content);
     } catch (error) {
       const normalizedError = error instanceof Error ? error : new Error(String(error));
       const safeMessage = normalizedError.message

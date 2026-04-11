@@ -16,6 +16,50 @@ Do not assume iframe-only globals are available in backend/bootstrap paths.
 - Treat `DOM.createElement(..., ...children)` children as trusted JSX-like markup fragments.
 - For untrusted/user-provided text, use `DOMText` helpers (`createText`, `createPText`, `createSpanText`, etc.) so JSX-sensitive characters are escaped.
 - Do not pass unsanitized user input as raw child markup into generic DOM helpers.
+- DOM helpers emit raw HTML attributes in the final string. Compatibility aliases such as `className`, `htmlFor`, and `readOnly` are accepted on input and normalized to `class`, `for`, and `readonly` in output.
+- When both forms are provided, the native HTML form wins explicitly: `class` over `className`, `for` over `htmlFor`, and `readonly` over `readOnly`.
+
+## DOM Helper Rule: `renderHTML()` Is Mandatory For Styled Helper Output
+
+If your `render()` method uses SDK DOM helpers and expects goober-backed styling/classes to appear in the output, you must wrap the final helper markup with `renderHTML(...)`.
+
+Why this is mandatory:
+
+- DOM helpers generate class names through goober
+- those class names are not enough by themselves
+- the extracted CSS must be emitted into the render output alongside the markup
+- `renderHTML(...)` is the SDK helper that emits that CSS and the expected script placeholder boundary
+
+Do this:
+
+```ts
+render(): string {
+  const semantic = new DOMSemantic();
+  const text = new DOMText();
+
+  const content = semantic.createMain([
+    text.createHText(1, "Styled helper UI"),
+  ]);
+
+  return semantic.renderHTML(content);
+}
+```
+
+Do not do this for styled helper output:
+
+```ts
+render(): string {
+  const semantic = new DOMSemantic();
+  return semantic.createMain([/* ... */]);
+}
+```
+
+Best practices:
+
+- build the full helper-composed UI first, then call `renderHTML(...)` once on the final root content
+- use the same helper instance for composition and `renderHTML(...)` when practical
+- keep `renderHTML(...)` in `render()`, not in `renderOnLoad()`
+- if you are returning plain manual JSX-like markup with no DOM-helper styling/classes, `renderHTML(...)` is not required
 
 ## Logging In Plugins
 
@@ -73,6 +117,10 @@ Privileged SDK features are capability-gated. The host should grant capabilities
   required for `PluginRegistry.useStore("json")`
 - `sudo.prompt`:
   required for `runWithSudo(...)`
+- `system.clipboard.read`:
+  required for host-mediated clipboard reads
+- `system.clipboard.write`:
+  required for host-mediated clipboard writes
 - `system.hosts.write`:
   reserved for host-mediated `/etc/hosts` updates (do not implement direct filesystem writes in plugins)
 - `system.fs.scope.<scope-id>`:
@@ -165,6 +213,35 @@ declareCapabilities() {
 ```
 
 This allows hosts to compare declared capabilities with granted capabilities during preflight, before a user reaches a rare or deep action path.
+
+## Many-Command Troubleshooting Best Practice
+
+If a plugin needs to run many tool commands, do not default to:
+
+- ten separate UI actions
+- raw shell chaining
+- ad hoc orchestration in iframe code
+
+Use this rule of thumb:
+
+- one command: `requestOperatorTool(...)`
+- several independent commands gathered by one backend method: loop in backend code
+- one named troubleshooting or inspect/act runbook: `requestScopedWorkflow(...)`
+
+For example, an AWS troubleshooting plugin may need to run many `aws` CLI commands. Best practice is:
+
+- declare capabilities via `declareCapabilities()`
+- use `createOperatorToolCapabilityPreset("aws-cli")`
+- keep execution in backend methods and registered handlers
+- use a backend loop only when the commands are independent inspections
+- switch to `requestScopedWorkflow(...)` when the sequence is one logical operator run with ordered steps, shared summary, and step-level diagnostics
+
+Avoid:
+
+- `sh -c`
+- shell interpolation
+- unstructured command concatenation
+- repeating the same low-level request code in many UI handlers
 
 ## Error-Path Safety
 

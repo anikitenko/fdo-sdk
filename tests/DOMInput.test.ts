@@ -18,18 +18,18 @@ describe("DOMInput", () => {
 
     it("should crate an input", () => {
         const input = domInput.createInput("text");
-        expect(input).toBe(`<input id="input" className="go11" type="text" />`)
+        expect(input).toBe(`<input id="input" class="go11" type="text" />`)
     })
 
     it("should create an input with a value", () => {
         const withValue = new DOMInput("input", {}, {value: "value"})
         const input = withValue.createInput("text");
-        expect(input).toBe(`<input id="input" className="go11" type="text" value="value" />`)
+        expect(input).toBe(`<input id="input" class="go11" type="text" value="value" />`)
     })
 
     it("should create a textarea", () => {
         const textarea = domInput.createTextarea();
-        expect(textarea).toBe(`<textarea id="input" className="go11" />`)
+        expect(textarea).toBe(`<textarea id="input" class="go11" />`)
     })
 
     describe("style and class handling", () => {
@@ -40,7 +40,7 @@ describe("DOMInput", () => {
                     backgroundColor: 'blue'
                 }
             }).createSelect([]);
-            expect(select).toMatch(/className="[^"]*go[^"]*"/);
+            expect(select).toMatch(/class="[^"]*go[^"]*"/);
         });
 
         it("should handle custom classes", () => {
@@ -56,7 +56,7 @@ describe("DOMInput", () => {
                 classes: ['custom-class']
             }).createSelect([]);
             expect(select).toContain('custom-class');
-            expect(select).toMatch(/className="[^"]*go[^"]*"/);
+            expect(select).toMatch(/class="[^"]*go[^"]*"/);
         });
 
         it("should handle disabled default class", () => {
@@ -200,7 +200,7 @@ describe("DOMInput", () => {
 
         it("should handle empty array children", () => {
             const select = new DOMInput("my-select", {}).createSelect([]);
-            expect(select).toBe('<select id="my-select" className="go11"></select>');
+            expect(select).toBe('<select id="my-select" class="go11"></select>');
         });
 
         it("should create select with onChange handler and no other attributes", () => {
@@ -302,7 +302,7 @@ describe("DOMInput", () => {
 
         it("should handle empty children array", () => {
             const optgroup = new DOMInput("test-id", {}).createOptgroup("Empty Group", []);
-            expect(optgroup).toBe('<optgroup id="test-id" className="go11" label="Empty Group"></optgroup>');
+            expect(optgroup).toBe('<optgroup id="test-id" class="go11" label="Empty Group"></optgroup>');
         });
 
         it("should handle optgroup with custom class", () => {
