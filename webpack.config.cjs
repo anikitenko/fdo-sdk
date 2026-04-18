@@ -1,4 +1,6 @@
 const path = require('path');
+const webpack = require('webpack');
+const packageJson = require('./package.json');
 const DOMMetadataPlugin = require("./extract-dom-classes");
 
 module.exports = {
@@ -37,6 +39,9 @@ module.exports = {
         ]
     },
     plugins: [
+        new webpack.DefinePlugin({
+            __FDO_SDK_PACKAGE_VERSION__: JSON.stringify(packageJson.version),
+        }),
         new DOMMetadataPlugin({
             srcDir: "src",
             outFile: "dom-metadata.json",

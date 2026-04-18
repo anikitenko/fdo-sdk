@@ -29,7 +29,7 @@ Primary authoring entry points:
 
 Use the operator fixtures for production-oriented DevOps/SRE/plugin authoring work.
 Use the non-operator fixtures for lifecycle, error-handling, storage, and UI composition baselines.
-For privileged/operator fixtures, prefer declaring expected capabilities in code via `declareCapabilities()` so host preflight checks can compare declared vs granted capabilities early.
+For privileged/operator fixtures, prefer declaring expected capabilities in code via `declareCapabilities()` so host preflight checks can compare declared vs granted capabilities early. For explicit diagnostics in plugin logic, use `runCapabilityPreflight({ declared, granted, action })`.
 
 ## Getting Started
 
@@ -48,10 +48,13 @@ The examples are still numbered to indicate learning progression:
 4. **04-ui-extensions-plugin.ts** - Quick actions and side panel integration
 5. **05-advanced-dom-plugin.ts** - Advanced DOM generation with styling
 6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
-7. **07-injected-libraries-demo.ts** - Demonstrates host-injected iframe libraries, browser-only helpers, the `UI_MESSAGE` bridge pattern, and host-mediated clipboard read/write flows
+7. **07-injected-libraries-demo.ts** - Demonstrates host-injected iframe libraries, browser-only helpers, the `UI_MESSAGE` bridge pattern, and host-mediated clipboard read/write flows with extracted privileged request payloads
 8. **08-privileged-actions-plugin.ts** - Low-level host privileged action flow using `requestPrivilegedAction(...)` with correlation ids and stable response handling
 9. **09-operator-plugin.ts** - Curated operator helper example for a known tool family using operator request builders, declared preset capabilities, and host-mediated execution
 10. **10-system-file-plugin.ts** - Generic scoped filesystem mutation for a system file other than `/etc/hosts`, using `system.fs.mutate` and the same low-level privileged transport pattern as `08`
+11. **11-hosts-manager-plugin/** - Real-world multi-file example demonstrating CSS imports, advanced state management, and `/etc/hosts` management (SwitchHosts style)
+12. **12-git-operations-plugin.ts** - One-file Git operations command center using curated Git operator scope, host quick actions + side panel entries, injected iframe libraries, persisted repository-path preferences, and a prefetch flow for the original configured repository (`publicKey` + path stored in plugin storage) where `remote.origin.url` is resolved via host-mediated scoped Git execution before metadata fetch (`system.network` + `system.network.https` + `system.network.scope.public-web-secure`; no auto-run command on runtime preparation). Includes declared-capability preflight diagnostics, staged commit execution, generalized AI assist hooks (commit message generation, output summarization, next-step suggestions), recent-run timeline tracking, and centralized privileged-envelope execution/error handling in `renderOnLoad()`.
+13. **13-service-content-hub-plugin.ts** - Production-oriented generic connector example for SaaS/content services (SharePoint, Dropbox, Drive, Confluence, custom APIs) with host-managed auth/session broker + content broker pattern, provider-based endpoint defaults (overridable `endpointUrl`), cursor pagination, selectable result actions, open-in-browser host policy gate, share-link clipboard flow, AI summary hook, persisted context/favorites/recent activity, and declarative runtime wiring via `defineRenderOnLoadActions(...)` (`strict: true`).
 
 For operator-style plugins, prefer host-mediated `system.process.exec` with a narrow scope such as `system.process.scope.docker-cli`, `system.process.scope.kubectl`, `system.process.scope.terraform`, or another explicit tool-family scope rather than raw shell execution.
 
@@ -87,6 +90,65 @@ if (response?.ok) {
 }
 ```
 
+When backend handlers return a privileged-action envelope through `createPrivilegedActionBackendRequest(...)`, use the canonical pipeline helper:
+
+```ts
+const envelopeOrRequest = await window.createBackendReq("UI_MESSAGE", {
+  handler: "plugin.buildPrivilegedRequest",
+  content: {},
+});
+
+const { response, errorMessage } = await requestPrivilegedActionFromEnvelope(envelopeOrRequest, {
+  context: "Privileged action failed",
+});
+
+if (!response.ok) {
+  console.error(errorMessage);
+}
+```
+
+If you need low-level control, this remains valid:
+
+```ts
+const requestPayload = extractPrivilegedActionRequest(envelopeOrRequest);
+const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
+const message = formatPrivilegedActionError(response, { context: "Privileged action failed" });
+```
+
+For `renderOnLoad()` string runtimes, use:
+
+```ts
+const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+// inside the returned onLoad string:
+const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
+```
+
+The helper safely unwraps all currently supported shapes:
+
+```ts
+input.result.request
+input.request
+direct request
+```
+
+If you are not using the helper yet, the current compatibility fallback is:
+
+```ts
+const envelope = await window.createBackendReq("UI_MESSAGE", {
+  handler: "plugin.buildPrivilegedRequest",
+  content: {},
+});
+
+const requestPayload = envelope?.result?.request ?? envelope?.request ?? envelope;
+const correlationId = envelope?.result?.correlationId ?? envelope?.correlationId;
+```
+
+Deprecated behavior:
+
+- passing the full backend envelope object directly into `requestPrivilegedAction` is incorrect
+- always pass the extracted validated request object instead
+```
+
 ## Injected Libraries
 
 The FDO application automatically injects several popular libraries that you can use without additional imports:
@@ -118,6 +180,32 @@ For detailed guidance on stable fixtures, public docs, and authoring expectation
 - **Solution**: Verify your plugin class extends `FDO_SDK` and implements `FDOInterface`
 - **Solution**: Ensure all required methods (`init`, `render`) are implemented
 - **Solution**: Check that metadata is properly defined with all required fields
+
+### Plugin Exits On Startup (abnormal-exit / metadata error)
+
+- **Issue**: Utility/plugin process exits during startup, often with logs similar to:
+  - `Plugin metadata must be an object.`
+  - Electron `reason: abnormal-exit` and a non-zero exit code (for example `256`, raw status for exit code `1`)
+- **Root cause**: Calling `PluginRegistry.useStore(...)` in class-field initialization before metadata is available in runtime initialization order.
+- **Solution**: Do not initialize stores in class fields. Acquire stores lazily via helper getter or in `init()` after metadata is assigned.
+- **Solution**: Keep backend handlers fail-safe (`{ ok: false, code, error }`) for expected validation failures so UI can render errors without killing plugin startup.
+
+### Error Rendering Plugin: Invalid render payload
+
+- **Issue**: UI shows `Error rendering plugin` and `Invalid render payload`.
+- **Common root cause**: `render()` (or helper methods called by it) throws before returning a valid render string, often due to gated store access such as `PluginRegistry.useStore("json")` in render-time or class-field initialization paths.
+- **Solution**: Keep render-path storage safe:
+  - Use `default` store for non-gated/session access.
+  - Treat `json` store as optional and initialize it in `init()` with fallback.
+  - Avoid calling gated store APIs from class fields and direct render-path code.
+  - Use safe wrappers/fallback values in `render()` so it always returns a valid string.
+
+### Prefetch Fails Because Node `require()` Is Unavailable
+
+- **Issue**: Prefetch logic fails with runtime errors indicating `require()` or Node module loading is unavailable.
+- **Root cause**: Git/config inspection is being attempted in a runtime path that does not guarantee raw Node module loading.
+- **Solution**: Do not read `.git/config` directly through `require()` for UI-triggered flows. Build a host-mediated scoped Git process request (for example `git config --get remote.origin.url`), execute it through `requestPrivilegedAction`, then pass the resolved remote URL to backend metadata fetch logic.
+- **Design rule**: UI runtime must avoid Node assumptions; backend/host paths should use supported SDK contracts and scoped privileged execution for Git/system inspection.
 
 ### Storage Operations Fail
 

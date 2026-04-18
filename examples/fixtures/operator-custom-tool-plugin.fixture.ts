@@ -1,12 +1,14 @@
 import {
   FDOInterface,
   FDO_SDK,
+  getInlinePrivilegedActionErrorFormatterSource,
   PluginCapability,
   PluginMetadata,
   PluginRegistry,
   createProcessCapabilityBundle,
   createPrivilegedActionBackendRequest,
   createScopedProcessExecActionRequest,
+  extractPrivilegedActionRequest,
 } from "@anikitenko/fdo-sdk";
 
 /**
@@ -73,10 +75,12 @@ export default class OperatorCustomToolFixturePlugin extends FDO_SDK implements 
   }
 
   renderOnLoad(): string {
+    const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
     return `
       (() => {
         const previewStatusButton = document.getElementById("custom-tool-preview-status");
         const output = document.getElementById("custom-tool-result");
+        const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
         if (!previewStatusButton || !output) {
           return;
@@ -95,8 +99,22 @@ export default class OperatorCustomToolFixturePlugin extends FDO_SDK implements 
               handler,
               content: {},
             });
-            const response = await window.createBackendReq("requestPrivilegedAction", envelope);
-            setOutput(response);
+            const fallbackCorrelationId = envelope?.result?.correlationId ?? envelope?.correlationId ?? "unknown";
+            const requestPayload = extractPrivilegedActionRequest(envelope);
+            const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
+            if (response && response.ok) {
+              setOutput(response);
+              return;
+            }
+            setOutput({
+              status: "error",
+              correlationId: response?.correlationId ?? fallbackCorrelationId,
+              message: formatPrivilegedActionError(response, {
+                context: "Custom tool request failed",
+                fallbackCorrelationId,
+              }),
+              response: response ?? null,
+            });
           } catch (error) {
             setOutput({
               error: error instanceof Error ? error.message : String(error),

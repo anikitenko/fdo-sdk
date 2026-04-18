@@ -1,5 +1,7 @@
 import {
     createPrivilegedActionCorrelationId,
+    formatPrivilegedActionError,
+    getInlinePrivilegedActionErrorFormatterSource,
     isPrivilegedActionErrorResponse,
     isPrivilegedActionSuccessResponse,
     unwrapPrivilegedActionResponse,
@@ -52,5 +54,49 @@ describe("privileged response helpers", () => {
             error: "denied",
             code: "CAPABILITY_MISSING",
         })).toThrow("denied");
+    });
+
+    test("formats privileged action errors with process result details", () => {
+        const message = formatPrivilegedActionError({
+            ok: false,
+            correlationId: "priv-42",
+            code: "PROCESS_EXIT_NON_ZERO",
+            error: "Process exited with code 128.",
+            result: {
+                stderr: "fatal: cannot change to '/missing/path': No such file or directory",
+                exitCode: 128,
+                command: "/usr/bin/git",
+                args: ["-C", "/missing/path", "status"],
+                cwd: "/Users/alexvwan",
+            },
+        }, { context: "Git operation failed" });
+
+        expect(message).toContain("Git operation failed (PROCESS_EXIT_NON_ZERO): Process exited with code 128.");
+        expect(message).toContain("stderr: fatal: cannot change to '/missing/path': No such file or directory");
+        expect(message).toContain("exitCode: 128");
+        expect(message).toContain("command: /usr/bin/git -C /missing/path status");
+        expect(message).toContain("cwd: /Users/alexvwan");
+        expect(message).toContain("Correlation ID: priv-42");
+    });
+
+    test("builds inline formatter source for renderOnLoad runtimes", () => {
+        const formatterFactory = Function(`return ${getInlinePrivilegedActionErrorFormatterSource()};`);
+        const formatter = formatterFactory() as (response: unknown, options?: { context?: string }) => string;
+
+        const message = formatter({
+            ok: false,
+            code: "CAPABILITY_MISSING",
+            error: "Missing capability",
+            result: {
+                stdout: "fallback output",
+            },
+        }, {
+            context: "Operator request failed",
+        });
+
+        expect(typeof formatter).toBe("function");
+        expect(message).toContain("Operator request failed (CAPABILITY_MISSING): Missing capability");
+        expect(message).toContain("stdout: fallback output");
+        expect(message).toContain("Correlation ID: unknown");
     });
 });

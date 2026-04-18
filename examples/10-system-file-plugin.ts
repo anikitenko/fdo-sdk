@@ -2,8 +2,10 @@ import {
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createPrivilegedActionBackendRequest,
+    extractPrivilegedActionRequest,
     FDOInterface,
     FDO_SDK,
+    getInlinePrivilegedActionErrorFormatterSource,
     PluginCapability,
     PluginMetadata,
     PluginRegistry,
@@ -89,10 +91,12 @@ export default class SystemFilePlugin extends FDO_SDK implements FDOInterface {
     }
 
     renderOnLoad(): string {
+        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
         return `
             (() => {
                 const button = document.getElementById("run-system-file-action");
                 const resultBox = document.getElementById("system-file-result");
+                const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
                 if (!button || !resultBox) {
                     return;
@@ -108,12 +112,25 @@ export default class SystemFilePlugin extends FDO_SDK implements FDOInterface {
                     setResult("Building privileged-action envelope...");
 
                     try {
-                        const envelope = await window.createBackendReq("UI_MESSAGE", {
+                        const envelopeResponse = await window.createBackendReq("UI_MESSAGE", {
                             handler: "${SystemFilePlugin.HANDLER}",
                             content: {},
                         });
 
-                        const response = await window.createBackendReq("requestPrivilegedAction", envelope);
+                        const requestPayload = extractPrivilegedActionRequest(envelopeResponse);
+                        const envelopeCorrelationId = envelopeResponse?.result?.correlationId ?? envelopeResponse?.correlationId ?? "unknown";
+
+                        if (!requestPayload || typeof requestPayload !== "object") {
+                            setResult({
+                                status: "error",
+                                correlationId: envelopeCorrelationId,
+                                error: "Backend handler did not return a privileged request envelope.",
+                                code: "PLUGIN_BACKEND_EMPTY_RESPONSE",
+                            });
+                            return;
+                        }
+
+                        const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
 
                         if (response && response.ok) {
                             setResult({
@@ -126,8 +143,11 @@ export default class SystemFilePlugin extends FDO_SDK implements FDOInterface {
 
                         setResult({
                             status: "error",
-                            correlationId: response?.correlationId ?? envelope?.correlationId ?? "unknown",
-                            error: response?.error ?? "Unknown host error",
+                            correlationId: response?.correlationId ?? envelopeCorrelationId,
+                            error: formatPrivilegedActionError(response, {
+                                context: "System file action failed",
+                                fallbackCorrelationId: envelopeCorrelationId,
+                            }),
                             code: response?.code ?? "UNKNOWN",
                         });
                     } catch (error) {

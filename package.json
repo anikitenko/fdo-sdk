@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/anikitenko/fdo-sdk.git"
   },
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "SDK for FlexDevOPs (FDO) application modules",
   "keywords": [
     "fdo",
@@ -30,6 +30,9 @@
   "bugs": {
     "url": "https://github.com/anikitenko/fdo-sdk/issues"
   },
+  "bin": {
+    "fdo-sdk": "bin/fdo-sdk.js"
+  },
   "main": "dist/fdo-sdk.bundle.js",
   "types": "dist/@types/index.d.ts",
   "type": "commonjs",
@@ -42,6 +45,8 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "bin/**/*.js",
+    "scripts/fdo-sdk-migrate.mjs",
     "dist/**/*.d.ts",
     "dist/**/*.js",
     "dist/**/*.json",
@@ -57,6 +62,7 @@
     "verify:types:local": "node scripts/verify-types-local.mjs",
     "verify:types:pack": "node scripts/verify-types-pack.mjs",
     "verify:docs": "node scripts/verify-docs.mjs",
+    "migrate": "node scripts/fdo-sdk-migrate.mjs",
     "verify:pack": "npm run verify:types:pack",
     "prepack": "npm run build && npm run verify:types:local",
     "test": "vitest run",

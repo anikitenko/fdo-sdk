@@ -25,13 +25,26 @@ export interface PluginInitPayload {
 }
 
 const KNOWN_PLUGIN_CAPABILITIES = new Set<PluginCapability>([
+    "system.ai",
+    "system.ai.assistants.list",
+    "system.ai.request",
+    "storage",
     "storage.json",
+    "system.network",
+    "system.network.https",
+    "system.network.http",
+    "system.network.websocket",
+    "system.network.tcp",
+    "system.network.udp",
+    "system.network.dns",
     "sudo.prompt",
     "system.clipboard.read",
     "system.clipboard.write",
+    "system.host.write",
     "system.hosts.write",
     "system.process.exec",
 ]);
+const STORAGE_BACKEND_CAPABILITY_PREFIX = "storage.";
 const HOST_PRIVILEGED_ACTION_SYSTEM_CLIPBOARD_READ = "system.clipboard.read";
 const HOST_PRIVILEGED_ACTION_SYSTEM_CLIPBOARD_WRITE = "system.clipboard.write";
 const HOST_PRIVILEGED_ACTION_SYSTEM_HOSTS_WRITE = "system.hosts.write";
@@ -40,6 +53,7 @@ const HOST_PRIVILEGED_ACTION_SYSTEM_PROCESS_EXEC = "system.process.exec";
 const HOST_PRIVILEGED_ACTION_SYSTEM_WORKFLOW_RUN = "system.workflow.run";
 const FS_SCOPE_CAPABILITY_PREFIX = "system.fs.scope.";
 const PROCESS_SCOPE_CAPABILITY_PREFIX = "system.process.scope.";
+const NETWORK_SCOPE_CAPABILITY_PREFIX = "system.network.scope.";
 const WORKFLOW_KINDS = new Set(["process-sequence"]);
 const WORKFLOW_STEP_PHASES = new Set(["inspect", "preview", "mutate", "apply", "cleanup"]);
 const WORKFLOW_STEP_ERROR_BEHAVIORS = new Set(["abort", "continue"]);
@@ -223,8 +237,16 @@ export function validatePluginInitPayload(payload: unknown): PluginInitPayload {
         for (const capability of payload.capabilities) {
             if (
                 !KNOWN_PLUGIN_CAPABILITIES.has(capability as PluginCapability)
+                && !(
+                    capability.startsWith(STORAGE_BACKEND_CAPABILITY_PREFIX)
+                    && isValidScopeId(capability.slice(STORAGE_BACKEND_CAPABILITY_PREFIX.length))
+                )
                 && !capability.startsWith(FS_SCOPE_CAPABILITY_PREFIX)
                 && !capability.startsWith(PROCESS_SCOPE_CAPABILITY_PREFIX)
+                && !(
+                    capability.startsWith(NETWORK_SCOPE_CAPABILITY_PREFIX)
+                    && isValidScopeId(capability.slice(NETWORK_SCOPE_CAPABILITY_PREFIX.length))
+                )
             ) {
                 throw new Error(`Plugin init payload capability "${capability}" is not supported by this SDK version.`);
             }

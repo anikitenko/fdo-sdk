@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.3](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.5.2...fdo-sdk-v1.5.3) (2026-04-18)
+
+
+### Bug Fixes
+
+* **examples:** one test missing ([#65](https://github.com/anikitenko/fdo-sdk/issues/65)) ([c872611](https://github.com/anikitenko/fdo-sdk/commit/c8726118b340bd7a364c591d18f037af58285e11))
+
 ## [1.5.2](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.5.1...fdo-sdk-v1.5.2) (2026-04-11)
 
 
@@ -139,6 +146,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Release automation is managed by Release Please (`.github/workflows/release-please.yml`), including automated versioning and changelog updates on release PRs.
+- Added first-class network capability helpers:
+  - `createNetworkScopeCapability(scopeId)`
+  - `requireNetworkScopeCapability(scopeId, action)`
+  - `createNetworkCapabilityBundle({ transports, scopeId })` object signature (array signature remains supported for backward compatibility)
+- Added first-class render-on-load authoring helpers:
+  - `defineRenderOnLoad(source, options?)`
+  - `defineRenderOnLoadActions({ handlers, bindings, ... })`
+  - `createRenderOnLoadActionsSource({ handlers, bindings, ... })`
+  - `resolveRenderOnLoadSource(output)`
+  - `getRenderOnLoadMonacoTypeDefinitions()`
+  - `getRenderOnLoadMonacoHints()`
+- `renderOnLoad()` now supports synchronous string, function, or `defineRenderOnLoad(...)` module payloads, normalized by SDK transport serialization.
+- Updated plugin-init capability validation to accept `system.network.scope.<scope-id>` IDs.
+- Added `extractPrivilegedActionRequest(...)` to safely unwrap privileged requests from direct request objects, backend envelopes, or `UI_MESSAGE` success payloads shaped like `{ ok, result: { correlationId, request } }`.
+- Added `requestPrivilegedActionFromEnvelope(...)` as the canonical privileged transport pipeline helper (`envelope -> extract -> request -> formatted error`), with optional `throwOnError` mode.
+- Updated low-level privileged examples and operator fixtures to extract the validated request object before calling the raw `requestPrivilegedAction` host bridge.
+- Deprecated passing full backend envelope objects directly into the raw `requestPrivilegedAction` bridge. Migration snippet:
+
+```ts
+const envelopeOrRequest = await window.createBackendReq("UI_MESSAGE", {
+  handler: "plugin.buildPrivilegedRequest",
+  content: {},
+});
+
+const requestPayload = extractPrivilegedActionRequest(envelopeOrRequest);
+const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
+```
+- Added `runCapabilityPreflight(...)` for deterministic declared-vs-granted capability diagnostics and remediation generation, and integrated declared-capability preflight into `PluginRegistry` diagnostics/init logging.
+- Added `createPluginDoctorReport(...)` for host-side structured diagnostics triage (severity findings, remediation strings, and normalized status).
+- Added docs snippet CI verification support in `verify:docs`:
+  - fenced snippets tagged with `verify` are compile-checked
+  - fenced snippets tagged with `verify runtime` also run a sandbox runtime smoke check
+- Added SDK/FDO handshake contract helpers:
+  - `getSdkHandshake()` with `sdkVersion`, `apiVersion`, `capabilitySchemaVersion`, and `featureFlags`
+  - `getSdkFeatureFlags()` for feature-flag-only checks
+- Included handshake payload in diagnostics (`PluginRegistry.getDiagnostics()`), so hosts can gate compatibility without ad hoc version probing.
+- Added code-based remediation template helpers for host “copy exact fix” UX:
+  - `getDiagnosticFixTemplate(code)`
+  - `listDiagnosticFixTemplates()`
+  - `formatDiagnosticExactFix(code)`
+- Added migration codemod command surfaces for legacy plugin updates:
+  - `fdo-sdk migrate ...` (bin command)
+  - `npm run migrate -- ...` (repo script)
+- Added programmatic codemod helper `applySdkMigrationCodemod(source)` and migration rules for:
+  - legacy privileged envelope extraction fallback chain
+  - deprecated `PluginRegistry.configureCapabilityPolicy(...)`
 
 ## [1.0.19] - 2025-11-11
 

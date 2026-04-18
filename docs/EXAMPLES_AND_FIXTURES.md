@@ -33,6 +33,7 @@ Use these rules for examples, fixtures, and AI-generated plugin scaffolds:
 
 - Keep backend orchestration in plugin methods and registered handlers.
 - Keep `renderOnLoad()` thin and UI-focused.
+- Do not call `PluginRegistry.useStore(...)` in class-field initializers; acquire stores lazily or in `init()` after metadata is available.
 - If `render()` uses styled SDK DOM-helper output, wrap the final helper markup with `renderHTML(...)`.
 - Treat `renderHTML(...)` as mandatory for styled DOM-helper output because it emits the extracted goober CSS alongside the markup.
 - Treat DOM helpers as the preferred SDK pattern for general structured UI.
@@ -62,6 +63,10 @@ const result = await window.createBackendReq("UI_MESSAGE", {
 });
 ```
 
+- If a backend handler returns a privileged-action envelope from `createPrivilegedActionBackendRequest(...)`, extract the validated request object before calling the raw `requestPrivilegedAction` bridge. Prefer `extractPrivilegedActionRequest(envelopeOrRequest)`. If you need fallback compatibility, use `envelope?.result?.request ?? envelope?.request ?? envelope` and keep `envelope?.result?.correlationId ?? envelope?.correlationId` only for diagnostics/fallback display.
+- For non-`ok` privileged responses, format errors with `formatPrivilegedActionError(...)` so users get correlation IDs and host process diagnostics (`stderr`, `stdout`, `exitCode`, command, `cwd`) when available.
+- In `renderOnLoad()` string runtimes, use `getInlinePrivilegedActionErrorFormatterSource()` to inline the same formatter function.
+
 - For known operator tool families, prefer:
   - `createOperatorToolCapabilityPreset(...)`
   - `requestOperatorTool(...)`
@@ -70,6 +75,9 @@ const result = await window.createBackendReq("UI_MESSAGE", {
 - For host-specific or non-curated tools, prefer:
   - `requestScopedProcessExec(...)`
 - For privileged or operator plugins, declare expected capabilities in code via `declareCapabilities()`.
+- AI provider globals should follow one canonical host naming scheme:
+  - assistants list: `globalThis.__FDO_AI_LIST_ASSISTANTS`
+  - AI request: `globalThis.__FDO_AI_REQUEST`
 
 ## Validation Expectations
 
@@ -81,6 +89,23 @@ The examples surface is considered stable only when all of the following stay tr
 - `createBackendReq(...)` examples reflect the real `UI_MESSAGE` handler pattern
 - DOM-helper examples that rely on helper-generated styles call `renderHTML(...)`
 - the canonical fixtures remain the primary recommended starting point
+
+## Fixture Runtime Matrix Contract
+
+Use the SDK fixture runtime matrix helpers as the source of truth for host CI smoke coverage:
+
+- `getFixtureRuntimeMatrix()`
+- `listFixtureRuntimeMatrixCases()`
+- `getFixtureRuntimeMatrixCase(id)`
+
+The contract is versioned and lists:
+
+- canonical fixture path
+- required lifecycle probes (`init`, `render`, `renderOnLoad`)
+- canonical `UI_MESSAGE` handler probes
+- required capabilities when relevant (for example storage/operator fixtures)
+
+Host CI should consume this matrix instead of hardcoding fixture handler IDs or capability expectations.
 
 ## Canonical Operator Patterns
 

@@ -1,4 +1,4 @@
-import {FDO_SDK} from "../src";
+import {defineRenderOnLoad, FDO_SDK} from "../src";
 import { PluginRegistry } from "../src/PluginRegistry";
 import { Logger } from "../src/Logger";
 
@@ -21,6 +21,49 @@ class AsyncRejectRenderOnLoadPlugin extends FDO_SDK {
 
     public renderOnLoad(): any {
         return Promise.reject(new Error("async-onload-failure"));
+    }
+}
+
+class FunctionRenderOnLoadPlugin extends FDO_SDK {
+    public render(): string {
+        return "<div>ok</div>";
+    }
+
+    public renderOnLoad(): any {
+        return () => {
+            const element = document.getElementById("status");
+            if (element) {
+                element.textContent = "loaded";
+            }
+        };
+    }
+}
+
+class ModuleRenderOnLoadPlugin extends FDO_SDK {
+    public render(): string {
+        return "<div>ok</div>";
+    }
+
+    public renderOnLoad(): any {
+        return defineRenderOnLoad(() => {
+            const element = document.getElementById("status");
+            if (element) {
+                element.textContent = "loaded";
+            }
+        }, {
+            language: "typescript",
+            description: "typed on-load module",
+        });
+    }
+}
+
+class InvalidRenderOnLoadPlugin extends FDO_SDK {
+    public render(): string {
+        return "<div>ok</div>";
+    }
+
+    public renderOnLoad(): any {
+        return { unsupported: true };
     }
 }
 
@@ -126,6 +169,24 @@ describe("FDO_SDK", () => {
 
     test("should serialize renderOnLoad output explicitly", () => {
         expect(sdk.serializeRenderOnLoad()).toBe(JSON.stringify('() => {}'));
+    });
+
+    test("should serialize renderOnLoad function output explicitly", () => {
+        const plugin = new FunctionRenderOnLoadPlugin();
+        const serialized = plugin.serializeRenderOnLoad();
+        const source = JSON.parse(serialized);
+
+        expect(typeof source).toBe("string");
+        expect(source).toContain("document.getElementById(\"status\")");
+    });
+
+    test("should serialize defineRenderOnLoad module output explicitly", () => {
+        const plugin = new ModuleRenderOnLoadPlugin();
+        const serialized = plugin.serializeRenderOnLoad();
+        const source = JSON.parse(serialized);
+
+        expect(typeof source).toBe("string");
+        expect(source).toContain("document.getElementById(\"status\")");
     });
 
     test("should log messages using log()", () => {
@@ -255,10 +316,17 @@ describe("FDO_SDK", () => {
         const errorSpy = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
 
         expect(() => asyncPlugin.serializeRenderOnLoad()).toThrow(
-            "Method 'renderOnLoad' must return a synchronous string. Async on-load promises are not supported."
+            "Method 'renderOnLoad' must return a synchronous string, function, or defineRenderOnLoad(...) module. Async on-load promises are not supported."
         );
 
         await Promise.resolve();
         expect(errorSpy).toHaveBeenCalledWith(expect.objectContaining({ message: "async-onload-failure" }));
+    });
+
+    test("should reject unsupported renderOnLoad outputs", () => {
+        const plugin = new InvalidRenderOnLoadPlugin();
+        expect(() => plugin.serializeRenderOnLoad()).toThrow(
+            "Method 'renderOnLoad' must return a synchronous string, function, or defineRenderOnLoad(...) module."
+        );
     });
 });

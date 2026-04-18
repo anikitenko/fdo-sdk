@@ -26,6 +26,9 @@ This document defines the supported ways to extend plugins with `@anikitenko/fdo
 
 - `PluginRegistry.useStore("default")` for scoped in-memory state
 - `PluginRegistry.useStore("json")` for scoped persistent state
+  - requires host capability grants: `storage` + `storage.json`
+- `createStorageCapabilityPreset("storageJSON")` for a curated JSON-storage capability preset
+- `createStorageCapabilityBundle("json")` for custom backend-driven storage capability bundle creation
 - `PluginRegistry.registerStore(name, storeOrFactory)` for custom store integrations
 - `PluginRegistry.configureStorage({ rootDir })` for persistent storage root
 - `PluginRegistry.configureCapabilities({ granted })` for host-managed grants to privileged SDK features
@@ -34,11 +37,14 @@ This document defines the supported ways to extend plugins with `@anikitenko/fdo
 
 - `QuickActionMixin` for quick action definitions
 - `SidePanelMixin` for side panel definitions
+- `listRenderOnLoadTemplates(...)` / `getRenderOnLoadTemplate(...)` for deterministic host/editor on-load templates
 
 ### Error Handling
 
 - `@handleError()` for controlled error handling behavior
 - optional `errorUIRenderer` for render fallback UI
+- `formatPrivilegedActionError(response, options?)` for stable privileged-action error messages
+- `getInlinePrivilegedActionErrorFormatterSource()` for `renderOnLoad()` string runtimes
 
 ### Logging And Diagnostics
 
@@ -46,6 +52,8 @@ This document defines the supported ways to extend plugins with `@anikitenko/fdo
 - `this.error(error)` for error logs
 - `this.event(name, payload)` for structured events with correlation IDs
 - `PluginRegistry.DIAGNOSTICS_HANDLER` (`"__sdk.getDiagnostics"`) for host diagnostics requests over `UI_MESSAGE`
+- `createPluginDoctorReport(diagnostics, options?)` for host-side structured triage findings derived from diagnostics
+- `createPluginDoctorPanelModel(report, options?)` for prioritized, sectioned panel-ready findings with exact-fix text
 
 ## Anti-Patterns To Avoid
 
