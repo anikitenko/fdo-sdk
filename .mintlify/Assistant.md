@@ -9,16 +9,16 @@ This page is a consolidated guide for assistants, AI tooling, and docs consumers
 
 It summarizes the current documented contract across:
 
-- [README.md](./README.md)
-- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
-- [docs/RENDER_RUNTIME_CONTRACT.md](./docs/RENDER_RUNTIME_CONTRACT.md)
-- [docs/SAFE_PLUGIN_AUTHORING.md](./docs/SAFE_PLUGIN_AUTHORING.md)
-- [docs/EXTENSION_POINTS.md](./docs/EXTENSION_POINTS.md)
-- [docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md](./docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md)
-- [docs/QUICK_REFERENCE.md](./docs/QUICK_REFERENCE.md)
-- [docs/INJECTED_LIBRARIES.md](./docs/INJECTED_LIBRARIES.md)
-- [docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md](./docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md)
-- [docs/API_STABILITY.md](./docs/API_STABILITY.md)
+- [README.md](../README.md)
+- [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
+- [docs/RENDER_RUNTIME_CONTRACT.md](../docs/RENDER_RUNTIME_CONTRACT.md)
+- [docs/SAFE_PLUGIN_AUTHORING.md](../docs/SAFE_PLUGIN_AUTHORING.md)
+- [docs/EXTENSION_POINTS.md](../docs/EXTENSION_POINTS.md)
+- [docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md](../docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md)
+- [docs/QUICK_REFERENCE.md](../docs/QUICK_REFERENCE.md)
+- [docs/INJECTED_LIBRARIES.md](../docs/INJECTED_LIBRARIES.md)
+- [docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md](../docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md)
+- [docs/API_STABILITY.md](../docs/API_STABILITY.md)
 
 ## What This SDK Is
 
@@ -45,10 +45,10 @@ The most important rule is that backend logic and iframe UI logic do not run in 
 
 When answering questions or generating code, prefer these sources in this order:
 
-1. [README.md](./README.md)
-2. [docs/RENDER_RUNTIME_CONTRACT.md](./docs/RENDER_RUNTIME_CONTRACT.md)
-3. [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
-4. [docs/API_STABILITY.md](./docs/API_STABILITY.md)
+1. [README.md](../README.md)
+2. [docs/RENDER_RUNTIME_CONTRACT.md](../docs/RENDER_RUNTIME_CONTRACT.md)
+3. [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
+4. [docs/API_STABILITY.md](../docs/API_STABILITY.md)
 5. Root package exports from `src/index.ts`
 
 Do not infer public contract guarantees from internal implementation details or tests alone.
@@ -405,7 +405,7 @@ Avoid depending on:
 
 ## Stable Vs Provisional Guidance
 
-From [docs/API_STABILITY.md](./docs/API_STABILITY.md):
+From [docs/API_STABILITY.md](../docs/API_STABILITY.md):
 
 ### Stable
 
@@ -500,13 +500,13 @@ When helping users with this SDK:
 
 ## Related Documents
 
-- [README.md](./README.md)
-- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
-- [docs/RENDER_RUNTIME_CONTRACT.md](./docs/RENDER_RUNTIME_CONTRACT.md)
-- [docs/SAFE_PLUGIN_AUTHORING.md](./docs/SAFE_PLUGIN_AUTHORING.md)
-- [docs/EXTENSION_POINTS.md](./docs/EXTENSION_POINTS.md)
-- [docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md](./docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md)
-- [docs/QUICK_REFERENCE.md](./docs/QUICK_REFERENCE.md)
-- [docs/INJECTED_LIBRARIES.md](./docs/INJECTED_LIBRARIES.md)
-- [docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md](./docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md)
-- [docs/API_STABILITY.md](./docs/API_STABILITY.md)
+- [README.md](../README.md)
+- [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md)
+- [docs/RENDER_RUNTIME_CONTRACT.md](../docs/RENDER_RUNTIME_CONTRACT.md)
+- [docs/SAFE_PLUGIN_AUTHORING.md](../docs/SAFE_PLUGIN_AUTHORING.md)
+- [docs/EXTENSION_POINTS.md](../docs/EXTENSION_POINTS.md)
+- [docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md](../docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md)
+- [docs/QUICK_REFERENCE.md](../docs/QUICK_REFERENCE.md)
+- [docs/INJECTED_LIBRARIES.md](../docs/INJECTED_LIBRARIES.md)
+- [docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md](../docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md)
+- [docs/API_STABILITY.md](../docs/API_STABILITY.md)
