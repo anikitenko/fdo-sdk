@@ -27,6 +27,23 @@ This document defines which SDK surfaces are stable contracts versus internal im
   - `renderOnLoad()`
   - `serializeRender()`
   - `serializeRenderOnLoad()`
+- Render-on-load authoring helpers:
+  - `defineRenderOnLoad(...)`
+  - `resolveRenderOnLoadSource(...)`
+  - `listRenderOnLoadTemplates(...)`
+  - `getRenderOnLoadTemplate(...)`
+  - `getRenderOnLoadMonacoTypeDefinitions(...)`
+  - `getRenderOnLoadMonacoHints(...)`
+- Fixture runtime matrix helpers:
+  - `getFixtureRuntimeMatrix(...)`
+  - `listFixtureRuntimeMatrixCases(...)`
+  - `getFixtureRuntimeMatrixCase(...)`
+- Handshake compatibility helpers:
+  - `evaluateSdkHandshakeCompatibility(...)`
+  - `isSdkHandshakeCompatible(...)`
+- Plugin doctor helpers:
+  - `createPluginDoctorReport(...)`
+  - `createPluginDoctorPanelModel(...)`
 - Optional declared capability surface:
   - `declareCapabilities()`
 - Public plugin contracts:
@@ -75,6 +92,21 @@ This document defines which SDK surfaces are stable contracts versus internal im
   - allowed in minors with explicit release notes
 - Internal changes:
   - unrestricted unless they alter documented stable behavior
+
+## Migration And Versioning Loop
+
+Treat migration and semver as one required release loop:
+
+1. Run migration dry-run on real plugin targets:
+   - `fdo sdk migrate --target ./plugins`
+   - or `fdo-sdk migrate --target ./plugins`
+2. Apply codemods (`--write`) and re-run tests/validation.
+3. Choose semver bump by compatibility impact:
+   - patch for non-contract fixes
+   - minor for additive changes/deprecations with migration notes
+   - major for breaking contract changes/removals
+4. Ensure changelog/release notes include explicit migration guidance.
+5. Validate the host (FDO) is running the intended SDK version before sign-off.
 
 ## Guidance For AI Tooling
 

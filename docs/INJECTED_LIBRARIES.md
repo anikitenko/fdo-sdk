@@ -211,6 +211,24 @@ console.log(result);
 
 For production plugins, register handlers in `init()` and call them through `UI_MESSAGE`. Do not assume arbitrary handler names are transport types.
 
+If a `UI_MESSAGE` handler returns a privileged-action envelope for `requestPrivilegedAction`, extract the validated request object before sending it to the host bridge:
+
+```javascript
+const envelopeOrRequest = await window.createBackendReq("UI_MESSAGE", {
+    handler: "plugin.buildPrivilegedRequest",
+    content: { /* handler payload */ }
+});
+
+const requestPayload =
+    envelopeOrRequest?.result?.request ??
+    envelopeOrRequest?.request ??
+    envelopeOrRequest;
+
+const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
+```
+
+Do not pass the entire backend envelope object directly into `requestPrivilegedAction`.
+
 ### `waitForElement(selector, callback, timeout)`
 
 Waits for an element to appear in the DOM.

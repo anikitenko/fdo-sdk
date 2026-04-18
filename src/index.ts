@@ -2,6 +2,9 @@ import {Logger} from "./Logger";
 import "./ambient/fdo-host";
 import {Communicator} from "./Communicator";
 import {PluginRegistry} from "./PluginRegistry";
+import type { RenderOnLoadOutput } from "./types";
+import { createNoopRenderOnLoadSource, resolveRenderOnLoadSource } from "./utils/renderOnLoad";
+import { SDK_API_VERSION } from "./version";
 
 export { atomicWriteFile, atomicWriteFileSync } from "./utils/atomic";
 export { BLUEPRINT_V6_ICON_NAMES, isBlueprintV6IconName } from "./utils/blueprintIcons";
@@ -17,16 +20,29 @@ export { pify } from "./utils/pify";
 export { runWithSudo } from "./utils/runWithSudo";
 export { emitDeprecationWarning, formatDeprecationMessage } from "./utils/deprecation";
 export {
+    createAICapabilityBundle,
     createCapabilityBundle,
     createFilesystemCapabilityBundle,
+    createNetworkCapabilityBundle,
+    createNetworkScopeCapability,
     createProcessCapabilityBundle,
+    createStorageCapabilityBundle,
     createWorkflowCapabilityBundle,
     describeCapability,
+    runCapabilityPreflight,
     parseMissingCapabilityError,
+    requireCapability,
     requireFilesystemScopeCapability,
+    requireNetworkScopeCapability,
     requireProcessScopeCapability,
+    requireStorageBackendCapability,
     requireWorkflowProcessCapabilities,
 } from "./utils/capabilities";
+export {
+    createAICapabilityPreset,
+    getAICapabilityPreset,
+    listAICapabilityPresets,
+} from "./utils/aiTooling";
 export {
     createClipboardReadActionRequest,
     createClipboardWriteActionRequest,
@@ -46,12 +62,16 @@ export {
 } from "./utils/clipboardTooling";
 export {
     createPrivilegedActionCorrelationId,
+    formatPrivilegedActionError,
+    getInlinePrivilegedActionErrorFormatterSource,
     isPrivilegedActionErrorResponse,
     isPrivilegedActionSuccessResponse,
     unwrapPrivilegedActionResponse,
 } from "./utils/privilegedResponses";
 export {
     createPrivilegedActionBackendRequest,
+    extractPrivilegedActionRequest,
+    requestPrivilegedActionFromEnvelope,
     requestPrivilegedAction,
 } from "./utils/privilegedTransport";
 export {
@@ -64,6 +84,11 @@ export {
     requestScopedProcessExec,
 } from "./utils/operatorTooling";
 export {
+    createStorageCapabilityPreset,
+    getStorageCapabilityPreset,
+    listStorageCapabilityPresets,
+} from "./utils/storageTooling";
+export {
     createScopedWorkflowRequest,
     requestScopedWorkflow,
 } from "./utils/workflowTooling";
@@ -72,6 +97,45 @@ export {
     getFailedWorkflowSteps,
     summarizeWorkflowResult,
 } from "./utils/workflowDiagnostics";
+export { createPluginDoctorPanelModel, createPluginDoctorReport } from "./utils/pluginDoctor";
+export {
+    evaluateSdkHandshakeCompatibility,
+    getSdkFeatureFlags,
+    getSdkHandshake,
+    isSdkHandshakeCompatible,
+} from "./utils/handshake";
+export {
+    getFixtureRuntimeMatrix,
+    getFixtureRuntimeMatrixCase,
+    listFixtureRuntimeMatrixCases,
+} from "./utils/fixtureRuntimeMatrix";
+export {
+    formatDiagnosticExactFix,
+    getDiagnosticFixTemplate,
+    listDiagnosticFixTemplates,
+} from "./utils/diagnosticTemplates";
+export { applySdkMigrationCodemod } from "./utils/migrationCodemod";
+export {
+    createNoopRenderOnLoadSource,
+    createRenderOnLoadActionsSource,
+    defineRenderOnLoad,
+    defineRenderOnLoadActions,
+    getRenderOnLoadTemplate,
+    listRenderOnLoadTemplates,
+    getRenderOnLoadMonacoHints,
+    getRenderOnLoadMonacoTypeDefinitions,
+    isRenderOnLoadModule,
+    resolveRenderOnLoadSource,
+} from "./utils/renderOnLoad";
+export {
+    getEditorSupportBundle,
+    getEditorSupportMonacoPolicy,
+    getEditorSupportPackageJson,
+    getEditorSupportPackageManifest,
+    SDK_EDITOR_INDEX_TYPES_VIRTUAL_PATH,
+    SDK_EDITOR_MODULE_ID,
+    SDK_EDITOR_PACKAGE_JSON_VIRTUAL_PATH,
+} from "./utils/editorSupport";
 
 export * from "./FDOInterface";
 export * from "./PluginMetadata";
@@ -92,7 +156,7 @@ export * from "./DOMSemantic";
 export * from "./decorators/ErrorHandler";
 
 export class FDO_SDK {
-    public static readonly API_VERSION: string = "1.0.0"
+    public static readonly API_VERSION: string = SDK_API_VERSION
     static readonly TYPE_TAG = Symbol("FDO_SDK")
     private _logger: Logger = new Logger({ context: { component: "FDO_SDK" } })
     private loggerScope: string = "global";
@@ -116,9 +180,8 @@ export class FDO_SDK {
         throw error
     }
 
-    public renderOnLoad(): string {
-        const load = '() => {}'
-        return load.toString()
+    public renderOnLoad(): RenderOnLoadOutput {
+        return createNoopRenderOnLoadSource();
     }
 
     /**
@@ -143,10 +206,12 @@ export class FDO_SDK {
         const onLoadOutput = this.renderOnLoad() as unknown;
         if (this.isThenable(onLoadOutput)) {
             void onLoadOutput.catch((error: unknown) => this.logAsyncLifecycleError("renderOnLoad", error));
-            throw new Error("Method 'renderOnLoad' must return a synchronous string. Async on-load promises are not supported.");
+            throw new Error(
+                "Method 'renderOnLoad' must return a synchronous string, function, or defineRenderOnLoad(...) module. Async on-load promises are not supported."
+            );
         }
 
-        return JSON.stringify(onLoadOutput)
+        return JSON.stringify(resolveRenderOnLoadSource(onLoadOutput as RenderOnLoadOutput))
     }
 
     public log(message: string): void {

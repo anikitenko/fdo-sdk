@@ -3,8 +3,10 @@ import {
   createOperatorToolCapabilityPreset,
   createPrivilegedActionBackendRequest,
   createScopedWorkflowRequest,
+  extractPrivilegedActionRequest,
   FDOInterface,
   FDO_SDK,
+  getInlinePrivilegedActionErrorFormatterSource,
   getOperatorToolPreset,
   PluginCapability,
   PluginMetadata,
@@ -80,11 +82,13 @@ export default class OperatorKubernetesFixturePlugin extends FDO_SDK implements 
   }
 
   renderOnLoad(): string {
+    const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
     return `
       (() => {
         const previewObjectsButton = document.getElementById("kubectl-preview-objects");
         const inspectRestartWorkflowButton = document.getElementById("kubectl-inspect-restart-workflow");
         const output = document.getElementById("kubectl-workflow-result");
+        const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
         if (!previewObjectsButton || !inspectRestartWorkflowButton || !output) {
           return;
@@ -103,8 +107,22 @@ export default class OperatorKubernetesFixturePlugin extends FDO_SDK implements 
               handler,
               content: {},
             });
-            const response = await window.createBackendReq("requestPrivilegedAction", envelope);
-            setOutput(response);
+            const fallbackCorrelationId = envelope?.result?.correlationId ?? envelope?.correlationId ?? "unknown";
+            const requestPayload = extractPrivilegedActionRequest(envelope);
+            const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
+            if (response && response.ok) {
+              setOutput(response);
+              return;
+            }
+            setOutput({
+              status: "error",
+              correlationId: response?.correlationId ?? fallbackCorrelationId,
+              message: formatPrivilegedActionError(response, {
+                context: "Kubernetes operator request failed",
+                fallbackCorrelationId,
+              }),
+              response: response ?? null,
+            });
           } catch (error) {
             setOutput({
               error: error instanceof Error ? error.message : String(error),

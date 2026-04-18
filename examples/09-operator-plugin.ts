@@ -2,8 +2,10 @@ import {
     createOperatorToolActionRequest,
     createOperatorToolCapabilityPreset,
     createPrivilegedActionBackendRequest,
+    extractPrivilegedActionRequest,
     FDOInterface,
     FDO_SDK,
+    getInlinePrivilegedActionErrorFormatterSource,
     getOperatorToolPreset,
     PluginCapability,
     PluginMetadata,
@@ -64,10 +66,12 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
     }
 
     renderOnLoad(): string {
+        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
         return `
             (() => {
                 const button = document.getElementById("run-docker-status");
                 const output = document.getElementById("operator-result-box");
+                const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
                 if (!button || !output) {
                     return;
@@ -88,7 +92,8 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
                             content: {},
                         });
 
-                        const response = await window.createBackendReq("requestPrivilegedAction", envelope);
+                        const requestPayload = extractPrivilegedActionRequest(envelope);
+                        const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
 
                         if (response && response.ok) {
                             setOutput({
@@ -99,10 +104,14 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
                             return;
                         }
 
+                        const fallbackCorrelationId = envelope?.result?.correlationId ?? envelope?.correlationId ?? "unknown";
                         setOutput({
                             status: "error",
-                            correlationId: response?.correlationId ?? envelope?.correlationId ?? "unknown",
-                            error: response?.error ?? "Unknown host error",
+                            correlationId: response?.correlationId ?? fallbackCorrelationId,
+                            error: formatPrivilegedActionError(response, {
+                                context: "Operator request failed",
+                                fallbackCorrelationId,
+                            }),
                             code: response?.code ?? "UNKNOWN",
                         });
                     } catch (error) {

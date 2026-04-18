@@ -1,7 +1,9 @@
 import {
   createPrivilegedActionBackendRequest,
+  extractPrivilegedActionRequest,
   FDOInterface,
   FDO_SDK,
+  getInlinePrivilegedActionErrorFormatterSource,
   getOperatorToolPreset,
   PluginCapability,
   PluginMetadata,
@@ -80,11 +82,13 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
   }
 
   renderOnLoad(): string {
+    const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
     return `
       (() => {
         const previewPlanButton = document.getElementById("terraform-preview-plan");
         const previewApplyWorkflowButton = document.getElementById("terraform-preview-apply-workflow");
         const output = document.getElementById("terraform-workflow-result");
+        const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
         if (!previewPlanButton || !previewApplyWorkflowButton || !output) {
           return;
         }
@@ -102,8 +106,22 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
               handler,
               content: {},
             });
-            const response = await window.createBackendReq("requestPrivilegedAction", envelope);
-            setOutput(response);
+            const fallbackCorrelationId = envelope?.result?.correlationId ?? envelope?.correlationId ?? "unknown";
+            const requestPayload = extractPrivilegedActionRequest(envelope);
+            const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
+            if (response && response.ok) {
+              setOutput(response);
+              return;
+            }
+            setOutput({
+              status: "error",
+              correlationId: response?.correlationId ?? fallbackCorrelationId,
+              message: formatPrivilegedActionError(response, {
+                context: "Terraform operator request failed",
+                fallbackCorrelationId,
+              }),
+              response: response ?? null,
+            });
           } catch (error) {
             setOutput({
               error: error instanceof Error ? error.message : String(error),

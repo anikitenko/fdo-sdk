@@ -1,4 +1,4 @@
-import { FDOInterface, FDO_SDK, PluginMetadata, PluginRegistry, StoreType } from "@anikitenko/fdo-sdk";
+import { FDOInterface, FDO_SDK, PluginCapability, PluginMetadata, PluginRegistry, StoreType } from "@anikitenko/fdo-sdk";
 
 /**
  * Scenario fixture: Scoped storage usage.
@@ -35,6 +35,10 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
 
   get metadata(): PluginMetadata {
     return this._metadata;
+  }
+
+  declareCapabilities(): PluginCapability[] {
+    return ["storage", "storage.json"];
   }
 
   init(): void {

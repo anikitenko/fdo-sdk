@@ -24,7 +24,7 @@
  * 5. Clear and record session data through explicit UI actions
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry } from "@anikitenko/fdo-sdk";
+import { FDO_SDK, FDOInterface, PluginCapability, PluginMetadata, PluginRegistry } from "@anikitenko/fdo-sdk";
 
 declare global {
   interface Window {
@@ -84,6 +84,10 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
 
   get metadata(): PluginMetadata {
     return this._metadata;
+  }
+
+  declareCapabilities(): PluginCapability[] {
+    return ["storage", "storage.json"];
   }
 
   /**

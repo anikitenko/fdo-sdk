@@ -31,4 +31,19 @@ describe("DOMButton", () => {
         const button = domButton.createButton("No Default", () => {}, { disableDefaultClass: true });
         expect(button.toString()).not.toContain("pure-button");
     });
+
+    it("should create a static button without inline onClick handler", () => {
+        const button = domButton.createStaticButton(
+            "Run",
+            { disableDefaultClass: true, classes: ["custom-action"] },
+            "run-button",
+            { type: "button" }
+        );
+
+        expect(button.toString()).toContain('id="run-button"');
+        expect(button.toString()).toContain('class="custom-action');
+        expect(button.toString()).toContain('type="button"');
+        expect(button.toString()).toContain(">Run</button>");
+        expect(button.toString()).not.toContain("onClick=");
+    });
 })

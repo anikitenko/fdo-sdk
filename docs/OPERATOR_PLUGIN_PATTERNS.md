@@ -106,6 +106,7 @@ The host should map each scope to:
 import {
   createPrivilegedActionBackendRequest,
   createProcessExecActionRequest,
+  formatPrivilegedActionError,
   isPrivilegedActionErrorResponse,
   isPrivilegedActionSuccessResponse,
   requestPrivilegedAction,
@@ -130,7 +131,10 @@ const response = await requestPrivilegedAction(request, {
 if (isPrivilegedActionSuccessResponse(response)) {
   // response.result
 } else if (isPrivilegedActionErrorResponse(response)) {
-  // response.error + response.code
+  const message = formatPrivilegedActionError(response, {
+    context: "Operator tool request failed",
+  });
+  // stable correlation id + code + stderr/stdout details when present
 }
 ```
 
@@ -145,6 +149,26 @@ const payload = createPrivilegedActionBackendRequest(request, {
 ```
 
 For serialized `renderOnLoad()` handlers, prefer the self-contained `requestPrivilegedAction(...)` helper over manually building `window.createBackendReq("requestPrivilegedAction", ...)`.
+
+If you do use the raw bridge after fetching a backend-built envelope through `UI_MESSAGE`, extract the validated request object first:
+
+```ts
+const envelopeOrRequest = await window.createBackendReq("UI_MESSAGE", {
+  handler: "operator.buildRequest",
+  content: {},
+});
+
+const requestPayload = extractPrivilegedActionRequest(envelopeOrRequest);
+const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
+```
+
+Do not forward the full backend envelope object directly into the raw host bridge.
+
+For `renderOnLoad()` string runtimes, use:
+
+- `getInlinePrivilegedActionErrorFormatterSource()`
+- assign `const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};`
+- format all error responses with a stable context and fallback correlation id
 
 ## Capability Presets
 
