@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.3](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.5.2...fdo-sdk-v1.5.3) (2026-04-18)
+
+
+### Bug Fixes
+
+* **examples:** one test missing ([#65](https://github.com/anikitenko/fdo-sdk/issues/65)) ([c872611](https://github.com/anikitenko/fdo-sdk/commit/c8726118b340bd7a364c591d18f037af58285e11))
+
 ## [1.5.2](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.5.1...fdo-sdk-v1.5.2) (2026-04-11)
 
 
