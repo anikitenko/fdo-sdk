@@ -1,17 +1,21 @@
 import {FDO_SDK} from "./index";
-import { PluginCapability } from "./types";
+import { PluginCapability, RenderOnLoadOutput } from "./types";
 
 /**
  * Public plugin contract for FDO SDK plugins.
  *
- * `render()` and `renderOnLoad()` are synchronous and return strings.
- * The SDK serializes those strings for host transport separately.
+ * `render()` is synchronous and returns a string.
+ * `renderOnLoad()` is synchronous and may return:
+ * - a string source
+ * - a function (serialized via `Function#toString`)
+ * - `defineRenderOnLoad(...)` module output
+ * The SDK serializes normalized source strings for host transport.
  */
 export interface FDOInterface {
     declareCapabilities?(): PluginCapability[];
     init(): void;
     render(): string;
-    renderOnLoad?(): string;
+    renderOnLoad?(): RenderOnLoadOutput;
 }
 
 export default FDOInterface;

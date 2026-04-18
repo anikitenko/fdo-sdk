@@ -13,6 +13,14 @@ const response = await window.createBackendReq("UI_MESSAGE", {
   content: { data },
 });
 
+// If handler returns a privileged-action envelope:
+const requestPayload =
+  response?.result?.request ??
+  response?.request ??
+  response;
+const privileged = await window.createBackendReq("requestPrivilegedAction", requestPayload);
+// For non-ok responses, prefer SDK formatPrivilegedActionError(...) in plugin code.
+
 // DOM Utilities
 window.waitForElement('#my-element', (el) => { /* ... */ });
 window.applyClassToSelector('my-class', '#target');

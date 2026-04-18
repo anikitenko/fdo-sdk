@@ -22,7 +22,10 @@ The supported lifecycle contract is synchronous:
 
 - `init()` performs setup
 - `render()` returns a UI string
-- `renderOnLoad()` optionally returns an on-load string
+- `renderOnLoad()` optionally returns:
+  - an on-load string source
+  - an on-load function (`() => void`) serialized by SDK
+  - a `defineRenderOnLoad(...)` module payload
 - the SDK serializes those values for host transport separately
 
 DOM helper rule:
@@ -42,6 +45,8 @@ Further documentation:
 - safe authoring guide: [docs/SAFE_PLUGIN_AUTHORING.md](./docs/SAFE_PLUGIN_AUTHORING.md)
 - operator plugin guidance: [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md)
 - examples and fixtures guide: [docs/EXAMPLES_AND_FIXTURES.md](./docs/EXAMPLES_AND_FIXTURES.md)
+- SharePoint/generic connector host contract: [docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md](./docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md)
+- plugin gap register: [docs/PLUGIN_DEVELOPMENT_GAP_REGISTER.md](docs-local/PLUGIN_DEVELOPMENT_GAP_REGISTER.md)
 - API stability policy: [docs/API_STABILITY.md](./docs/API_STABILITY.md)
 
 ## Features
@@ -165,7 +170,16 @@ The SDK uses explicit host-granted capabilities from `PLUGIN_INIT.content.capabi
 
 Core capabilities:
 
-- `storage.json` - required for `PluginRegistry.useStore("json")`
+- `storage` - base capability family for plugin-managed persistent storage backends
+- `storage.json` - JSON backend leaf capability, required with `storage` for `PluginRegistry.useStore("json")`
+- `system.network` - base capability family for runtime network access
+- `system.network.https` - required for outbound HTTPS requests (`fetch("https://...")`)
+- `system.network.http` - required for outbound plaintext HTTP requests (`fetch("http://...")`)
+- `system.network.websocket` - required for outbound `WebSocket` connections
+- `system.network.tcp` - required for raw TCP socket modules
+- `system.network.udp` - required for raw UDP socket modules
+- `system.network.dns` - required for DNS modules/APIs
+- `system.network.scope.<scope-id>` - host-defined destination scope required together with network base + transport capabilities
 - `sudo.prompt` - required for `runWithSudo(...)`
 - `system.clipboard.read` - required for host-mediated clipboard reads
 - `system.clipboard.write` - required for host-mediated clipboard writes
@@ -193,18 +207,49 @@ Public helpers exported from root package:
 - `createProcessExecActionRequest(...)`
 - `createProcessScopeCapability(...)`
 - `createPrivilegedActionBackendRequest(...)`
+- `extractPrivilegedActionRequest(...)`
 - `requestPrivilegedAction(...)`
+- `getSdkHandshake(...)`
+- `getSdkFeatureFlags(...)`
+- `evaluateSdkHandshakeCompatibility(...)`
+- `isSdkHandshakeCompatible(...)`
+- `createPluginDoctorReport(...)`
+- `createPluginDoctorPanelModel(...)`
+- `getFixtureRuntimeMatrix(...)`
+- `listFixtureRuntimeMatrixCases(...)`
+- `getFixtureRuntimeMatrixCase(...)`
+- `getDiagnosticFixTemplate(...)`
+- `listDiagnosticFixTemplates(...)`
+- `formatDiagnosticExactFix(...)`
+- `applySdkMigrationCodemod(...)`
+- `defineRenderOnLoad(...)`
+- `defineRenderOnLoadActions(...)`
+- `listRenderOnLoadTemplates(...)`
+- `getRenderOnLoadTemplate(...)`
+- `createRenderOnLoadActionsSource(...)`
+- `resolveRenderOnLoadSource(...)`
+- `getRenderOnLoadMonacoTypeDefinitions(...)`
+- `getRenderOnLoadMonacoHints(...)`
+- `formatPrivilegedActionError(...)`
+- `getInlinePrivilegedActionErrorFormatterSource(...)`
 - `createClipboardReadRequest(...)`
 - `createClipboardWriteRequest(...)`
 - `requestClipboardRead(...)`
 - `requestClipboardWrite(...)`
+- `createStorageCapabilityPreset(...)`
+- `getStorageCapabilityPreset(...)`
+- `listStorageCapabilityPresets(...)`
 - `createScopedProcessExecActionRequest(...)`
 - `requestScopedProcessExec(...)`
 - `createProcessCapabilityBundle(...)`
+- `createNetworkCapabilityBundle(...)`
+- `createNetworkScopeCapability(...)`
+- `createStorageCapabilityBundle(...)`
 - `createWorkflowCapabilityBundle(...)`
 - `createFilesystemCapabilityBundle(...)`
 - `describeCapability(...)`
 - `parseMissingCapabilityError(...)`
+- `requireNetworkScopeCapability(...)`
 - `getOperatorToolPreset(...)`
 - `listOperatorToolPresets(...)`
 - `createOperatorToolCapabilityPreset(...)`
@@ -331,17 +376,89 @@ Plugin identity is still attached in structured log metadata (`pluginId`, `compo
 - The SDK exposes a reserved diagnostics handler: `PluginRegistry.DIAGNOSTICS_HANDLER` (`"__sdk.getDiagnostics"`).
 - Hosts can query runtime health/capabilities/notifications via a `UI_MESSAGE` request without adding custom plugin handlers.
 - Diagnostics include capability grant and usage/denial counters for permission auditing.
+- Diagnostics also include a handshake contract (`sdkVersion`, `apiVersion`, `capabilitySchemaVersion`, `featureFlags`) for host compatibility gating.
+- For deterministic compatibility gating, use `evaluateSdkHandshakeCompatibility(diagnostics.handshake, expectations)` before enabling host features that depend on specific SDK capability schema or feature flags.
+- For host-side triage UX, use `createPluginDoctorReport(diagnostics)` to get structured findings with severity, remediation, and status (`healthy`, `needs-attention`, `degraded`).
+- For host panel rendering, use `createPluginDoctorPanelModel(report)` to get prioritized findings, section grouping, and exact-fix text (`formatDiagnosticExactFix` integrated).
+- For deterministic “copy exact fix” UX by error code, use `getDiagnosticFixTemplate(code)` or `formatDiagnosticExactFix(code)`.
 
 Example host request payload:
 
-```typescript
-{
+```typescript verify
+const requestEnvelope = {
   message: "UI_MESSAGE",
   content: {
     handler: "__sdk.getDiagnostics",
-    content: { notificationsLimit: 20 }
+    content: { notificationsLimit: 20 },
+  },
+};
+```
+
+Plugin Doctor example:
+
+```typescript verify
+import { createPluginDoctorPanelModel, createPluginDoctorReport } from "@anikitenko/fdo-sdk";
+
+async function loadDoctorReport() {
+  const diagnostics = await window.createBackendReq("UI_MESSAGE", {
+    handler: "__sdk.getDiagnostics",
+    content: { notificationsLimit: 20 },
+  });
+
+  const capabilitySchemaVersion = (diagnostics as any)?.handshake?.capabilitySchemaVersion;
+  if (capabilitySchemaVersion !== "1.0.0") {
+    console.warn("Host/SDK capability schema mismatch", { capabilitySchemaVersion });
   }
+
+  const report = createPluginDoctorReport(diagnostics as any, {
+    includeInfo: true,
+    includeNotificationFindings: true,
+    handshake: {
+      expectedContractVersion: "1.0.0",
+      expectedApiVersion: "1.0.0",
+      expectedCapabilitySchemaVersion: "1.0.0",
+      requiredFeatureFlags: ["diagnosticsHandler", "pluginDoctorReport"],
+    },
+  });
+  return createPluginDoctorPanelModel(report, {
+    maxPrioritizedFindings: 8,
+  });
 }
+```
+
+## Fixture Runtime Matrix (Host CI)
+
+- The SDK exposes a versioned fixture smoke contract for host CI wiring:
+  - `getFixtureRuntimeMatrix()`
+  - `listFixtureRuntimeMatrixCases()`
+  - `getFixtureRuntimeMatrixCase(id)`
+- Each entry defines the canonical fixture path plus expected smoke probes (`init`, `render`, `renderOnLoad`, `uiMessage` handlers).
+- Use this contract in FDO CI to avoid hardcoded fixture handler lists drifting from SDK fixtures.
+
+Example:
+
+```typescript verify
+import { getFixtureRuntimeMatrix } from "@anikitenko/fdo-sdk";
+
+const matrix = getFixtureRuntimeMatrix();
+for (const fixtureCase of matrix.cases) {
+  console.log(fixtureCase.id, fixtureCase.fixturePath, fixtureCase.probes.uiMessage.length);
+}
+```
+
+## RenderOnLoad Templates
+
+- Use `listRenderOnLoadTemplates()` for host/editor template pickers.
+- Use `getRenderOnLoadTemplate(id)` to load one deterministic template by id.
+- Template entries include `context` (`runtime-source` or `plugin-method`) and `language` to drive editor UX.
+
+```typescript verify
+import { getRenderOnLoadTemplate, listRenderOnLoadTemplates } from "@anikitenko/fdo-sdk";
+
+const templates = listRenderOnLoadTemplates({ context: "plugin-method" });
+const defaultTemplate = getRenderOnLoadTemplate("method-define-render-on-load-actions");
+
+console.log(templates.length, defaultTemplate?.language);
 ```
 
 ## Development
@@ -368,6 +485,58 @@ npm test             # Run Vitest tests
 npm run test:coverage # Run tests with coverage report
 npm run coverage:open # Open coverage report in browser
 ```
+
+Documentation snippet verification:
+
+- `npm run verify:docs` validates links and banned references
+- fenced code blocks tagged with `verify` are compile-checked
+- fenced code blocks tagged with `verify runtime` also run a minimal sandbox runtime smoke check
+
+### Migration Codemod
+
+Use the SDK migration command to update legacy plugin patterns:
+
+```bash
+npm run migrate -- --target ./examples
+npm run migrate -- --target ./examples --write
+```
+
+Published-package command:
+
+```bash
+fdo-sdk migrate --target ./my-plugin --write
+```
+
+FDO-wrapper command (when the host exposes SDK tooling through `fdo`):
+
+```bash
+fdo sdk migrate --target ./my-plugin --write
+```
+
+Current migration rules include:
+
+- legacy privileged envelope fallback chain to `extractPrivilegedActionRequest(...)`
+- deprecated `PluginRegistry.configureCapabilityPolicy(...)` to `configureCapabilities(...)`
+
+### Migration + Versioning Loop (Required)
+
+Keep migration and versioning in one loop for every behavior-affecting change:
+
+1. Run migration dry-run in the target plugin set:
+   - `npm run migrate -- --target ./examples`
+   - or `fdo sdk migrate --target ./examples`
+2. Apply migrations:
+   - `npm run migrate -- --target ./examples --write`
+   - or `fdo sdk migrate --target ./examples --write`
+3. Validate:
+   - `npm test`
+   - `npm run test:examples`
+   - `npm run verify:docs`
+4. Version correctly:
+   - patch: internal fix, no public behavior change
+   - minor: additive API/behavior or deprecation with migration note
+   - major: breaking contract/removal
+5. Publish and confirm FDO consumes the expected SDK version before final validation.
 
 ### Publishing
 

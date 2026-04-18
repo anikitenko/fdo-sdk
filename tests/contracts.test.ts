@@ -114,10 +114,38 @@ describe("SDK contract validators", () => {
         expect(validatePluginInitPayload(undefined)).toEqual({});
         expect(validatePluginInitPayload({
             apiVersion: "1.0.0",
-            capabilities: ["storage.json", "system.hosts.write", "system.fs.scope.etc-hosts", "system.process.exec", "system.process.scope.docker-cli"]
+            capabilities: [
+                "storage",
+                "storage.json",
+                "system.network",
+                "system.network.https",
+                "system.network.scope.public-web-secure",
+                "system.host.write",
+                "system.hosts.write",
+                "system.fs.scope.etc-hosts",
+                "system.process.exec",
+                "system.process.scope.docker-cli",
+            ]
         })).toEqual({
             apiVersion: "1.0.0",
-            capabilities: ["storage.json", "system.hosts.write", "system.fs.scope.etc-hosts", "system.process.exec", "system.process.scope.docker-cli"],
+            capabilities: [
+                "storage",
+                "storage.json",
+                "system.network",
+                "system.network.https",
+                "system.network.scope.public-web-secure",
+                "system.host.write",
+                "system.hosts.write",
+                "system.fs.scope.etc-hosts",
+                "system.process.exec",
+                "system.process.scope.docker-cli",
+            ],
+        });
+
+        expect(validatePluginInitPayload({
+            capabilities: ["storage", "storage.sqlite"]
+        })).toEqual({
+            capabilities: ["storage", "storage.sqlite"],
         });
     });
 
@@ -131,6 +159,12 @@ describe("SDK contract validators", () => {
         );
         expect(() => validatePluginInitPayload({ capabilities: ["unknown.capability"] })).toThrow(
             'Plugin init payload capability "unknown.capability" is not supported by this SDK version.'
+        );
+        expect(() => validatePluginInitPayload({ capabilities: ["storage."] })).toThrow(
+            'Plugin init payload capability "storage." is not supported by this SDK version.'
+        );
+        expect(() => validatePluginInitPayload({ capabilities: ["system.network.scope."] })).toThrow(
+            'Plugin init payload capability "system.network.scope." is not supported by this SDK version.'
         );
     });
 

@@ -93,6 +93,80 @@ Log destination:
 - in FDO host runtime this is typically `PLUGIN_HOME/logs/`
 - plugin identity is preserved in structured log metadata rather than an extra nested log folder
 
+## Privileged Error Formatting Rule
+
+Do not surface raw `response.error` only. Use the SDK formatter so users see correlation IDs and host process details (`stderr`, `stdout`, `exitCode`, `command`, `cwd`) when present.
+
+Use in normal runtime code:
+
+```ts
+const message = formatPrivilegedActionError(response, {
+  context: "Operator request failed",
+  fallbackCorrelationId: envelopeCorrelationId,
+});
+```
+
+Use in `renderOnLoad()` string runtimes:
+
+```ts
+const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+return `
+(() => {
+  const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
+  // use formatter for all non-ok privileged responses
+})();
+`;
+```
+
+Preferred authoring form when possible:
+
+```ts
+renderOnLoad() {
+  return defineRenderOnLoad(() => {
+    // browser-only UI logic
+  }, { language: "typescript" });
+}
+```
+
+The SDK normalizes this to string source at transport boundary, so host behavior remains compatible while plugin authoring stays typed.
+
+When `renderOnLoad()` needs multiple UI bindings, prefer `defineRenderOnLoadActions(...)` over hand-written long listener strings. It gives typed handler/binding configuration and consistent runtime guard behavior (selector mismatch, unknown handler id, async handler failure).
+
+Production baseline for new plugins:
+
+- Default to `defineRenderOnLoadActions(...)` for event wiring.
+- Use `strict: true` so missing selectors and unknown handlers fail fast during development.
+- Keep `setup` focused on state/bootstrap only; put user interactions in declarative `bindings`.
+
+```ts
+renderOnLoad() {
+  return defineRenderOnLoadActions({
+    handlers: {
+      runStatus: async () => {
+        await window.createBackendReq("UI_MESSAGE", {
+          handler: "gitOps.v1.runStatus",
+          content: {},
+        });
+      },
+    },
+    bindings: [
+      { selector: "#git-run-status", event: "click", handler: "runStatus", preventDefault: true, required: true },
+    ],
+    strict: true,
+    language: "typescript",
+  });
+}
+```
+
+For host/editor template pickers, use `listRenderOnLoadTemplates(...)` and `getRenderOnLoadTemplate(id)` instead of hardcoded renderOnLoad snippets.
+
+For host UX that needs deterministic “copy exact fix” guidance by error code, use:
+
+- `getDiagnosticFixTemplate(code)`
+- `formatDiagnosticExactFix(code)`
+
+These helpers provide stable remediation templates for common failure codes such as capability denial, process spawn/exit failures, empty backend responses, and handshake compatibility issues.
+
 ## Metadata Rules
 
 - Define full `metadata` (`name`, `version`, `author`, `description`, `icon`)
@@ -109,12 +183,52 @@ Log destination:
 
 If storage root is missing, JSON store requests throw by design.
 
+Initialization order safety (critical):
+
+- Do not call `PluginRegistry.useStore(...)` in class-field initializers.
+- Acquire stores lazily (helper getter) or inside `init()`/handlers after metadata is ready.
+- Reason: some host/runtime validations read plugin metadata during store acquisition. If store calls run before metadata assignment, startup can fail with errors like `Plugin metadata must be an object.` and terminate the plugin process.
+
+Recommended pattern:
+
+```ts
+private sessionStore?: StoreType;
+
+private getSessionStore(): StoreType {
+  if (!this.sessionStore) {
+    this.sessionStore = PluginRegistry.useStore("default");
+  }
+  return this.sessionStore;
+}
+
+init(): void {
+  const store = this.getSessionStore();
+  // use store safely here
+}
+```
+
 ## Capability Grants (Host-Managed)
 
 Privileged SDK features are capability-gated. The host should grant capabilities at init-time through `PLUGIN_INIT.content.capabilities`.
 
+- `storage`:
+  base storage capability family; required with any concrete storage backend capability
 - `storage.json`:
-  required for `PluginRegistry.useStore("json")`
+  JSON backend leaf capability; required with `storage` for `PluginRegistry.useStore("json")`
+- `system.network`:
+  base network capability family; required with concrete network transport capabilities
+- `system.network.https`:
+  required for outbound HTTPS requests (for example `fetch("https://...")`)
+- `system.network.http`:
+  required for outbound plaintext HTTP requests (for example `fetch("http://...")`)
+- `system.network.websocket`:
+  required for outbound `WebSocket` usage
+- `system.network.tcp`:
+  required for raw TCP socket modules/APIs
+- `system.network.udp`:
+  required for raw UDP socket modules/APIs
+- `system.network.dns`:
+  required for DNS modules/APIs
 - `sudo.prompt`:
   required for `runWithSudo(...)`
 - `system.clipboard.read`:
@@ -196,6 +310,7 @@ For capability remediation and diagnostics, the SDK now also provides:
 - `createFilesystemCapabilityBundle(...)`
 - `describeCapability(...)`
 - `parseMissingCapabilityError(...)`
+- `runCapabilityPreflight(...)`
 
 This lets plugin authors and AI tooling distinguish:
 
@@ -213,6 +328,23 @@ declareCapabilities() {
 ```
 
 This allows hosts to compare declared capabilities with granted capabilities during preflight, before a user reaches a rare or deep action path.
+
+Recommended explicit preflight pattern in plugin backend code:
+
+```ts
+const declared = this.declareCapabilities();
+const report = runCapabilityPreflight({
+  declared,
+  granted: initCapabilitiesFromHost,
+  action: "initialize plugin runtime",
+});
+
+if (!report.ok) {
+  // surface report.summary + report.remediations in init diagnostics/logs
+}
+```
+
+`PluginRegistry.callInit()` already logs declared-capability preflight diagnostics, but calling `runCapabilityPreflight(...)` directly is useful when you want a deterministic report object for custom UI, telemetry, or AI-assisted remediation.
 
 ## Many-Command Troubleshooting Best Practice
 

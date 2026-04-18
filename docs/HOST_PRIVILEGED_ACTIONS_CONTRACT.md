@@ -30,6 +30,8 @@ Validated by SDK helper:
   - `createClipboardWriteRequest(text, reason?)`
   - `requestClipboardRead(reasonOrOptions?, options?)`
   - `requestClipboardWrite(text, reasonOrOptions?, options?)`
+  - `formatPrivilegedActionError(response, options?)`
+  - `getInlinePrivilegedActionErrorFormatterSource()`
 
 ## Request Shape
 
@@ -96,8 +98,23 @@ const response = await requestPrivilegedAction(request, {
 if (response?.ok) {
   // success path
 } else {
-  // deterministic error path with correlationId + error + code
+  const message = formatPrivilegedActionError(response, {
+    context: "Filesystem mutate action failed",
+  });
+  // deterministic error path with correlationId + error + code + process details when present
 }
+```
+
+For `renderOnLoad()` string runtimes, use the inline-source helper:
+
+```ts
+const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+return `
+(() => {
+  const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
+  // use formatPrivilegedActionError(response, { context, fallbackCorrelationId })
+})();
+`;
 ```
 
 If you need the stable request envelope without sending it yet:
@@ -107,6 +124,57 @@ const payload = createPrivilegedActionBackendRequest(request, {
   correlationIdPrefix: "etc-hosts",
 });
 ```
+
+If your iframe UI fetches that envelope through `UI_MESSAGE`, prefer the canonical pipeline helper:
+
+```ts verify
+import { requestPrivilegedActionFromEnvelope } from "@anikitenko/fdo-sdk";
+
+async function runPrivilegedPipeline() {
+  const envelopeOrRequest = await window.createBackendReq("UI_MESSAGE", {
+    handler: "plugin.buildPrivilegedRequest",
+    content: {},
+  });
+
+  const { response, errorMessage } = await requestPrivilegedActionFromEnvelope(envelopeOrRequest, {
+    context: "Privileged action failed",
+  });
+
+  if (!response.ok) {
+    console.error(errorMessage);
+  }
+}
+```
+
+If you need low-level control, call `extractPrivilegedActionRequest(...)` + `window.createBackendReq("requestPrivilegedAction", requestPayload)` manually.
+
+The helper safely unwraps all currently supported shapes:
+
+```ts
+input.result.request
+input.request
+direct request
+```
+
+Compatibility fallback if you are not using the helper yet:
+
+```ts
+const requestPayload = envelope?.result?.request ?? envelope?.request ?? envelope;
+const correlationId = envelope?.result?.correlationId ?? envelope?.correlationId;
+```
+
+The stable rule for envelope-based handlers is:
+
+- backend handler may return `{ correlationId, request }`
+- `UI_MESSAGE` transport may wrap that again as `{ ok, result: { correlationId, request } }`
+- raw host privileged-action bridge should receive `request`
+- preserve `correlationId` in UI diagnostics separately if you need it for fallback/error display
+
+Deprecated behavior:
+
+- passing the full backend envelope directly into `requestPrivilegedAction` is deprecated
+- this compatibility may exist temporarily in some hosts, but SDK examples should not rely on it
+- a future major release may remove compatibility for forwarding raw envelope objects
 
 ```ts
 {

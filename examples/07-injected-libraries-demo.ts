@@ -12,15 +12,7 @@
  * - This example intentionally uses plain markup so the focus stays on injected globals and iframe runtime behavior
  */
 
-import {
-    createClipboardReadRequest,
-    createClipboardWriteRequest,
-    FDO_SDK,
-    FDOInterface,
-    PluginMetadata,
-    PluginCapability,
-    PluginRegistry,
-} from "@anikitenko/fdo-sdk";
+import { createClipboardReadRequest, createClipboardWriteRequest, FDO_SDK, FDOInterface, getInlinePrivilegedActionErrorFormatterSource, PluginMetadata, PluginCapability, PluginRegistry, extractPrivilegedActionRequest } from "@anikitenko/fdo-sdk";
 
 export default class InjectedLibrariesDemoPlugin extends FDO_SDK implements FDOInterface {
     private readonly _metadata: PluginMetadata = {
@@ -216,9 +208,11 @@ class Plugin extends FDO_SDK &#123;
     }
 
     renderOnLoad(): string {
+        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
         return `
             (() => {
                 const output = document.getElementById("helper-output");
+                const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
                 const setOutput = (html) => {
                     if (output) {
                         output.innerHTML = html;
@@ -296,21 +290,26 @@ new MyPlugin();\`, 1);
                         const content = editor.getValue();
                         setOutput("Preparing clipboard request...");
                         try {
-                            const request = await window.createBackendReq("UI_MESSAGE", {
+                            const envelopeOrRequest = await window.createBackendReq("UI_MESSAGE", {
                                 handler: "demo.getClipboardWriteRequest",
                                 content: { text: content }
                             });
-                            const response = await window.createBackendReq("requestPrivilegedAction", {
-                                correlationId: \`clipboard-\${Date.now()}\`,
-                                request
-                            });
+                            const requestPayload = extractPrivilegedActionRequest(envelopeOrRequest);
+                            const fallbackCorrelationId = envelopeOrRequest?.result?.correlationId
+                                ?? envelopeOrRequest?.correlationId
+                                ?? "unknown";
+                            const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
 
                             if (response && response.ok) {
                                 notyf.success("Editor content copied to clipboard.");
                                 setOutput(\`<strong>Clipboard Response:</strong><br /><pre>\${JSON.stringify(response, null, 2)}</pre>\`);
                             } else {
                                 notyf.error("Clipboard write was denied.");
-                                setOutput(\`<strong>Clipboard Error:</strong><br /><pre>\${JSON.stringify(response, null, 2)}</pre>\`);
+                                const message = formatPrivilegedActionError(response, {
+                                    context: "Clipboard write failed",
+                                    fallbackCorrelationId
+                                });
+                                setOutput(\`<strong>Clipboard Error:</strong><br /><pre>\${message}</pre><br /><strong>Raw Response:</strong><br /><pre>\${JSON.stringify(response, null, 2)}</pre>\`);
                             }
                         } catch (error) {
                             const message = error instanceof Error ? error.message : String(error);
@@ -322,21 +321,26 @@ new MyPlugin();\`, 1);
                     bindClick("read-clipboard-btn", async () => {
                         setOutput("Preparing clipboard read request...");
                         try {
-                            const request = await window.createBackendReq("UI_MESSAGE", {
+                            const envelopeOrRequest = await window.createBackendReq("UI_MESSAGE", {
                                 handler: "demo.getClipboardReadRequest",
                                 content: {}
                             });
-                            const response = await window.createBackendReq("requestPrivilegedAction", {
-                                correlationId: \`clipboard-\${Date.now()}\`,
-                                request
-                            });
+                            const requestPayload = extractPrivilegedActionRequest(envelopeOrRequest);
+                            const fallbackCorrelationId = envelopeOrRequest?.result?.correlationId
+                                ?? envelopeOrRequest?.correlationId
+                                ?? "unknown";
+                            const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
 
                             if (response && response.ok) {
                                 notyf.success("Clipboard content loaded.");
                                 setOutput(\`<strong>Clipboard Read Response:</strong><br /><pre>\${JSON.stringify(response, null, 2)}</pre>\`);
                             } else {
                                 notyf.error("Clipboard read was denied.");
-                                setOutput(\`<strong>Clipboard Read Error:</strong><br /><pre>\${JSON.stringify(response, null, 2)}</pre>\`);
+                                const message = formatPrivilegedActionError(response, {
+                                    context: "Clipboard read failed",
+                                    fallbackCorrelationId
+                                });
+                                setOutput(\`<strong>Clipboard Read Error:</strong><br /><pre>\${message}</pre><br /><strong>Raw Response:</strong><br /><pre>\${JSON.stringify(response, null, 2)}</pre>\`);
                             }
                         } catch (error) {
                             const message = error instanceof Error ? error.message : String(error);

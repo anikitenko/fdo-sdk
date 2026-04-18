@@ -2,8 +2,10 @@ import {
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createPrivilegedActionBackendRequest,
+    extractPrivilegedActionRequest,
     FDOInterface,
     FDO_SDK,
+    getInlinePrivilegedActionErrorFormatterSource,
     PluginCapability,
     PluginRegistry,
     PluginMetadata,
@@ -71,10 +73,12 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
     }
 
     renderOnLoad(): string {
+        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
         return `
             (() => {
                 const button = document.getElementById("run-privileged-action");
                 const resultBox = document.getElementById("result-box");
+                const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
                 if (!button || !resultBox) {
                     return;
@@ -96,7 +100,8 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
                         });
 
                         const typedEnvelope = envelope;
-                        const response = await window.createBackendReq("requestPrivilegedAction", typedEnvelope);
+                        const requestPayload = extractPrivilegedActionRequest(typedEnvelope);
+                        const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
 
                         if (response && response.ok) {
                             setResult({
@@ -107,10 +112,16 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
                             return;
                         }
 
+                        const fallbackCorrelationId = typedEnvelope?.result?.correlationId
+                            ?? typedEnvelope?.correlationId
+                            ?? "unknown";
                         setResult({
                             status: "error",
-                            correlationId: response?.correlationId ?? typedEnvelope?.correlationId ?? "unknown",
-                            error: response?.error ?? "Unknown host error",
+                            correlationId: response?.correlationId ?? fallbackCorrelationId,
+                            error: formatPrivilegedActionError(response, {
+                                context: "Privileged action failed",
+                                fallbackCorrelationId,
+                            }),
                             code: response?.code ?? "UNKNOWN",
                         });
                     } catch (error) {

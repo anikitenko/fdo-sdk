@@ -433,6 +433,9 @@ describe("PluginRegistry", () => {
         expect(diagnostics.apiVersion).toBe(FDO_SDK.API_VERSION);
         expect(diagnostics.pluginId).toBe("tests-diagnostics-plugin");
         expect(diagnostics.metadata?.name).toBe(plugin.metadata.name);
+        expect(diagnostics.handshake.apiVersion).toBe(FDO_SDK.API_VERSION);
+        expect(diagnostics.handshake.featureFlags.pluginDoctorReport).toBe(true);
+        expect(diagnostics.handshake.capabilitySchemaVersion).toBe("1.0.0");
         expect(diagnostics.health.status).toBe("healthy");
         expect(diagnostics.health.initCount).toBe(1);
         expect(diagnostics.health.renderCount).toBe(1);
@@ -530,7 +533,7 @@ describe("PluginRegistry", () => {
         test("should return specific store when using useStore with valid store name", () => {
             registerScopedPlugin();
             PluginRegistry.configureStorage({ rootDir: "/tmp/fdo-sdk-test-storage" });
-            PluginRegistry.configureCapabilities({ granted: ["storage.json"] });
+            PluginRegistry.configureCapabilities({ granted: ["storage", "storage.json"] });
             const store = PluginRegistry.useStore("json");
             expect(store).not.toBe(StoreJson);
             expect((store as any)._filePath).toContain("/tmp/fdo-sdk-test-storage/tests-scoped-plugin/store.json");
@@ -609,7 +612,7 @@ describe("PluginRegistry", () => {
 
         test("should require explicit storage root for json store", () => {
             registerScopedPlugin();
-            PluginRegistry.configureCapabilities({ granted: ["storage.json"] });
+            PluginRegistry.configureCapabilities({ granted: ["storage", "storage.json"] });
 
             expect(() => PluginRegistry.useStore("json")).toThrow(
                 "JSON store requires a configured storage root. Set PluginRegistry.configureStorage({ rootDir }) or FDO_SDK_STORAGE_ROOT."
@@ -619,17 +622,27 @@ describe("PluginRegistry", () => {
         test("should allow JSON store root from environment", () => {
             process.env.FDO_SDK_STORAGE_ROOT = "/tmp/fdo-sdk-env-storage";
             registerScopedPlugin();
-            PluginRegistry.configureCapabilities({ granted: ["storage.json"] });
+            PluginRegistry.configureCapabilities({ granted: ["storage", "storage.json"] });
 
             const store = PluginRegistry.useStore("json");
 
             expect((store as any)._filePath).toContain("/tmp/fdo-sdk-env-storage/tests-scoped-plugin/store.json");
         });
 
-        test("should require storage.json capability before creating json store", () => {
+        test("should require storage base capability before creating json store", () => {
             registerScopedPlugin();
             PluginRegistry.configureStorage({ rootDir: "/tmp/fdo-sdk-test-storage" });
             PluginRegistry.configureCapabilities({ granted: [] });
+
+            expect(() => PluginRegistry.useStore("json")).toThrow(
+                'Capability "storage" is required to use the JSON persistent store. Configure PluginRegistry.configureCapabilities({ granted: ["storage"] }) in the host before plugin initialization.'
+            );
+        });
+
+        test("should require storage backend leaf capability when base storage is granted", () => {
+            registerScopedPlugin();
+            PluginRegistry.configureStorage({ rootDir: "/tmp/fdo-sdk-test-storage" });
+            PluginRegistry.configureCapabilities({ granted: ["storage"] });
 
             expect(() => PluginRegistry.useStore("json")).toThrow(
                 'Capability "storage.json" is required to use the JSON persistent store. Configure PluginRegistry.configureCapabilities({ granted: ["storage.json"] }) in the host before plugin initialization.'

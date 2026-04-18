@@ -28,7 +28,8 @@ Primary plugin lifecycle:
   - returns UI source string
   - serialized for host transport via explicit SDK methods
 - `renderOnLoad()`:
-  - optional string payload for UI on-load behavior
+  - optional payload for UI on-load behavior
+  - supported authoring forms: source string, function, or `defineRenderOnLoad(...)` module
 
 Transport helpers:
 
@@ -81,9 +82,11 @@ Store lifecycle hooks are supported:
 
 Runtime permission model:
 
-- privileged SDK features are capability-gated (`storage.json`, `sudo.prompt`, `system.hosts.write`, `system.fs.scope.<scope-id>`, `system.process.exec`, `system.process.scope.<scope-id>`)
+- privileged SDK features are capability-gated (`storage`, `storage.<backend>` such as `storage.json`, `system.network`, `system.network.<transport>` such as `system.network.https`, `sudo.prompt`, `system.hosts.write`, `system.fs.scope.<scope-id>`, `system.process.exec`, `system.process.scope.<scope-id>`)
 - host grants are configured via `PluginRegistry.configureCapabilities(...)` (usually through validated `PLUGIN_INIT` payload)
 - diagnostics include granted capabilities and usage/denial counters for auditing
+- diagnostics also include SDK handshake metadata (`sdkVersion`, `apiVersion`, capability schema version, feature flags) for host compatibility gating
+- hosts should evaluate this handshake contract with `evaluateSdkHandshakeCompatibility(...)` instead of ad hoc version checks
 
 Host-mediated privileged actions:
 

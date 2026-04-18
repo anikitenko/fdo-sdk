@@ -185,7 +185,10 @@ render(): string {
 The SDK now keeps that separation explicit:
 
 - `render()` returns the plugin's UI string
-- `renderOnLoad()` optionally returns the plugin's on-load script/function string
+- `renderOnLoad()` optionally returns:
+  - source string
+  - function (`() => void`)
+  - `defineRenderOnLoad(...)` module
 - serialization for the host transport is handled by explicit SDK methods rather than by mutating plugin lifecycle methods at construction time
 
 ## Supported Lifecycle Contract
@@ -194,8 +197,78 @@ The supported public contract in the SDK is:
 
 - `init()` performs plugin setup
 - `render()` synchronously returns a string
-- `renderOnLoad()` optionally synchronously returns a string
+- `renderOnLoad()` optionally synchronously returns a string, function, or `defineRenderOnLoad(...)` module
 - `serializeRender()` and `serializeRenderOnLoad()` are transport helpers used by the SDK/host boundary
+
+Recommended authoring pattern:
+
+```ts
+import { defineRenderOnLoad } from "@anikitenko/fdo-sdk";
+
+renderOnLoad() {
+  return defineRenderOnLoad(() => {
+    const button = document.getElementById("run");
+    button?.addEventListener("click", async () => {
+      await window.createBackendReq("UI_MESSAGE", {
+        handler: "plugin.run",
+        content: {},
+      });
+    });
+  }, {
+    language: "typescript",
+    description: "typed on-load handler",
+  });
+}
+```
+
+For production plugins with many UI actions, prefer declarative binding generation instead of hand-written listener wiring strings:
+
+```ts verify
+import { defineRenderOnLoadActions } from "@anikitenko/fdo-sdk";
+
+const onLoadModule = defineRenderOnLoadActions({
+  setup: () => {
+    // optional setup hook before listeners attach
+  },
+  handlers: {
+    runInspect: async () => {
+      await window.createBackendReq("UI_MESSAGE", {
+        handler: "plugin.inspect",
+        content: {},
+      });
+    },
+  },
+  bindings: [
+    { selector: "#inspect-button", event: "click", handler: "runInspect", preventDefault: true },
+  ],
+  language: "typescript",
+  strict: true,
+});
+```
+
+Recommendation: for new plugins, treat `defineRenderOnLoadActions(...)` as the default path for UI event wiring. Use plain `defineRenderOnLoad(...)` when you need heavily custom runtime logic that does not fit selector/event bindings.
+
+For host/editor template pickers, use:
+
+- `listRenderOnLoadTemplates(...)`
+- `getRenderOnLoadTemplate(id)`
+
+Template entries include context (`runtime-source` vs `plugin-method`) and language metadata for deterministic editor UX.
+
+Minimal runtime-check snippet used by docs CI:
+
+```ts verify runtime
+(() => {
+  const marker = { invoked: false };
+  const run = () => {
+    marker.invoked = true;
+  };
+  run();
+  if (!marker.invoked) {
+    throw new Error("runtime marker was not invoked");
+  }
+})();
+```
 
 Plugin authors should override:
 

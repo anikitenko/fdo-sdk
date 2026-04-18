@@ -21,8 +21,15 @@ import { createDefaultStore } from "./StoreDefault";
 import { createJsonStore } from "./StoreJson";
 import { validatePluginMetadata, validateSerializedRenderPayload } from "./utils/contracts";
 import { NotificationManager } from "./utils/NotificationManager";
-import { configureCapabilities, createCapabilityBundle, getCapabilityDiagnostics, requireCapability } from "./utils/capabilities";
+import {
+    configureCapabilities,
+    createCapabilityBundle,
+    getCapabilityDiagnostics,
+    requireStorageBackendCapability,
+    runCapabilityPreflight
+} from "./utils/capabilities";
 import { emitDeprecationWarning } from "./utils/deprecation";
+import { getSdkHandshake } from "./utils/handshake";
 
 type PluginWithMetadata = FDO_SDK & { metadata: PluginMetadata };
 type PluginWithQuickActions = FDO_SDK & { defineQuickActions: () => QuickAction[] };
@@ -105,7 +112,7 @@ export class PluginRegistry {
         const context = this.getStoreContext();
 
         if (storeName === "json") {
-            requireCapability("storage.json", "use the JSON persistent store");
+            requireStorageBackendCapability("json", "use the JSON persistent store");
         }
 
         if (!this.storeInstances[context.pluginId]) {
@@ -243,15 +250,19 @@ export class PluginRegistry {
         const sidePanelConfig = this.getSidePanelConfig();
         const permissions = getCapabilityDiagnostics();
         const declaredCapabilities = this.getDeclaredCapabilities();
-        const grantedSet = new Set(permissions.granted);
-        const declaredSet = new Set(declaredCapabilities);
-        const missingDeclared = declaredCapabilities.filter((capability) => !grantedSet.has(capability));
-        const undeclaredGranted = permissions.granted.filter((capability) => !declaredSet.has(capability));
+        const capabilityPreflight = runCapabilityPreflight({
+            declared: declaredCapabilities,
+            granted: permissions.granted,
+            action: "satisfy plugin declared capability contract",
+        });
+        const missingDeclared = capabilityPreflight.missing.map((entry) => entry.capability as any).filter((entry): entry is typeof declaredCapabilities[number] => typeof entry === "string");
+        const undeclaredGranted = capabilityPreflight.undeclaredGranted.map((entry) => entry.capability as any).filter((entry): entry is typeof permissions.granted[number] => typeof entry === "string");
 
         return {
             apiVersion: FDO_SDK.API_VERSION,
             pluginId,
             metadata,
+            handshake: getSdkHandshake(),
             health: {
                 status: this.diagnosticsState.errorCount > 0 ? "degraded" : "healthy",
                 startedAt: this.diagnosticsState.startedAt,
@@ -493,20 +504,30 @@ export class PluginRegistry {
             return;
         }
 
-        const grantedCapabilities = getCapabilityDiagnostics().granted;
-        const grantedSet = new Set(grantedCapabilities);
-        const missingCapabilities = declaredCapabilities.filter((capability) => !grantedSet.has(capability));
+        const preflight = runCapabilityPreflight({
+            declared: declaredCapabilities,
+            action: "initialize plugin runtime",
+        });
 
         this._logger.event("plugin.capabilities.declared", {
             declaredCapabilities,
-            grantedCapabilities,
-            missingCapabilities,
+            grantedCapabilities: preflight.granted,
+            missingCapabilities: preflight.missing.map((entry) => entry.capability),
+            remediations: preflight.remediations,
         });
 
-        if (missingCapabilities.length > 0) {
+        if (preflight.missing.length > 0) {
             this._logger.warn(
-                `Plugin declared capabilities that are not currently granted: ${missingCapabilities.join(", ")}.`
+                `Plugin declared capabilities that are not currently granted: ${preflight.missing.map((entry) => entry.capability).join(", ")}.`
             );
+            for (const remediation of preflight.remediations) {
+                this._logger.warn(`Capability preflight remediation: ${remediation}`);
+            }
+        } else {
+            this._logger.info("Plugin capability preflight passed for declared capabilities.", {
+                declaredCapabilities,
+                grantedCapabilities: preflight.granted,
+            });
         }
     }
 }
