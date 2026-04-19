@@ -1,0 +1,62 @@
+---
+title: "Quickstart"
+description: "Build your first FDO SDK plugin with the smallest possible setup."
+---
+
+# Quickstart
+
+This is the fastest path to a working plugin.
+
+## What You Need To Know First
+
+FDO plugins have two runtimes:
+
+- backend runtime
+- iframe UI runtime
+
+Your plugin class, handlers, storage, and logging run in backend runtime.
+Your UI runs later inside a sandboxed iframe.
+
+That is the core rule behind the SDK.
+
+## Smallest Valid Plugin
+
+```ts
+import { FDO_SDK, FDOInterface, PluginMetadata } from "@anikitenko/fdo-sdk";
+
+export default class MyPlugin extends FDO_SDK implements FDOInterface {
+  private readonly _metadata: PluginMetadata = {
+    name: "My Plugin",
+    version: "1.0.0",
+    author: "Your Name",
+    description: "My first plugin",
+    icon: "cog",
+  };
+
+  get metadata(): PluginMetadata {
+    return this._metadata;
+  }
+
+  init(): void {
+    this.info("Plugin initialized");
+  }
+
+  render(): string {
+    return `<div>Hello from FDO SDK</div>`;
+  }
+}
+```
+
+## Start With Fixtures
+
+If you are building a real plugin, start from:
+
+- `examples/fixtures/minimal-plugin.fixture.ts`
+- `examples/fixtures/error-handling-plugin.fixture.ts`
+- `examples/fixtures/storage-plugin.fixture.ts`
+
+## What To Read Next
+
+- [Basics](/getting-started/basics)
+- [Learning Path](/getting-started/learning-path)
+- [Runtime Model](/guides/runtime-model)

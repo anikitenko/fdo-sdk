@@ -1,0 +1,60 @@
+---
+title: "Runtime Model"
+description: "Understand backend runtime, iframe runtime, and the host boundary."
+---
+
+# Runtime Model
+
+The SDK has two runtimes and one host boundary.
+
+## Backend Runtime
+
+This is where your plugin class runs.
+
+Use it for:
+
+- `init()`
+- registering handlers
+- storage access
+- logging
+- diagnostics
+- backend orchestration
+
+Do not assume browser-only globals exist here.
+
+## Iframe UI Runtime
+
+This is where your UI executes after `render()` output is consumed by FDO.
+
+Use it for:
+
+- DOM work
+- event listeners
+- UI feedback
+- host-injected helpers and libraries
+- calling your backend through `window.createBackendReq(...)`
+
+## Host Boundary
+
+The host owns:
+
+- iframe sandboxing
+- capability grants
+- privileged action execution
+- network and filesystem boundaries
+- session/request infrastructure for connector patterns
+
+Your plugin should treat host boundaries as explicit contracts, not hidden implementation details.
+
+## What This Means In Practice
+
+- backend code should not depend on iframe-only libraries
+- iframe UI should not assume direct privileged host access
+- privileged work should go through documented host-mediated contracts
+- provider-specific semantics should stay in plugin code unless the host contract explicitly owns them
+
+## Related Reading
+
+- `docs/ARCHITECTURE.md`
+- `docs/RENDER_RUNTIME_CONTRACT.md`
+- `docs/SAFE_PLUGIN_AUTHORING.md`

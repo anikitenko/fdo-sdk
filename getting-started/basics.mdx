@@ -1,0 +1,69 @@
+---
+title: "Basics"
+description: "Understand the fundamental SDK rules before building larger plugins."
+---
+
+# Basics
+
+## The One Rule That Matters Most
+
+Do not mix backend runtime and iframe UI runtime.
+
+Backend runtime is for:
+
+- `init()`
+- handlers
+- stores
+- logging
+- diagnostics
+- privileged action setup
+
+Iframe UI runtime is for:
+
+- DOM access
+- browser event handling
+- `window.createBackendReq(...)`
+- host-injected UI libraries
+
+## What `render()` Really Returns
+
+`render()` returns UI source for the FDO iframe pipeline.
+
+It is not:
+
+- arbitrary host DOM HTML injection
+- direct React component source you control in the host app
+
+The safest mental model is:
+
+- JSX-compatible UI source for a sandboxed iframe render pipeline
+
+## DOM Helper Rule
+
+If you use SDK DOM helpers and expect styling to work, wrap the final output with `renderHTML(...)`.
+
+Without that, helper-generated classes may exist but their CSS will not be emitted.
+
+## Safe Authoring Rules
+
+- prefer JSX-safe tags like `<br />`
+- avoid raw `<style>` blocks in `render()`
+- escape literal braces in code samples
+- do not pass untrusted raw strings into generic DOM helper children
+- use `DOMText` helpers for user-provided text
+
+## Metadata Rule
+
+`metadata.icon` must be a valid BlueprintJS v6 icon name.
+
+## Storage Rule
+
+Do not call `PluginRegistry.useStore(...)` in class field initializers.
+
+Acquire stores lazily or inside `init()` / handlers.
+
+## Read Next
+
+- [Quickstart](/getting-started/quickstart)
+- [Learning Path](/getting-started/learning-path)
+- [Runtime Model](/guides/runtime-model)

@@ -1,0 +1,88 @@
+---
+title: "Learning Path"
+description: "Recommended order for learning the FDO SDK without getting lost in internals."
+---
+
+# Learning Path
+
+If you are new to the SDK, use this order.
+
+## Step 1: Understand The Runtime Split
+
+Read:
+
+- `README.md`
+- `docs/RENDER_RUNTIME_CONTRACT.md`
+
+Goal:
+
+- understand backend runtime vs iframe runtime
+
+## Step 2: Learn Safe Plugin Authoring
+
+Read:
+
+- `docs/SAFE_PLUGIN_AUTHORING.md`
+- `docs/EXTENSION_POINTS.md`
+
+Goal:
+
+- learn what is public contract vs anti-pattern
+
+## Step 3: Start From Fixtures
+
+Start from:
+
+- `examples/fixtures/minimal-plugin.fixture.ts`
+- `examples/fixtures/error-handling-plugin.fixture.ts`
+- `examples/fixtures/storage-plugin.fixture.ts`
+
+Goal:
+
+- get a production-friendly starting point instead of copying learning examples blindly
+
+## Step 4: Learn Capability And Privileged Actions
+
+Read:
+
+- `docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md`
+- `docs/API_STABILITY.md`
+
+Goal:
+
+- understand what the host owns
+- understand what capabilities are required
+
+## Step 5: Use Numbered Examples Intentionally
+
+Use numbered examples only after the fixtures make sense.
+
+They are a teaching progression, not the default production starting point.
+
+Good examples to visit next:
+
+- `examples/05-advanced-dom-plugin.ts`
+- `examples/08-privileged-actions-plugin.ts`
+- `examples/09-operator-plugin.ts`
+- `examples/13-service-content-hub-plugin.ts`
+
+## Step 6: For Provider Integrations
+
+Use the connector pattern:
+
+- host owns transport and session state
+- plugin owns provider-specific parsing and UX
+
+Read:
+
+- `docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md`
+
+## Practical Outcome
+
+If you follow this order, you avoid the common mistakes:
+
+- mixing runtimes
+- misusing `render()`
+- skipping `renderHTML(...)`
+- using stores too early
+- treating examples as stronger than the actual public contract

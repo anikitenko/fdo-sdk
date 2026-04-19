@@ -2,15 +2,65 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "FDO SDK",
+  "description": "SDK for building FlexDevOps desktop application plugins.",
   "colors": {
     "primary": "#2563EB"
   },
+  "appearance": {
+    "default": "system",
+    "strict": false
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "assistant",
+      "chatgpt",
+      "claude",
+      "perplexity"
+    ],
+    "display": "header"
+  },
   "navigation": {
-    "groups": [
+    "tabs": [
       {
-        "group": "Documentation",
-        "pages": [
-          ".mintlify/Assistant"
+        "tab": "Docs",
+        "groups": [
+          {
+            "group": "Start Here",
+            "pages": [
+              "index",
+              "getting-started/quickstart",
+              "getting-started/basics",
+              "getting-started/learning-path"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/runtime-model",
+              "docs/ARCHITECTURE",
+              "docs/RENDER_RUNTIME_CONTRACT",
+              "docs/SAFE_PLUGIN_AUTHORING",
+              "docs/EXTENSION_POINTS",
+              "docs/API_STABILITY"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "docs/QUICK_REFERENCE",
+              "docs/INJECTED_LIBRARIES",
+              "docs/HOST_PRIVILEGED_ACTIONS_CONTRACT",
+              "docs/SHAREPOINT_PROVIDER_HOST_CONTRACT"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
+              "docs/EXAMPLES_AND_FIXTURES"
+            ]
+          }
         ]
       }
     ]
