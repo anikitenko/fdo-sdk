@@ -1,0 +1,51 @@
+# FDO SDK
+
+`@anikitenko/fdo-sdk` is the SDK for building FlexDevOps desktop application plugins.
+
+## Overview
+
+The SDK has two runtimes:
+
+- Backend/plugin runtime for lifecycle, handlers, storage, logging, diagnostics, and host IPC
+- Iframe UI runtime for UI returned by `render()`, browser-side helpers, and host-injected libraries
+
+Important rule:
+
+- `render()` output is UI source for the FDO iframe render pipeline, not arbitrary raw HTML inserted directly into the host DOM
+
+## Core Documents
+
+- README.md
+- docs/ARCHITECTURE.md
+- docs/RENDER_RUNTIME_CONTRACT.md
+- docs/SAFE_PLUGIN_AUTHORING.md
+- docs/EXTENSION_POINTS.md
+- docs/HOST_PRIVILEGED_ACTIONS_CONTRACT.md
+- docs/INJECTED_LIBRARIES.md
+- docs/QUICK_REFERENCE.md
+- docs/API_STABILITY.md
+- docs/SHAREPOINT_PROVIDER_HOST_CONTRACT.md
+- docs/EXAMPLES_AND_FIXTURES.md
+
+## Key Rules
+
+- Keep backend runtime and iframe runtime logic separate
+- Use `renderHTML(...)` when styled DOM-helper output is expected
+- Prefer `defineRenderOnLoadActions(...)` for non-trivial UI wiring
+- Use `PluginRegistry.registerHandler(...)` for UI-to-backend calls
+- Acquire stores lazily; do not call `PluginRegistry.useStore(...)` in class field initializers
+- Treat capability grants as host-authoritative
+- Use host-mediated privileged actions instead of ad hoc filesystem or process escape patterns
+- Treat examples as useful but provisional; prefer documented public exports and contract docs for stable behavior
+
+## Connector Pattern
+
+For connector/provider examples:
+
+- host owns session transport and request execution
+- plugin owns provider-specific parsing and UX behavior
+- host should remain API-agnostic
+
+## Assistant Context
+
+The repository also includes `.mintlify/Assistant.md` for assistant-oriented guidance.
