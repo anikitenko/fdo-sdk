@@ -20,6 +20,7 @@ export default defineConfig({
       }
     },
     alias: {
+      "@anikitenko/fdo-sdk": path.resolve(__dirname, "src/index.ts"),
       electron: path.resolve(__dirname, "tests/mocks/electron.ts"),
     },
   },

@@ -19,7 +19,10 @@ describe("DOMButton", () => {
 
         const button = domButton.createButton(label, mockOnClick, options, "test-button");
 
-        expect(button.toString()).toBe(`<button id="test-button" class="pure-button custom-class go11" onClick={() => {}}>Click Me</button>`);
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup = `<button id="test-button" class="pure-button custom-class go11" onClick={() => {}}>Click Me</button>`;
+        expect(button.toString()).toBe(expectedMarkup);
     });
 
     it("should apply default class when disableDefaultClass is not set", () => {
@@ -44,6 +47,9 @@ describe("DOMButton", () => {
         expect(button.toString()).toContain('class="custom-action');
         expect(button.toString()).toContain('type="button"');
         expect(button.toString()).toContain(">Run</button>");
-        expect(button.toString()).not.toContain("onClick=");
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup = "onClick=";
+        expect(button.toString()).not.toContain(expectedMarkup);
     });
 })

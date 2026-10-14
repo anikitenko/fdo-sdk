@@ -1,6 +1,6 @@
 import {
   createPrivilegedActionBackendRequest,
-  extractPrivilegedActionRequest,
+
   FDOInterface,
   FDO_SDK,
   getInlinePrivilegedActionErrorFormatterSource,
@@ -88,7 +88,8 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
         const previewPlanButton = document.getElementById("terraform-preview-plan");
         const previewApplyWorkflowButton = document.getElementById("terraform-preview-apply-workflow");
         const output = document.getElementById("terraform-workflow-result");
-        const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
+        /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
+                const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
         if (!previewPlanButton || !previewApplyWorkflowButton || !output) {
           return;
         }
@@ -107,7 +108,7 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
               content: {},
             });
             const fallbackCorrelationId = envelope?.result?.correlationId ?? envelope?.correlationId ?? "unknown";
-            const requestPayload = extractPrivilegedActionRequest(envelope);
+            const requestPayload = envelope?.result?.request ?? envelope?.request ?? envelope;
             const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
             if (response && response.ok) {
               setOutput(response);

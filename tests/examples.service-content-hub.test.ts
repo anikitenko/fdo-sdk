@@ -1,10 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { PluginRegistry } from "../src/PluginRegistry";
 
-vi.mock("@anikitenko/fdo-sdk", async () => {
-    return await import("../src/index");
-});
-
 let ServiceContentHubPlugin: typeof import("../examples/13-service-content-hub-plugin").default;
 
 beforeAll(async () => {

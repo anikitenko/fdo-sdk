@@ -8,7 +8,7 @@ import {
   createProcessCapabilityBundle,
   createPrivilegedActionBackendRequest,
   createScopedProcessExecActionRequest,
-  extractPrivilegedActionRequest,
+
 } from "@anikitenko/fdo-sdk";
 
 /**
@@ -80,7 +80,8 @@ export default class OperatorCustomToolFixturePlugin extends FDO_SDK implements 
       (() => {
         const previewStatusButton = document.getElementById("custom-tool-preview-status");
         const output = document.getElementById("custom-tool-result");
-        const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
+        /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
+                const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
         if (!previewStatusButton || !output) {
           return;
@@ -100,7 +101,7 @@ export default class OperatorCustomToolFixturePlugin extends FDO_SDK implements 
               content: {},
             });
             const fallbackCorrelationId = envelope?.result?.correlationId ?? envelope?.correlationId ?? "unknown";
-            const requestPayload = extractPrivilegedActionRequest(envelope);
+            const requestPayload = envelope?.result?.request ?? envelope?.request ?? envelope;
             const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
             if (response && response.ok) {
               setOutput(response);

@@ -34,7 +34,11 @@ module.exports = {
             {
                 test: /\.ts$/,
                 exclude: /node_modules/,
-                use: 'ts-loader'
+                use: {
+                    loader: 'ts-loader',
+                    // Full type checking is performed by build:types using the public tsc CLI.
+                    options: { compiler: path.resolve(__dirname, 'scripts/typescript-compiler.cjs'), transpileOnly: true },
+                }
             }
         ]
     },

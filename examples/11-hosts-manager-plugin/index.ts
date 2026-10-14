@@ -2,7 +2,7 @@ import {
     DOM,
     createHostsWriteActionRequest,
     createPrivilegedActionBackendRequest,
-    extractPrivilegedActionRequest,
+
     FDOInterface,
     FDO_SDK,
     getInlinePrivilegedActionErrorFormatterSource,
@@ -73,8 +73,8 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
     init(): void {
         this.info("Hosts Manager Plugin Initialized");
 
-        PluginRegistry.registerHandler(HostsManagerPlugin.SELECT_HANDLER, (data: { id?: string }) => {
-            const id = typeof data?.id === "string" ? data.id : "";
+        PluginRegistry.registerHandler(HostsManagerPlugin.SELECT_HANDLER, (data: unknown) => {
+            const id = data && typeof data === "object" && "id" in data && typeof data.id === "string" ? data.id : "";
             if (!id) {
                 return {
                     ok: false,
@@ -89,8 +89,8 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
             };
         });
 
-        PluginRegistry.registerHandler(HostsManagerPlugin.TOGGLE_HANDLER, (data: { id?: string }) => {
-            const id = typeof data?.id === "string" ? data.id : "";
+        PluginRegistry.registerHandler(HostsManagerPlugin.TOGGLE_HANDLER, (data: unknown) => {
+            const id = data && typeof data === "object" && "id" in data && typeof data.id === "string" ? data.id : "";
             if (!id) {
                 return {
                     ok: false,
@@ -191,6 +191,7 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
                 const applyBtn = document.getElementById("hosts-apply-btn");
                 const refreshBtn = document.getElementById("hosts-refresh-btn");
                 const statusDisplay = document.getElementById("status-display");
+                /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
                 const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
                 if (!envList || !preview || !previewTitle || !applyBtn || !refreshBtn || !statusDisplay) {
@@ -412,7 +413,7 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
                             envelope?.result?.correlationId
                             ?? envelope?.correlationId
                             ?? "";
-                        const requestPayload = extractPrivilegedActionRequest(envelope);
+                        const requestPayload = envelope?.result?.request ?? envelope?.request ?? envelope;
                         if (!requestPayload || typeof requestPayload !== "object") {
                             showStatus("Apply failed: malformed privileged request payload.", true);
                             return;

@@ -1,4 +1,3 @@
-import {FDO_SDK} from "./index";
 import { PluginCapability, RenderOnLoadOutput } from "./types";
 
 /**

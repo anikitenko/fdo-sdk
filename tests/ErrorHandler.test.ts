@@ -1,6 +1,5 @@
-import { handleError } from '../src/decorators/ErrorHandler';
+import { handleError } from '../src';
 import { NotificationManager } from '../src/utils/NotificationManager';
-import { FDO_SDK } from '../src';
 
 describe('ErrorHandler Decorator', () => {
     let mockError: vi.Mock;

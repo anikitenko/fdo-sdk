@@ -133,7 +133,7 @@ export function evaluateSdkHandshakeCompatibility(
 
     const featureFlagSeverity = options.featureFlagSeverity ?? "warning";
     for (const featureFlag of requiredFlags(options)) {
-        if (handshake.featureFlags[featureFlag] !== true) {
+        if ((handshake.featureFlags as unknown as Record<string, unknown>)[featureFlag] !== true) {
             issues.push({
                 code: "HANDSHAKE_FEATURE_FLAG_MISSING",
                 severity: featureFlagSeverity,
@@ -146,7 +146,7 @@ export function evaluateSdkHandshakeCompatibility(
     }
 
     const status = toStatus(issues);
-    const report: SdkHandshakeCompatibilityReport = {
+    return {
         ok: status !== "incompatible",
         status,
         handshake,
@@ -158,7 +158,6 @@ export function evaluateSdkHandshakeCompatibility(
         summary: createSummary(issues),
     };
 
-    return report;
 }
 
 export function isSdkHandshakeCompatible(

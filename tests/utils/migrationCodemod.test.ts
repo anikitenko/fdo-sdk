@@ -1,4 +1,4 @@
-import { applySdkMigrationCodemod } from "../../src/utils/migrationCodemod";
+import { applySdkMigrationCodemod } from "../../src";
 
 describe("sdk migration codemod", () => {
     test("replaces legacy privileged envelope fallback chain and injects helper import", () => {

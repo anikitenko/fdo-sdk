@@ -1,0 +1,266 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.sdk.fdo.alexvwan.me/schemas/ui-components/1.0.0",
+  "type": "object",
+  "required": [
+    "contractVersion",
+    "sdkVersion",
+    "components"
+  ],
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$"
+    },
+    "sdkVersion": {
+      "type": "string"
+    },
+    "components": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "identity",
+          "name",
+          "create",
+          "mount",
+          "editableProperties",
+          "slots",
+          "states",
+          "events",
+          "closeReasons",
+          "preview",
+          "signatures",
+          "identityAttribute",
+          "versionAttribute",
+          "stateAttribute",
+          "slotAttribute",
+          "readonlySlots",
+          "returnKinds",
+          "eventContracts",
+          "automaticCloseReasons"
+        ],
+        "properties": {
+          "identity": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "create": {
+            "type": "string"
+          },
+          "mount": {
+            "type": "string"
+          },
+          "markupType": {
+            "type": "string"
+          },
+          "mountType": {
+            "type": "string"
+          },
+          "controllerType": {
+            "type": "string"
+          },
+          "primitive": {
+            "enum": [
+              "dialog",
+              "popover"
+            ]
+          },
+          "role": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "closeReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "identityAttribute": {
+            "const": "data-fdo-component"
+          },
+          "versionAttribute": {
+            "const": "data-fdo-component-version"
+          },
+          "stateAttribute": {
+            "const": "data-fdo-state"
+          },
+          "slotAttribute": {
+            "const": "data-fdo-slot"
+          },
+          "editableProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "type",
+                "kind",
+                "optional"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "identity",
+                    "text",
+                    "style-map",
+                    "class-names"
+                  ]
+                },
+                "optional": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "property",
+                "kind"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "property": {
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "trusted-html"
+                }
+              }
+            }
+          },
+          "signatures": {
+            "type": "object",
+            "required": [
+              "create",
+              "mount"
+            ],
+            "properties": {
+              "create": {
+                "type": "string"
+              },
+              "mount": {
+                "type": "string"
+              }
+            }
+          },
+          "preview": {
+            "type": "object",
+            "required": [
+              "markupOnly",
+              "handlers",
+              "backendExecution",
+              "requirements"
+            ],
+            "properties": {
+              "markupOnly": {
+                "const": true
+              },
+              "handlers": {
+                "const": false
+              },
+              "backendExecution": {
+                "const": false
+              },
+              "requirements": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "readonlySlots": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "returnKinds": {
+            "type": "object",
+            "required": [
+              "create",
+              "mount"
+            ],
+            "properties": {
+              "create": {
+                "const": "html-string"
+              },
+              "mount": {
+                "const": "frontend-controller"
+              }
+            }
+          },
+          "eventContracts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "type",
+                "optional",
+                "phase",
+                "staticPreviewSafe"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "optional": {
+                  "type": "boolean"
+                },
+                "phase": {
+                  "const": "frontend"
+                },
+                "staticPreviewSafe": {
+                  "const": false
+                }
+              }
+            }
+          },
+          "automaticCloseReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

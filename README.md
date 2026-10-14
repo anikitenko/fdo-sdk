@@ -312,11 +312,13 @@ Plugin author logging API:
 Example:
 
 ```typescript
-init(): void {
-  this.info("Plugin init started", { plugin: this.metadata.name });
-  const correlationId = this.event("plugin.init.custom", { phase: "start" });
-  this.debug("Custom init event emitted", { correlationId });
-  this.info(`Log directory: ${this.getLogDirectory()}`);
+class ExamplePlugin extends FDO_SDK {
+  init(): void {
+    this.info("Plugin init started", { plugin: this.metadata.name });
+    const correlationId = this.event("plugin.init.custom", { phase: "start" });
+    this.debug("Custom init event emitted", { correlationId });
+    this.info(`Log directory: ${this.getLogDirectory()}`);
+  }
 }
 ```
 
@@ -335,13 +337,13 @@ Plugin identity is still attached in structured log metadata (`pluginId`, `compo
 Example host request payload:
 
 ```typescript
-{
+const request = {
   message: "UI_MESSAGE",
   content: {
     handler: "__sdk.getDiagnostics",
     content: { notificationsLimit: 20 }
   }
-}
+};
 ```
 
 ## Development
@@ -422,3 +424,11 @@ git push origin main --follow-tags
 ## License
 
 ISC
+
+### Reliable authoring and Live UI
+
+See [authoring contract and style ownership](docs/AUTHORING_AND_LIVE_UI.md), [working overlay patterns](docs/OVERLAY_PATTERNS.md), and [compatibility/migration notes](docs/AUTHORING_COMPATIBILITY.md). Run `npm run verify:pack` for the installed-tarball and real-Chrome release gate.
+
+### SDK UI components
+
+[Dialog, Confirmation Dialog and Popover](docs/UI_COMPONENTS.md) offer separate HTML composition and scoped frontend controllers. See the [generated API reference](docs/UI_COMPONENT_API.generated.md) and [component example](examples/14-sdk-ui-components.ts).

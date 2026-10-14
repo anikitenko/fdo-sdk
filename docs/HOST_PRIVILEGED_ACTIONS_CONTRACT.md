@@ -36,7 +36,7 @@ Validated by SDK helper:
 ## Request Shape
 
 ```ts
-{
+type ClipboardReadRequest = {
   action: "system.clipboard.read",
   payload: {
     reason?: string
@@ -45,7 +45,7 @@ Validated by SDK helper:
 ```
 
 ```ts
-{
+type ClipboardWriteRequest = {
   action: "system.clipboard.write",
   payload: {
     text: string,
@@ -55,7 +55,7 @@ Validated by SDK helper:
 ```
 
 ```ts
-{
+type HostsWriteRequest = {
   action: "system.hosts.write",
   payload: {
     records: Array<{
@@ -150,7 +150,7 @@ If you need low-level control, call `extractPrivilegedActionRequest(...)` + `win
 
 The helper safely unwraps all currently supported shapes:
 
-```ts
+```text
 input.result.request
 input.request
 direct request
@@ -177,7 +177,7 @@ Deprecated behavior:
 - a future major release may remove compatibility for forwarding raw envelope objects
 
 ```ts
-{
+type FilesystemMutateRequest = {
   action: "system.fs.mutate",
   payload: {
     scope: string, // host-defined scope id, e.g. "etc-hosts"
@@ -195,7 +195,7 @@ Deprecated behavior:
 ```
 
 ```ts
-{
+type ProcessExecRequest = {
   action: "system.process.exec",
   payload: {
     scope: string,      // host-defined scope id, e.g. "docker-cli"
@@ -213,7 +213,7 @@ Deprecated behavior:
 ```
 
 ```ts
-{
+type WorkflowRunRequest = {
   action: "system.workflow.run",
   payload: {
     scope: string,      // host-defined scope id, e.g. "terraform"

@@ -102,14 +102,14 @@
 
 ## Technical Decisions Summary
 
-| Decision | Choice | Impact |
-|----------|--------|--------|
-| File Organization | Flat structure with numbered prefixes | Clear progression, easy navigation |
-| Documentation Ratio | 20-30% inline comments | Meets educational goals without overwhelming |
-| Type Safety | Explicit types with strict mode | Better learning experience, demonstrates best practices |
-| Storage Demo | Both StoreDefault and StoreJson | Complete coverage of storage options |
-| DOM Progression | HTML strings → DOM helpers | Gradual learning curve |
-| Version Compatibility | Comment header with version range | Low maintenance, clear compatibility |
+| Decision              | Choice                                | Impact                                                  |
+| --------------------- | ------------------------------------- | ------------------------------------------------------- |
+| File Organization     | Flat structure with numbered prefixes | Clear progression, easy navigation                      |
+| Documentation Ratio   | 20-30% inline comments                | Meets educational goals without overwhelming            |
+| Type Safety           | Explicit types with strict mode       | Better learning experience, demonstrates best practices |
+| Storage Demo          | Both StoreDefault and StoreJson       | Complete coverage of storage options                    |
+| DOM Progression       | HTML strings → DOM helpers            | Gradual learning curve                                  |
+| Version Compatibility | Comment header with version range     | Low maintenance, clear compatibility                    |
 
 ## Unresolved Questions
 

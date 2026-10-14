@@ -119,13 +119,14 @@ For `renderOnLoad()` string runtimes, use:
 
 ```ts
 const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
-// inside the returned onLoad string:
-const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
+const onLoad = `
+  const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
+`;
 ```
 
 The helper safely unwraps all currently supported shapes:
 
-```ts
+```text
 input.result.request
 input.request
 direct request
@@ -319,3 +320,9 @@ If you have questions about contributing, feel free to:
 - Review the [SDK documentation](https://docs.sdk.fdo.alexvwan.me)
 
 Thank you for helping improve the FDO SDK examples!
+
+## Overlay composition and frontend lifecycle
+
+[13-overlay-patterns.ts](13-overlay-patterns.ts) contains native dialog, custom dialog/alertdialog and native popover examples. See [overlay behavior and limitations](../docs/OVERLAY_PATTERNS.md).
+
+[14-sdk-ui-components.ts](14-sdk-ui-components.ts) demonstrates SDK-provided composition, frontend mounting, async confirmation and cleanup through the browser-safe `/ui` export.

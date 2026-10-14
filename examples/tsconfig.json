@@ -10,11 +10,18 @@
     "paths": {
       "@anikitenko/fdo-sdk": [
         "../src/index.ts"
+      ],
+      "@anikitenko/fdo-sdk/ui": [
+        "../src/ui/index.ts"
       ]
-    }
+    },
+    "jsx": "preserve",
+    "lib": [
+      "ES2020",
+      "DOM"
+    ]
   },
   "include": [
-    "*.ts",
-    "fixtures/**/*.ts"
+    "**/*.ts"
   ]
 }

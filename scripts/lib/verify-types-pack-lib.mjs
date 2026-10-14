@@ -10,7 +10,7 @@ export function fail(message) {
 }
 
 export function parsePackJson(output) {
-  const jsonMatch = output.match(/(\[\s*\{[\s\S]*\}\s*\])\s*$/);
+  const jsonMatch = output.match(/(\[\s*\{[\s\S]*}\s*])\s*$/);
   if (!jsonMatch) {
     fail("unable to parse `npm pack --dry-run --json` output");
   }
@@ -113,6 +113,10 @@ export function verifyPackFileList(files) {
 
   if (!files.includes("dist/@types/index.d.ts")) {
     fail("tarball is missing dist/@types/index.d.ts");
+  }
+
+  for (const file of ["dist/fdo-sdk.mjs", "dist/dom-metadata.json", "dist/dom-authoring-contract.json", "dist/dom-authoring-contract.schema.json", "dist/ui.cjs", "dist/ui.mjs", "dist/@types/ui/index.d.ts", "dist/ui-components.json", "dist/ui-components.schema.json", "docs/UI_COMPONENT_API.generated.md"]) {
+    if (!files.includes(file)) fail(`tarball is missing ${file}`);
   }
 
   const dtsFiles = files.filter((file) => file.endsWith(".d.ts"));

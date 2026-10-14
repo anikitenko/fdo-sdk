@@ -22,6 +22,10 @@ import {
     StoreType,
 } from "@anikitenko/fdo-sdk";
 
+function failBrokerResponse(message: string): never {
+    throw new Error(message);
+}
+
 type ServiceContext = {
     providerId: string;
     accountId: string;
@@ -518,6 +522,7 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
     renderOnLoad() {
         return defineRenderOnLoadActions({
             setup: () => {
+                function failOperation(message: string): never { throw new Error(message); }
                 const root = document.getElementById("service-hub-root");
                 if (!root) {
                     return;
@@ -882,7 +887,7 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
                             try {
                                 const parsed = new URL(browserUrl);
                                 if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-                                    throw new Error("Authorization URL must use http or https.");
+                                    failOperation("Authorization URL must use http or https.");
                                 }
                             } catch (error) {
                                 throw new Error(`Auth start returned invalid authorization URL: ${error instanceof Error ? error.message : String(error)}`);
@@ -2089,7 +2094,7 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
                     };
                 }
                 if (!sessionId) {
-                    throw new Error("Auth broker returned neither session id nor authorization url.");
+                    failBrokerResponse("Auth broker returned neither session id nor authorization url.");
                 }
                 const nextContext = {
                     ...context,
@@ -2363,7 +2368,7 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
                     ? String((result as { webUrl: string }).webUrl).trim()
                     : "";
                 if (!webUrl) {
-                    throw new Error("Content broker returned empty share link.");
+                    failBrokerResponse("Content broker returned empty share link.");
                 }
                 this.appendRecentActivity("create-share-link", itemId);
                 return { ok: true, webUrl, correlationId };

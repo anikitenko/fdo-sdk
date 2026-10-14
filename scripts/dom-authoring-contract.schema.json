@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.sdk.fdo.alexvwan.me/schemas/dom-authoring-contract/1.0.0",
+  "title": "FDO DOM authoring contract",
+  "type": "object",
+  "required": [
+    "contractVersion",
+    "sdkVersion",
+    "valueKinds",
+    "styleOwnership",
+    "lifecycle",
+    "preview",
+    "classes"
+  ],
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+\\.[0-9]+$"
+    },
+    "sdkVersion": {
+      "type": "string"
+    },
+    "valueKinds": {
+      "type": "object",
+      "required": [
+        "html-string",
+        "class-name-string",
+        "animation-name-string",
+        "render-on-load-module",
+        "dom-element"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {
+        "html-string": {
+          "type": "string"
+        },
+        "class-name-string": {
+          "type": "string"
+        },
+        "animation-name-string": {
+          "type": "string"
+        },
+        "render-on-load-module": {
+          "type": "string"
+        },
+        "dom-element": {
+          "type": "string"
+        }
+      }
+    },
+    "styleOwnership": {
+      "type": "object",
+      "required": [
+        "default",
+        "isolated",
+        "lifetime"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {
+        "default": {
+          "type": "string"
+        },
+        "isolated": {
+          "type": "string"
+        },
+        "lifetime": {
+          "type": "string"
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "required": [
+        "key",
+        "teardown",
+        "diagnostics"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "teardown": {
+          "type": "string"
+        },
+        "diagnostics": {
+          "type": "string"
+        }
+      }
+    },
+    "preview": {
+      "type": "object",
+      "required": [
+        "backendExecution",
+        "frontendExecution",
+        "inlineHandlers",
+        "policy"
+      ],
+      "properties": {
+        "backendExecution": {
+          "const": false
+        },
+        "frontendExecution": {
+          "const": false
+        },
+        "inlineHandlers": {
+          "const": false
+        },
+        "policy": {
+          "type": "string"
+        }
+      }
+    },
+    "classes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "extends",
+          "constructors",
+          "methods"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "extends": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "constructors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "parameters"
+              ],
+              "properties": {
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/parameter"
+                  }
+                }
+              }
+            }
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/method"
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "parameter": {
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "optional",
+        "rest"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "rest": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "method": {
+      "type": "object",
+      "required": [
+        "name",
+        "parameters",
+        "returnType",
+        "returnKind",
+        "compositionArguments",
+        "sideEffects",
+        "staticPreviewSafe",
+        "constraints",
+        "example"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          }
+        },
+        "returnType": {
+          "type": "string"
+        },
+        "returnKind": {
+          "enum": [
+            "html-string",
+            "class-name-string",
+            "animation-name-string",
+            "style-collector",
+            "properties",
+            "attribute-string"
+          ]
+        },
+        "compositionArguments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "kind",
+              "rest"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "trusted-html-string",
+                  "plain-text",
+                  "attribute-value",
+                  "class-name-string",
+                  "style-map",
+                  "keyframe-css-string",
+                  "style-collector",
+                  "frontend-handler"
+                ]
+              },
+              "rest": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "sideEffects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "staticPreviewSafe": {
+          "type": "boolean"
+        },
+        "constraints": {
+          "type": "string"
+        },
+        "example": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

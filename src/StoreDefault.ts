@@ -1,4 +1,4 @@
-import { StoreType, StoreWithLifecycle } from "./types";
+import { StoreWithLifecycle } from "./types";
 
 export type MemoryStore = StoreWithLifecycle & { memory: Record<string, any> };
 

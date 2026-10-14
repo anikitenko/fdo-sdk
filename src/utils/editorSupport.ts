@@ -99,7 +99,7 @@ export function getEditorSupportBundle(): EditorSupportBundle {
 export function getEditorSupportMonacoPolicy(
     options: EditorSupportMonacoPolicyOptions
 ): EditorSupportMonacoPolicy {
-    const hasSdkIndex = options.hasSdkIndex === true;
+    const hasSdkIndex = typeof options.hasSdkIndex === "boolean" && options.hasSdkIndex;
     const packageManifest = getEditorSupportPackageManifest();
     const packageJson = getEditorSupportPackageJson(packageManifest);
     const namespaceFallbackTypeDefinitions =

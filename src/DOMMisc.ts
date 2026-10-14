@@ -1,4 +1,4 @@
-import {DOM} from "./DOM";
+import {DOM, DOMOptions} from "./DOM";
 
 export class DOMMisc extends DOM {
     /**
@@ -18,14 +18,14 @@ export class DOMMisc extends DOM {
      * @example <caption>Create a new divider element.</caption>
      * const divider = new DOMMisc().divider();
      */
-    public divider(options?: Partial<typeof DOM.DEFAULT_OPTIONS>, id?: string): string {
+    public divider(options?: Partial<DOMOptions>, id?: string): string {
         const style = {
             ...DOM.DEFAULT_OPTIONS.style,
             "border-top": "1px solid #cccccd", margin: "10px",
             ...(options?.style || {})
         };
 
-        const mergedOptions: Partial<typeof DOM.DEFAULT_OPTIONS> = {
+        const mergedOptions: Partial<DOMOptions> = {
             ...DOM.DEFAULT_OPTIONS,
             ...options || {},
             style

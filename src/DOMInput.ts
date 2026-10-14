@@ -1,8 +1,8 @@
-import {DOM} from "./DOM";
+import {DOM, DOMOptions} from "./DOM";
 
 export class DOMInput extends DOM {
     private readonly id: string | undefined
-    private readonly options: Partial<typeof DOM.DEFAULT_OPTIONS>
+    private readonly options: Partial<DOMOptions>
     private readonly props: Record<string, any> | undefined
 
     /**
@@ -12,7 +12,7 @@ export class DOMInput extends DOM {
      * @param props - The properties to apply to the input.
      * @constructor - Creates a new DOMInput instance with the given style options and properties.
      */
-    constructor(id :string, styleOptions: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
+    constructor(id: string = "", styleOptions: Partial<DOMOptions> = DOM.DEFAULT_OPTIONS,
                 props?: Record<string, any>) {
         super(true)
         this.id = id
@@ -36,15 +36,16 @@ export class DOMInput extends DOM {
 
     /**
      * Creates a new textarea element.
+     * @param content - Plain text content, escaped before serialization.
      * @returns {string} - The rendered textarea element.
      * @uiName Create textarea
      * @example <caption>Create a new textarea element.</caption>
      * const textarea = new DOMInput().createTextarea("text");
      */
-    public createTextarea(): string {
+    public createTextarea(content: string = ""): string {
         const props = this.combineProperties("", this.options, this.id)
 
-        return this.createElement("textarea", {...props, ...this.props});
+        return this.createElement("textarea", {...props, ...this.props}, this.escapeJSXText(content));
     }
 
     /**
@@ -116,7 +117,7 @@ export class DOMInput extends DOM {
         const optgroupProps = {...props, label, ...otherProps};
         const attributes = this.createAttributes(optgroupProps);
         const content = this.flattenChildren(children).join('');
-        const openTag = attributes ? `<optgroup ${attributes}>` : `<optgroup>`;
+        const openTag = `<optgroup ${attributes}>`;
 
         return `${openTag}${content}</optgroup>`;
     }

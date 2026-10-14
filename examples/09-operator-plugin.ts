@@ -2,7 +2,7 @@ import {
     createOperatorToolActionRequest,
     createOperatorToolCapabilityPreset,
     createPrivilegedActionBackendRequest,
-    extractPrivilegedActionRequest,
+
     FDOInterface,
     FDO_SDK,
     getInlinePrivilegedActionErrorFormatterSource,
@@ -71,6 +71,7 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
             (() => {
                 const button = document.getElementById("run-docker-status");
                 const output = document.getElementById("operator-result-box");
+                /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
                 const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
                 if (!button || !output) {
@@ -92,7 +93,7 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
                             content: {},
                         });
 
-                        const requestPayload = extractPrivilegedActionRequest(envelope);
+                        const requestPayload = envelope?.result?.request ?? envelope?.request ?? envelope;
                         const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
 
                         if (response && response.ok) {

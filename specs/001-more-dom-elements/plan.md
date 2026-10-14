@@ -388,23 +388,23 @@ examples/
 
 ### Technical Risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Breaking changes to existing API | High | Comprehensive backward compatibility testing, no modifications to existing method signatures |
-| Bundle size increase too large | Medium | Monitor bundle size during build, optimize if needed, consider code splitting |
-| Performance regression | Medium | Benchmark DOM generation performance, optimize if needed |
-| TypeScript compilation errors | Medium | Use strict mode from start, fix type errors incrementally |
-| Test coverage below 80% | Medium | Write tests alongside implementation, use coverage reports to identify gaps |
-| goober CSS integration issues | Low | Follow existing patterns closely, test CSS generation thoroughly |
+| Risk                             | Impact   | Mitigation                                                                                   |
+| -------------------------------- | -------- | -------------------------------------------------------------------------------------------- |
+| Breaking changes to existing API | High     | Comprehensive backward compatibility testing, no modifications to existing method signatures |
+| Bundle size increase too large   | Medium   | Monitor bundle size during build, optimize if needed, consider code splitting                |
+| Performance regression           | Medium   | Benchmark DOM generation performance, optimize if needed                                     |
+| TypeScript compilation errors    | Medium   | Use strict mode from start, fix type errors incrementally                                    |
+| Test coverage below 80%          | Medium   | Write tests alongside implementation, use coverage reports to identify gaps                  |
+| goober CSS integration issues    | Low      | Follow existing patterns closely, test CSS generation thoroughly                             |
 
 ### Process Risks
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| CI pipeline failures | Medium | Test locally before pushing, fix CI issues promptly |
-| Merge conflicts | Low | Rebase frequently, coordinate with other contributors |
-| Documentation gaps | Low | Write JSDoc comments during implementation, review before PR |
-| Example plugin doesn't work | Medium | Test example plugin thoroughly, verify in real FDO application |
+| Risk                        | Impact   | Mitigation                                                     |
+| --------------------------- | -------- | -------------------------------------------------------------- |
+| CI pipeline failures        | Medium   | Test locally before pushing, fix CI issues promptly            |
+| Merge conflicts             | Low      | Rebase frequently, coordinate with other contributors          |
+| Documentation gaps          | Low      | Write JSDoc comments during implementation, review before PR   |
+| Example plugin doesn't work | Medium   | Test example plugin thoroughly, verify in real FDO application |
 
 ## Success Metrics
 

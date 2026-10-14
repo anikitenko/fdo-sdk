@@ -1,4 +1,4 @@
-import {DOM} from "./DOM";
+import {DOM, DOMOptions} from "./DOM";
 
 export class DOMButton extends DOM {
     /**
@@ -24,7 +24,7 @@ export class DOMButton extends DOM {
      */
     public createButton(label: string,
                         onClick: Function,
-                        options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
+                        options: Partial<DOMOptions> = DOM.DEFAULT_OPTIONS,
                         id? :string,
                         otherProps?: Record<string, any>
     ): string {
@@ -46,7 +46,7 @@ export class DOMButton extends DOM {
      */
     public createStaticButton(
         label: string,
-        options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions> = DOM.DEFAULT_OPTIONS,
         id?: string,
         otherProps?: Record<string, any>
     ): string {

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { StoreType, StoreWithLifecycle } from "./types";
+import { StoreWithLifecycle } from "./types";
 import { Logger } from "./Logger";
 import { atomicWriteFile } from "./utils/atomic";
 

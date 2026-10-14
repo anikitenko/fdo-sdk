@@ -2,7 +2,7 @@ import {
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createPrivilegedActionBackendRequest,
-    extractPrivilegedActionRequest,
+
     FDOInterface,
     FDO_SDK,
     getInlinePrivilegedActionErrorFormatterSource,
@@ -96,6 +96,7 @@ export default class SystemFilePlugin extends FDO_SDK implements FDOInterface {
             (() => {
                 const button = document.getElementById("run-system-file-action");
                 const resultBox = document.getElementById("system-file-result");
+                /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
                 const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
                 if (!button || !resultBox) {
@@ -117,7 +118,7 @@ export default class SystemFilePlugin extends FDO_SDK implements FDOInterface {
                             content: {},
                         });
 
-                        const requestPayload = extractPrivilegedActionRequest(envelopeResponse);
+                        const requestPayload = envelopeResponse?.result?.request ?? envelopeResponse?.request ?? envelopeResponse;
                         const envelopeCorrelationId = envelopeResponse?.result?.correlationId ?? envelopeResponse?.correlationId ?? "unknown";
 
                         if (!requestPayload || typeof requestPayload !== "object") {

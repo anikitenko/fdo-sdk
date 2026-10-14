@@ -6,7 +6,7 @@ import {
     SDK_EDITOR_INDEX_TYPES_VIRTUAL_PATH,
     SDK_EDITOR_MODULE_ID,
     SDK_EDITOR_PACKAGE_JSON_VIRTUAL_PATH,
-} from "../../src/utils/editorSupport";
+} from "../../src";
 
 describe("editor support helpers", () => {
     test("returns default editor package manifest", () => {

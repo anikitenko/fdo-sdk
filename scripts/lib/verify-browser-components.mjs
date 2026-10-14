@@ -1,0 +1,55 @@
+export function componentBrowserChecks(moduleSource, markup) {
+    return async ({ evaluate, check, accessible, click, key, settle }) => {
+        const evaluateAsync = expression => evaluate(`(async () => { ${expression} })()`);
+        const source = 'data:text/javascript;base64,' + Buffer.from(moduleSource).toString('base64');
+        await evaluateAsync(`window.ui = await import(${JSON.stringify(source)}); document.body.innerHTML = ${JSON.stringify(markup)}; window.reasons = []; window.errors = []; window.onDiagnostic = d => window.errors.push(d);`);
+        await check(`(() => { const dom = new ui.DOM().collectStylesFrom(); const html = ui.createDialog(dom, {id:'preview-only', title:'Static preview', options:{style:{'--test-color':'red'}}}); return typeof html === 'string' && dom.renderHTML(html).includes('--test-color:red') && window.window === window && !document.getElementById('preview-only') && !document.head.querySelector('#_goober'); })()`, 'browser composition stays string-only and leaves window/document styles untouched');
+        await evaluate(`window.a = ui.mountDialog(document.getElementById('a'), { onClose: r => reasons.push(['a', r]), onDiagnostic }); window.b = ui.mountDialog(document.getElementById('b'), { onClose: r => reasons.push(['b', r]), onDiagnostic }); document.getElementById('open-a').onclick = () => a.open(document.getElementById('open-a')); document.getElementById('open-b').onclick = () => b.open(document.getElementById('open-b'));`);
+        await click('open-a');
+        await check(`a.getState().open && document.getElementById('a').open && errors.length === 0`, 'native SDK dialog opens without errors');
+        await accessible('dialog', 'Caller name');
+        await check(`document.getElementById('a').getAttribute('aria-labelledby') === 'external-label' && document.getElementById('a').getAttribute('aria-describedby') === 'external-description'`, 'caller ARIA relationships preserved');
+        await check(`getComputedStyle(document.getElementById('a')).backgroundColor === 'rgb(255, 192, 203)'`, 'documented CSS custom properties');
+        await click('open-b'); // The background is inert; explicitly open the second modal for stack testing.
+        await evaluate(`b.open(document.getElementById('open-b'))`);
+        await key('Escape');
+        await check(`a.getState().open && !b.getState().open && reasons.filter(x => x[0] === 'b' && x[1] === 'escape').length === 1`, 'nested modal Escape only closes its owner');
+        await evaluate(`document.querySelector('#a button[data-fdo-action="cancel"]').id = 'cancel-a'`);
+        await click('cancel-a');
+        await check(`document.activeElement.id === 'open-a' && a.getState().closeReason === 'cancel'`, 'dialog Cancel reason and focus restoration');
+        await click('open-a');
+        await evaluate(`window.old = a; window.a = ui.mountDialog(document.getElementById('a'), {onClose: r => reasons.push(['a2',r]), onDiagnostic}); a.open(document.getElementById('open-a'))`);
+        await key('Escape');
+        await check(`old.getState().destroyed && reasons.filter(x => x[0] === 'a2' && x[1] === 'escape').length === 1`, 'remount replaces exact listeners once');
+        await evaluate(`window.calls = 0; window.finish = null; window.c = ui.mountConfirmationDialog(document.getElementById('c'), {onConfirm: ({signal}) => { window.calls++; window.signal = signal; return new Promise(resolve => {window.finish = resolve;}); }, onClose: r => reasons.push(['c',r]), onDiagnostic}); c.open(document.getElementById('open-a')); window.first = c.confirm(); window.second = c.confirm(); void 0;`);
+        await check(`first === second && calls === 1 && c.getState().pending && document.querySelector('#c [data-fdo-action="confirm"]').disabled && document.getElementById('c').getAttribute('aria-busy') === 'true'`, 'confirmation pending and duplicate protection');
+        await accessible('alertdialog', 'Confirm changes?');
+        await check(`!document.querySelector('#c [data-fdo-slot="status"]').hidden`, 'pending live feedback');
+        await key('Escape');
+        await check(`first.then(result => result === false && signal.aborted && c.getState().closeReason === 'escape')`, 'pending Escape aborts and settles');
+        await evaluate(`c.open(document.getElementById('open-a')); finish()`); await settle();
+        await check(`c.getState().open && !c.getState().pending`, 'stale async completion cannot close reopened confirmation');
+        await evaluateAsync(`c.destroy(); window.c = ui.mountConfirmationDialog(document.getElementById('c'), {onConfirm: async () => {throw Error('<failure>')}, onDiagnostic}); c.open(); window.result = await c.confirm()`);
+        await check(`result === false && c.getState().open && c.getState().error === '<failure>' && document.querySelector('#c [data-fdo-slot="error"]').textContent === '<failure>' && !document.querySelector('#c [data-fdo-slot="error"]').querySelector('failure')`, 'async error stays open and is rendered as text');
+        await evaluateAsync(`c.destroy(); window.c = ui.mountConfirmationDialog(document.getElementById('c'), {onConfirm: async () => {}, onClose: r => reasons.push(['success',r]), onDiagnostic}); c.open(); window.result = await c.confirm()`); await settle();
+        await check(`result && !c.getState().open && reasons.some(x => x[0] === 'success' && x[1] === 'confirm')`, 'successful work emits confirm reason');
+        await evaluate(`document.getElementById('p').style.color = 'rgb(1, 2, 3)'; window.p = ui.mountPopover(document.getElementById('p'), {anchor: document.getElementById('anchor'), onClose:r => reasons.push(['p',r]), onDiagnostic}); document.getElementById('anchor').onclick = () => p.open(document.getElementById('anchor'));`);
+        await click('anchor'); await accessible('region', 'Options');
+        await check(`p.getState().open && document.getElementById('anchor').getAttribute('aria-controls') === 'caller p' && document.getElementById('anchor').getAttribute('aria-expanded') === 'true'`, 'popover anchor attributes preserve caller controls');
+        await check(`(() => {const r=document.getElementById('p').getBoundingClientRect(); return r.left >= 7 && r.top >= 7 && r.right <= innerWidth-7 && r.bottom <= innerHeight-7;})()`, 'popover flips and shifts within viewport');
+        await evaluate(`window.intercept = event => { if (event.key === 'Escape') event.preventDefault(); }; document.getElementById('p').addEventListener('keydown', intercept)`);
+        await key('Escape');
+        await check(`p.getState().open && document.getElementById('p').matches(':popover-open')`, 'embedded controls can consume Escape before dismissal');
+        await evaluate(`document.getElementById('p').removeEventListener('keydown', intercept)`);
+        await key('Escape');
+        await check(`!p.getState().open && p.getState().closeReason === 'escape' && document.activeElement.id === 'anchor'`, 'popover Escape reason and focus');
+        await click('anchor'); await click('outside');
+        await check(`!p.getState().open && p.getState().closeReason === 'dismiss' && document.activeElement.id === 'outside'`, 'light dismissal does not steal outside focus');
+        await evaluate(`p.open(); document.getElementById('anchor').style.left='30px'; p.updatePosition()`);
+        await check(`document.getElementById('p').getBoundingClientRect().left < 200`, 'explicit position update follows anchor movement');
+        await evaluate(`p.destroy(); p.destroy(); a.destroy(); b.destroy(); c.destroy(); window.dispatchEvent(new Event('resize'))`);
+        await check(`document.getElementById('anchor').getAttribute('aria-controls') === 'caller' && document.getElementById('anchor').getAttribute('aria-expanded') === 'false' && document.getElementById('p').style.color === 'rgb(1, 2, 3)' && document.getElementById('p').style.left === '' && document.getElementById('p').style.maxHeight === ''`, 'idempotent cleanup restores caller attributes/styles');
+        await check(`errors.length === 0 && window.__backendCalls === 0`, 'no lifecycle diagnostics or implicit backend requests');
+        console.log('SDK components: browser lifecycle, async work, positioning and accessibility checks passed.');
+    };
+}

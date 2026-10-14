@@ -1,7 +1,7 @@
 import { dialog } from "electron";
 import sudo from "@expo/sudo-prompt";
 import { PluginRegistry, runWithSudo } from "../../src";
-import { pify } from "../../src/utils/pify";
+import { pify } from "../../src";
 import { resetCapabilityStateForTests } from "../../src/utils/capabilities";
 
 // Mock electron dialog
