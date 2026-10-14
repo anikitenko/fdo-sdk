@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.5.4...fdo-sdk-v1.6.0) (2026-10-14)
+
+
+### Features
+
+* **ui:** add scoped dialog, confirmation dialog and popover components ([#68](https://github.com/anikitenko/fdo-sdk/issues/68)) ([69012f1](https://github.com/anikitenko/fdo-sdk/commit/69012f1335183e482aad6a96802b051512bb481c))
+
 ## [1.5.4](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.5.3...fdo-sdk-v1.5.4) (2026-04-18)
 
 
