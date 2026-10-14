@@ -1,4 +1,4 @@
-import {DOM} from "./DOM";
+import {DOM, DOMOptions} from "./DOM";
 
 export class DOMNested extends DOM {
     /**
@@ -10,7 +10,7 @@ export class DOMNested extends DOM {
     }
 
     private buildProps(
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }>,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }>,
         id?: string
     ): Record<string, any> {
         return this.applyCustomAttributes(this.combineProperties("", options, id), options);
@@ -30,7 +30,7 @@ export class DOMNested extends DOM {
      */
     public createBlockDiv(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -51,7 +51,7 @@ export class DOMNested extends DOM {
      */
     public createList(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -70,7 +70,7 @@ export class DOMNested extends DOM {
      */
     public createListItem(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -89,7 +89,7 @@ export class DOMNested extends DOM {
      */
     public createLegend(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -108,7 +108,7 @@ export class DOMNested extends DOM {
      */
     public createFieldset(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -127,7 +127,7 @@ export class DOMNested extends DOM {
      */
     public createForm(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -148,7 +148,7 @@ export class DOMNested extends DOM {
      */
     public createOrderedList(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -169,7 +169,7 @@ export class DOMNested extends DOM {
      */
     public createDefinitionList(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -188,7 +188,7 @@ export class DOMNested extends DOM {
      */
     public createDefinitionTerm(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -207,7 +207,7 @@ export class DOMNested extends DOM {
      */
     public createDefinitionDescription(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { createJsonStore, StoreJson } from '../src/StoreJson';
 import { Logger } from '../src/Logger';
-import { atomicWriteFile } from '../src/utils/atomic';
+import { atomicWriteFile } from '../src';
 
 // Mock fs module
 vi.mock('fs', () => {

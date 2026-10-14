@@ -33,24 +33,28 @@ Why this is mandatory:
 Do this:
 
 ```ts
-render(): string {
-  const semantic = new DOMSemantic();
-  const text = new DOMText();
+class ExamplePlugin extends FDO_SDK {
+  render(): string {
+    const semantic = new DOMSemantic();
+    const text = new DOMText();
 
-  const content = semantic.createMain([
-    text.createHText(1, "Styled helper UI"),
-  ]);
+    const content = semantic.createMain([
+      text.createHText(1, "Styled helper UI"),
+    ]);
 
-  return semantic.renderHTML(content);
+    return semantic.renderHTML(content);
+  }
 }
 ```
 
 Do not do this for styled helper output:
 
 ```ts
-render(): string {
-  const semantic = new DOMSemantic();
-  return semantic.createMain([/* ... */]);
+class ExamplePlugin extends FDO_SDK {
+  render(): string {
+    const semantic = new DOMSemantic();
+    return semantic.createMain([/* ... */]);
+  }
 }
 ```
 
@@ -78,10 +82,12 @@ Use the built-in `FDO_SDK` logging methods from your plugin class:
 Example:
 
 ```typescript
-init(): void {
-    this.info("Plugin init", { plugin: this.metadata.name });
-    const correlationId = this.event("plugin.init.custom", { phase: "start" });
-    this.debug("init event emitted", { correlationId });
+class ExamplePlugin extends FDO_SDK {
+  init(): void {
+      this.info("Plugin init", { plugin: this.metadata.name });
+      const correlationId = this.event("plugin.init.custom", { phase: "start" });
+      this.debug("init event emitted", { correlationId });
+  }
 }
 ```
 
@@ -121,10 +127,12 @@ return `
 Preferred authoring form when possible:
 
 ```ts
-renderOnLoad() {
-  return defineRenderOnLoad(() => {
-    // browser-only UI logic
-  }, { language: "typescript" });
+class ExamplePlugin extends FDO_SDK {
+  renderOnLoad() {
+    return defineRenderOnLoad(() => {
+      // browser-only UI logic
+    }, { language: "typescript" });
+  }
 }
 ```
 
@@ -139,22 +147,24 @@ Production baseline for new plugins:
 - Keep `setup` focused on state/bootstrap only; put user interactions in declarative `bindings`.
 
 ```ts
-renderOnLoad() {
-  return defineRenderOnLoadActions({
-    handlers: {
-      runStatus: async () => {
-        await window.createBackendReq("UI_MESSAGE", {
-          handler: "gitOps.v1.runStatus",
-          content: {},
-        });
+class ExamplePlugin extends FDO_SDK {
+  renderOnLoad() {
+    return defineRenderOnLoadActions({
+      handlers: {
+        runStatus: async () => {
+          await window.createBackendReq("UI_MESSAGE", {
+            handler: "gitOps.v1.runStatus",
+            content: {},
+          });
+        },
       },
-    },
-    bindings: [
-      { selector: "#git-run-status", event: "click", handler: "runStatus", preventDefault: true, required: true },
-    ],
-    strict: true,
-    language: "typescript",
-  });
+      bindings: [
+        { selector: "#git-run-status", event: "click", handler: "runStatus", preventDefault: true, required: true },
+      ],
+      strict: true,
+      language: "typescript",
+    });
+  }
 }
 ```
 
@@ -192,18 +202,20 @@ Initialization order safety (critical):
 Recommended pattern:
 
 ```ts
-private sessionStore?: StoreType;
+class ExamplePlugin extends FDO_SDK {
+  private sessionStore?: StoreType;
 
-private getSessionStore(): StoreType {
-  if (!this.sessionStore) {
-    this.sessionStore = PluginRegistry.useStore("default");
+  private getSessionStore(): StoreType {
+    if (!this.sessionStore) {
+      this.sessionStore = PluginRegistry.useStore("default");
+    }
+    return this.sessionStore;
   }
-  return this.sessionStore;
-}
 
-init(): void {
-  const store = this.getSessionStore();
-  // use store safely here
+  init(): void {
+    const store = this.getSessionStore();
+    // use store safely here
+  }
 }
 ```
 
@@ -322,8 +334,10 @@ This is the model AI tooling should recommend when a plugin needs to behave like
 For production-grade UX, operator plugins should also expose:
 
 ```ts
-declareCapabilities() {
-  return createOperatorToolCapabilityPreset("kubectl");
+class ExamplePlugin extends FDO_SDK {
+  declareCapabilities() {
+    return createOperatorToolCapabilityPreset("kubectl");
+  }
 }
 ```
 

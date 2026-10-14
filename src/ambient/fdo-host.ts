@@ -130,6 +130,8 @@ declare global {
         }
 
         interface EditorOptions {
+            fontSize?: string | number;
+            showPrintMargin?: boolean;
             selectionStyle?: string;
             highlightActiveLine?: boolean;
             highlightSelectedWord?: boolean;

@@ -1,5 +1,7 @@
 # Feature Specification: Enhanced Error Handling with Decorators
 
+Historical design sketches in this document are shown as text; consult the published SDK declarations and current authoring guides for executable APIs.
+
 **Feature Branch**: `003-enhanced-error-handling`  
 **Created**: October 27, 2025  
 **Status**: Draft  
@@ -250,7 +252,7 @@ The system must provide comprehensive error handling during plugin loading to en
 ### Error Prevention
 
 1. **Type Safety First**
-   ```typescript
+   ```text
    // ✅ Good: Use type-safe error handling
    @handleError()
    async getData(): Promise<Result<Data>> {
@@ -268,7 +270,7 @@ The system must provide comprehensive error handling during plugin loading to en
    ```
 
 2. **Consistent Error Patterns**
-   ```typescript
+   ```text
    // ✅ Good: Use decorator for consistent handling
    @handleError({
      errorMessage: "Failed to process user data"
@@ -288,7 +290,7 @@ The system must provide comprehensive error handling during plugin loading to en
    ```
 
 3. **Error Recovery**
-   ```typescript
+   ```text
    // ✅ Good: Graceful degradation
    @handleError({
      errorUIRenderer: (error) => ({
@@ -305,7 +307,7 @@ The system must provide comprehensive error handling during plugin loading to en
 ### Error Reporting
 
 1. **Actionable Messages**
-   ```typescript
+   ```text
    // ✅ Good: Clear, actionable error
    @handleError({
      errorMessage: "Unable to save settings. Check write permissions and try again."
@@ -318,7 +320,7 @@ The system must provide comprehensive error handling during plugin loading to en
    ```
 
 2. **Development Context**
-   ```typescript
+   ```text
    // ✅ Good: Include debug info in logs
    @handleError({
      errorMessage: "User validation failed",
@@ -329,7 +331,7 @@ The system must provide comprehensive error handling during plugin loading to en
 ### Testing Recommendations
 
 1. **Error Scenarios**
-   ```typescript
+   ```text
    // ✅ Good: Test error paths
    it('should handle network errors', async () => {
      const plugin = new MyPlugin();
@@ -342,7 +344,7 @@ The system must provide comprehensive error handling during plugin loading to en
    ```
 
 2. **Recovery Testing**
-   ```typescript
+   ```text
    // ✅ Good: Test recovery paths
    it('should recover from temporary failures', async () => {
      const plugin = new MyPlugin();
@@ -357,7 +359,7 @@ The system must provide comprehensive error handling during plugin loading to en
 ### Plugin Loading Best Practices
 
 1. **Progressive Enhancement**
-   ```typescript
+   ```text
    // ✅ Good: Gradual feature initialization
    @handleError({
      allowPartialLoad: true
@@ -373,7 +375,7 @@ The system must provide comprehensive error handling during plugin loading to en
    ```
 
 2. **Health Checks**
-   ```typescript
+   ```text
    // ✅ Good: Regular health monitoring
    @handleError({
      healthCheck: true
@@ -390,7 +392,7 @@ The system must provide comprehensive error handling during plugin loading to en
 ### Notification Best Practices
 
 1. **Error Level Guidelines**
-   ```typescript
+   ```text
    // ✅ Good: Use appropriate error levels
    @handleError({
      notification: {
@@ -409,7 +411,7 @@ The system must provide comprehensive error handling during plugin loading to en
    ```
 
 2. **User-Friendly Messages**
-   ```typescript
+   ```text
    // ✅ Good: Clear, actionable messages
    @handleError({
      notification: {
@@ -430,7 +432,7 @@ The system must provide comprehensive error handling during plugin loading to en
    ```
 
 3. **Rate Limiting**
-   ```typescript
+   ```text
    // ✅ Good: Configure rate limits
    @handleError({
      notification: {
@@ -450,7 +452,7 @@ The system must provide comprehensive error handling during plugin loading to en
    ```
 
 4. **Notification Groups**
-   ```typescript
+   ```text
    // ✅ Good: Group related errors
    @handleError({
      notification: {

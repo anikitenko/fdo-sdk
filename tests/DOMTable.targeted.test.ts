@@ -24,7 +24,7 @@ describe("DOMTable targeted coverage", () => {
         const header = dom.createTableHeader(["H2"], {}, undefined, { onClick: () => true, hidden: true });
         // ensure boolean attribute 'hidden' rendered and onClick serialized
         expect(header).toContain('hidden');
-        expect(header).toMatch(/onClick=\{.+\}/);
+        expect(header).toMatch(/onClick=\{.+}/);
     });
 
     it("createTableHeader: colspan/rowspan + scope + style", () => {

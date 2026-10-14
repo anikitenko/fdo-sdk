@@ -1,7 +1,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import vm from "node:vm";
-import ts from "typescript";
+import { ts } from "ts-morph";
 
 const repoRoot = process.cwd();
 const scanRoots = ["README.md", "docs", "examples"];
@@ -18,6 +18,7 @@ const markdownLinkPattern = /\[[^\]]+]\((?!https?:\/\/|mailto:|#)([^)]+)\)/g;
 const codeFencePattern = /```([^\n`]*)\n([\s\S]*?)```/g;
 const findings = [];
 let verifiedSnippetCount = 0;
+let syntaxCheckedSnippetCount = 0;
 let runtimeCheckedSnippetCount = 0;
 
 async function walk(target) {
@@ -184,7 +185,8 @@ for (const root of scanRoots) {
       continue;
     }
     const fullPath = path.join(repoRoot, relativeFile);
-    const content = await readFile(fullPath, "utf8");
+    /** @type {string} */
+    const content = await readFile(fullPath, { encoding: "utf8" });
 
     for (const { pattern, message } of bannedPatterns) {
       if (pattern.test(content)) {
@@ -216,11 +218,13 @@ for (const root of scanRoots) {
         const line = getLineNumber(content, startIndex);
         const { language, tags } = parseFenceInfo(infoRaw);
 
-        if (!tags.has("verify")) {
+        // Every advertised TS/JS example must have valid syntax, including generated API docs.
+        if (!mapLanguageToExtension(language)) {
           continue;
         }
 
-        verifiedSnippetCount += 1;
+        syntaxCheckedSnippetCount += 1;
+        if (tags.has("verify")) verifiedSnippetCount += 1;
         try {
           transpileSnippetOrThrow({
             relativeFile,
@@ -234,7 +238,7 @@ for (const root of scanRoots) {
           continue;
         }
 
-        if (tags.has("runtime")) {
+        if (tags.has("verify") && tags.has("runtime")) {
           runtimeCheckedSnippetCount += 1;
           try {
             await runRuntimeSnippetOrThrow({ source });
@@ -261,5 +265,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Documentation verification passed. Verified snippets: ${verifiedSnippetCount}; runtime-checked snippets: ${runtimeCheckedSnippetCount}.`
+  `Documentation verification passed. Syntax-checked snippets: ${syntaxCheckedSnippetCount}; verified snippets: ${verifiedSnippetCount}; runtime-checked snippets: ${runtimeCheckedSnippetCount}.`
 );

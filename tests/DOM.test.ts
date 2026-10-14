@@ -153,7 +153,10 @@ describe("DOM", () => {
         expect(extractCss).toHaveBeenCalled();
 
         // Check the structure of the output
-        expect(result).toContain("<style>mocked-css</style>"); // Style tag with extracted CSS
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup1 = "<style>mocked-css</style>";
+        expect(result).toContain(expectedMarkup1); // Style tag with extracted CSS
         expect(result).toContain("<div>Hello</div>"); // Original element
         expect(result).toContain('<script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>'); // Script placeholder
         expect(result).not.toContain("{`");
@@ -167,7 +170,10 @@ describe("DOM", () => {
         expect(elementIndex).toBeLessThan(scriptIndex); // Element should come before the script
 
         // Verify the complete string
-        expect(result).toBe(`<style>mocked-css</style><div>Hello</div><script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>`);
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup2 = `<style>mocked-css</style><div>Hello</div><script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>`;
+        expect(result).toBe(expectedMarkup2);
     });
 
     test("renderHTML should keep an explicit empty style tag when no CSS is extracted", () => {
@@ -278,7 +284,10 @@ describe("DOM", () => {
         const props = { onClick: mockClickHandler, onHover: vi.fn(), id: "test" };
         const eventAttributes = (dom as any).createOnAttributes(props);
 
-        expect(eventAttributes).toContain(`onClick={${mockClickHandler.toString()}}`);
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup3 = `onClick={${mockClickHandler.toString()}}`;
+        expect(eventAttributes).toContain(expectedMarkup3);
         expect(eventAttributes).toContain(`onHover={${props.onHover.toString()}}`);
         expect(eventAttributes).not.toContain("id=");
     });
@@ -294,11 +303,17 @@ describe("DOM", () => {
 
         // Test case 3: Element with event handler
         const element3 = dom.createElement("button", { onClick: () => {}}, "Content");
-        expect(element3.toString()).toBe(`<button onClick={() => {}}>Content</button>`);
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup4 = `<button onClick={() => {}}>Content</button>`;
+        expect(element3.toString()).toBe(expectedMarkup4);
 
         // Test case 4: Element with both regular attributes and event handlers
         const element4 = dom.createElement("button", { onClick: () => {}, className: "mock"}, "Content");
-        expect(element4.toString()).toBe(`<button class="mock" onClick={() => {}}>Content</button>`);
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup5 = `<button class="mock" onClick={() => {}}>Content</button>`;
+        expect(element4.toString()).toBe(expectedMarkup5);
     });
 
     test("should create keyframe and return the generated class name", () => {
@@ -333,7 +348,10 @@ describe("DOM", () => {
         }, "Content");
 
         // Verify the element has the keyframe class
-        expect(element.toString()).toBe(`<button class="mocked-keyframe" onClick={() => {}}>Content</button>`);
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup6 = `<button class="mocked-keyframe" onClick={() => {}}>Content</button>`;
+        expect(element.toString()).toBe(expectedMarkup6);
     });
 
     test("should create keyframe with complex animation steps", () => {
@@ -374,7 +392,10 @@ describe("DOM", () => {
         vi.spyOn(dom, "createOnAttributes").mockReturnValue("onClick='doSomething()'");
 
         const result = dom.createElement("button", {}, "Click");
-        expect(result).toBe("<button onClick='doSomething()'>Click</button>");
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup7 = "<button onClick='doSomething()'>Click</button>";
+        expect(result).toBe(expectedMarkup7);
     });
 
     test("createElement with both attributes and onAttributes", () => {
@@ -384,7 +405,10 @@ describe("DOM", () => {
         vi.spyOn(dom, "createOnAttributes").mockReturnValue("onClick='fn()'");
 
         const result = dom.createElement("span", {}, "Wow");
-        expect(result).toBe("<span id='test' onClick='fn()'>Wow</span>");
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup8 = "<span id='test' onClick='fn()'>Wow</span>";
+        expect(result).toBe(expectedMarkup8);
     });
 
     test("createElement with no attributes", () => {
@@ -394,7 +418,10 @@ describe("DOM", () => {
         vi.spyOn(dom, "createOnAttributes").mockReturnValue("");
 
         const result = dom.createElement("hr");
-        expect(result).toBe("<hr></hr>");
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup9 = "<hr></hr>";
+        expect(result).toBe(expectedMarkup9);
     });
 
     test("combineProperties with all defaults", () => {

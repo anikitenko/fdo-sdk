@@ -29,7 +29,7 @@ describe("DOMInput", () => {
 
     it("should create a textarea", () => {
         const textarea = domInput.createTextarea();
-        expect(textarea).toBe(`<textarea id="input" class="go11" />`)
+        expect(textarea).toBe(`<textarea id="input" class="go11"></textarea>`)
     })
 
     describe("style and class handling", () => {

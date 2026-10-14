@@ -109,7 +109,7 @@ Provide **multiple methods** for maximum flexibility:
 **Resolution**: 
 Provide **separate parameters** with value defaulting to label if not provided:
 ```typescript
-createOption(label: string, value?: string, selected?: boolean, options?, id?)
+declare function createOption(label: string, value?: string, selected?: boolean, options?: Record<string, unknown>, id?: string): string;
 ```
 
 **Rationale**:
@@ -196,7 +196,7 @@ createOption(label: string, value?: string, selected?: boolean, options?, id?)
 **Resolution**: 
 **Support through custom attributes** in the options parameter. Example:
 ```typescript
-createTableCell(content, options: { customAttributes: { colspan: "2" } })
+createTableCell(content, { customAttributes: { colspan: "2" } });
 ```
 
 **Rationale**:

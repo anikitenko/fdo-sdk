@@ -1,4 +1,4 @@
-import {DOM} from "./DOM";
+import {DOM, DOMOptions} from "./DOM";
 
 export class DOMText extends DOM {
     /**
@@ -21,7 +21,7 @@ export class DOMText extends DOM {
      */
     public createBlockQuoteText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("blockquote", content, id, options, false, "");
@@ -39,7 +39,7 @@ export class DOMText extends DOM {
      */
     public createPText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("p", content, id, options)
@@ -57,7 +57,7 @@ export class DOMText extends DOM {
      */
     public createSpanText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("span", content, id, options)
@@ -75,7 +75,7 @@ export class DOMText extends DOM {
      */
     public createCodeText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("code", content, id, options, false, "")
@@ -93,7 +93,7 @@ export class DOMText extends DOM {
      */
     public createStrongText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("strong", content, id, options, true)
@@ -111,7 +111,7 @@ export class DOMText extends DOM {
      */
     public createEmText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("em", content, id, options, true)
@@ -131,7 +131,7 @@ export class DOMText extends DOM {
     public createHText(
         level: number,
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         if (!Number.isInteger(level) || level < 1 || level > 6) {
@@ -153,7 +153,7 @@ export class DOMText extends DOM {
      */
     public createPreText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("pre", content, id, options, true)
@@ -171,7 +171,7 @@ export class DOMText extends DOM {
      */
     public createIText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("i", content, id, options, true)
@@ -189,7 +189,7 @@ export class DOMText extends DOM {
      */
     public createBText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("b", content, id, options, true)
@@ -207,7 +207,7 @@ export class DOMText extends DOM {
      */
     public createCiteText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("cite", content, id, options, true)
@@ -225,7 +225,7 @@ export class DOMText extends DOM {
      */
     public createSText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("s", content, id, options, true)
@@ -245,7 +245,7 @@ export class DOMText extends DOM {
     public createAbbrText(
         content: string,
         title: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("abbr", content, id, options, true, "", {"title": title})
@@ -263,7 +263,7 @@ export class DOMText extends DOM {
      */
     public createUText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("u", content, id, options, true)
@@ -283,7 +283,7 @@ export class DOMText extends DOM {
     public createLabelText(
         content: string,
         htmlFor: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("label", content, id, options, true, "", {"htmlFor": htmlFor})
@@ -301,7 +301,7 @@ export class DOMText extends DOM {
      */
     public createDivText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("div", content, id, options, true)
@@ -319,7 +319,7 @@ export class DOMText extends DOM {
      */
     public createMarkText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("mark", content, id, options, true)
@@ -337,7 +337,7 @@ export class DOMText extends DOM {
      */
     public createSmallText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("small", content, id, options, true)
@@ -355,7 +355,7 @@ export class DOMText extends DOM {
      */
     public createInsText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("ins", content, id, options, true)
@@ -373,7 +373,7 @@ export class DOMText extends DOM {
      */
     public createKbdText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("kbd", content, id, options, true)
@@ -391,7 +391,7 @@ export class DOMText extends DOM {
      */
     public createText(
         content: string,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS>,
+        options?: Partial<DOMOptions>,
         id?: string
     ): string {
         return this.createTextElement("span", content, id, options, true)
@@ -409,13 +409,13 @@ export class DOMText extends DOM {
      * @returns {string} - The rendered text element.
      * @uiName Create text element
      * @example <caption>Create a new text element.</caption>
-     * const text = new DOMText().createTextElement("span", "This is a text element", DOM.DEFAULT_OPTIONS, false, "", {"data-test": "test"});
+     * const text = new DOMText().createSpanText("This is a text element");
      */
     private createTextElement(
         element: string,
         content: string,
         id?: string,
-        options: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions> = DOM.DEFAULT_OPTIONS,
         disableDefaultClassOpt: boolean = false,
         defaultClass: string = "",
         extraProps: Record<string, string> = {}

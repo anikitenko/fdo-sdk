@@ -1,9 +1,5 @@
 import { beforeAll, describe, expect, test, vi } from "vitest";
 
-vi.mock("@anikitenko/fdo-sdk", async () => {
-    return await import("../src/index");
-});
-
 let AdvancedDOMPlugin: typeof import("../examples/05-advanced-dom-plugin").default;
 
 beforeAll(async () => {

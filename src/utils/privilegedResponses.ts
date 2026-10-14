@@ -15,16 +15,16 @@ export function isPrivilegedActionSuccessResponse<TResult = unknown>(
 ): value is PrivilegedActionSuccessResponse<TResult> {
     return Boolean(value)
         && typeof value === "object"
-        && (value as PrivilegedActionSuccessResponse<TResult>).ok === true
-        && typeof (value as PrivilegedActionSuccessResponse<TResult>).correlationId === "string";
+        && (value as Record<string, unknown>).ok === true
+        && typeof (value as Record<string, unknown>).correlationId === "string";
 }
 
 export function isPrivilegedActionErrorResponse(value: unknown): value is PrivilegedActionErrorResponse {
     return Boolean(value)
         && typeof value === "object"
-        && (value as PrivilegedActionErrorResponse).ok === false
-        && typeof (value as PrivilegedActionErrorResponse).correlationId === "string"
-        && typeof (value as PrivilegedActionErrorResponse).error === "string";
+        && (value as Record<string, unknown>).ok === false
+        && typeof (value as Record<string, unknown>).correlationId === "string"
+        && typeof (value as Record<string, unknown>).error === "string";
 }
 
 export function unwrapPrivilegedActionResponse<TResult = unknown>(

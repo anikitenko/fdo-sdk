@@ -9,7 +9,7 @@ import {
     isRenderOnLoadModule,
     listRenderOnLoadTemplates,
     resolveRenderOnLoadSource,
-} from "../../src/utils/renderOnLoad";
+} from "../../src";
 
 describe("renderOnLoad helpers", () => {
     const originalWindow = globalThis.window;

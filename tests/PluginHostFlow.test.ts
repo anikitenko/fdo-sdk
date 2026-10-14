@@ -1,8 +1,8 @@
 import { FDO_SDK } from "../src";
 import { MESSAGE_TYPE } from "../src/enums";
 import { Logger } from "../src/Logger";
-import { PluginRegistry } from "../src/PluginRegistry";
-import { QuickAction, SidePanelConfig } from "../src/types";
+import { PluginRegistry } from "../src";
+import { QuickAction, SidePanelConfig } from "../src";
 
 class IntegrationPlugin extends FDO_SDK {
     public initCallCount = 0;

@@ -30,7 +30,10 @@ describe("DOMNested", () => {
         const text = domText.createHText(1, "Hello World", {}, "test-text");
         const nested = domNested.createBlockDiv([button, text], {}, "test-div");
 
-        expect(nested.toString()).toBe(`<div id="test-div" class="go11"><button id="test-button" class="pure-button custom-class go11" onClick={() => {}}>Click Me</button><h1 id="test-text" class="go11">Hello World</h1></div>`);
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup = `<div id="test-div" class="go11"><button id="test-button" class="pure-button custom-class go11" onClick={() => {}}>Click Me</button><h1 id="test-text" class="go11">Hello World</h1></div>`;
+        expect(nested.toString()).toBe(expectedMarkup);
     });
 
     test("createBlockDiv with no options", () => {

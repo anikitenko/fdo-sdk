@@ -59,7 +59,7 @@ describe("verify-types-pack-lib", () => {
   });
 
   it("fails when package type entry configuration is invalid", () => {
-    expect(() => getTypeEntryPaths({ types: "" })).toThrowError(
+    expect(() => getTypeEntryPaths({ types: "" })).toThrow(
       "Types pack verification failed: `package.json.types` must be a non-empty string"
     );
   });
@@ -67,7 +67,7 @@ describe("verify-types-pack-lib", () => {
   it("fails when declarations are missing from pack file list", () => {
     expect(() =>
       verifyPackFileList(["dist/fdo-sdk.bundle.js", "dist/dom-metadata.json", "docs/README.md"])
-    ).toThrowError("Types pack verification failed: tarball is missing dist/@types/index.d.ts");
+    ).toThrow("Types pack verification failed: tarball is missing dist/@types/index.d.ts");
   });
 
   it("fails when declared package types path does not exist", () => {
@@ -81,7 +81,7 @@ describe("verify-types-pack-lib", () => {
       },
     };
 
-    expect(() => verifyDeclaredTypePathsExist(pkg, root)).toThrowError(
+    expect(() => verifyDeclaredTypePathsExist(pkg, root)).toThrow(
       "Types pack verification failed: declared types file does not exist: dist/@types/index.d.ts"
     );
   });
@@ -101,7 +101,7 @@ describe("verify-types-pack-lib", () => {
     fs.mkdirSync(path.join(root, "dist", "@types"), { recursive: true });
     fs.writeFileSync(path.join(root, "dist", "@types", "other.d.ts"), "export {};\n", "utf8");
 
-    expect(() => verifyTypeArtifactsExist(root)).toThrowError(
+    expect(() => verifyTypeArtifactsExist(root)).toThrow(
       "Types pack verification failed: required declaration file is missing: dist/@types/index.d.ts"
     );
   });

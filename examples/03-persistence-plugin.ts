@@ -194,7 +194,6 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
   /**
    * Handle clearing all preferences.
    * 
-   * @param data - Optional data
    * @returns Result object
    */
   private handleClearPreferences(): any {

@@ -2,7 +2,7 @@ import {
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createPrivilegedActionBackendRequest,
-    extractPrivilegedActionRequest,
+
     FDOInterface,
     FDO_SDK,
     getInlinePrivilegedActionErrorFormatterSource,
@@ -78,6 +78,7 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
             (() => {
                 const button = document.getElementById("run-privileged-action");
                 const resultBox = document.getElementById("result-box");
+                /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
                 const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
                 if (!button || !resultBox) {
@@ -100,7 +101,7 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
                         });
 
                         const typedEnvelope = envelope;
-                        const requestPayload = extractPrivilegedActionRequest(typedEnvelope);
+                        const requestPayload = typedEnvelope?.result?.request ?? typedEnvelope?.request ?? typedEnvelope;
                         const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
 
                         if (response && response.ok) {

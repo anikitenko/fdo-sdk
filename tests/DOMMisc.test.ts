@@ -14,7 +14,10 @@ describe("DOMMisc", () => {
 
     it("should create a divider with correct default options", () => {
         const divider = domMisc.divider({classes: ["test"]}, "test");
-        expect(divider.toString()).toBe(`<hr id="test" class="test go2473750146"></hr>`)
+        // Exact legacy transport text; this is not executable HTML/JSX.
+        // language=TEXT
+        const expectedMarkup = `<hr id="test" class="test go2473750146"></hr>`;
+        expect(divider.toString()).toBe(expectedMarkup)
     })
 
     test("divider with no options or id", () => {

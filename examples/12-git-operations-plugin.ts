@@ -380,8 +380,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                 const url = new URL(withoutQuotes);
                 const decoded = decodeURIComponent(url.pathname || "");
                 if (this.getRuntimePlatform() === "win32") {
-                    const normalized = decoded.replace(/^\/([a-zA-Z]:)/, "$1").replace(/\//g, "\\");
-                    return normalized;
+                    return decoded.replace(/^\/([a-zA-Z]:)/, "$1").replace(/\//g, "\\");
                 }
                 return decoded || withoutQuotes;
             } catch {
@@ -1597,7 +1596,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                                 : []
                         );
                     const seen = new Set<string>();
-                    const normalized = raw
+                    return raw
                         .map((item, index) => {
                             if (typeof item !== "object" || item === null) {
                                 return null;
@@ -1639,10 +1638,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                             if (providerFilter && item.provider.toLowerCase() !== providerFilter) {
                                 return false;
                             }
-                            if (modelFilter && item.model.toLowerCase() !== modelFilter) {
-                                return false;
-                            }
-                            return true;
+                            return !modelFilter || item.model.toLowerCase() === modelFilter;
                         })
                         .sort((a, b) => {
                             if (a.default !== b.default) {
@@ -1651,7 +1647,6 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                             return a.name.localeCompare(b.name);
                         })
                         .slice(0, 100);
-                    return normalized;
                 };
 
                 const toResult = (value: unknown) => {
@@ -1856,7 +1851,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                     const modified = typeof summary.modified === "number" ? summary.modified : 0;
                     const untracked = typeof summary.untracked === "number" ? summary.untracked : 0;
                     const branch = typeof summary.branch === "string" ? summary.branch : "current branch";
-                    let suggestion = "Run status to refresh repository diagnostics.";
+                    let suggestion: string;
                     if (conflicts > 0) {
                         suggestion = "Resolve conflicts first, then run status and commit staged changes.";
                     } else if (modified > 0 || untracked > 0) {
@@ -2256,6 +2251,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
 
     renderOnLoad() {
         function gitOperationsRenderOnLoad(): void {
+            function failOperation(message: string): never { throw new Error(message); }
             const root = document.getElementById("git-ops-root");
             const repoInput = document.getElementById("git-repo-path") as HTMLInputElement | null;
             const outputCode = document.getElementById("git-output-code") as HTMLElement | null;
@@ -2572,7 +2568,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                         const message = typeof response.error === "string"
                             ? response.error
                             : "Failed to fetch AI assistants.";
-                        throw new Error(`${message}${code}`);
+                        failOperation(`${message}${code}`);
                     }
 
                     const rawAssistants: unknown[] = Array.isArray(response)
@@ -2795,7 +2791,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                     ?? envelope?.request
                     ?? (typeof envelope?.action === "string" ? envelope : null);
                 if (!requestPayload || typeof requestPayload !== "object") {
-                    throw new Error(`${context} is missing a privileged request payload.`);
+                    failOperation(`${context} is missing a privileged request payload.`);
                 }
 
                 return {
@@ -2821,7 +2817,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                     context: options.context,
                     fallbackCorrelationId: correlationId,
                 });
-                throw new Error(appendGitExecutionHints(formatted, response, { cwdHint: options.cwdHint }));
+                failOperation(appendGitExecutionHints(formatted, response, { cwdHint: options.cwdHint }));
             };
 
             const setBusy = (busy: boolean) => {
@@ -2968,7 +2964,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
             const persistRepoPath = async (silent = false): Promise<string> => {
                 const repoPath = String(repoInput.value || "").trim();
                 if (!repoPath) {
-                    throw new Error("Repository path is required.");
+                    failOperation("Repository path is required.");
                 }
 
                 const saveResult = await window.createBackendReq("UI_MESSAGE", {
@@ -2980,7 +2976,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                     const message = typeof saveResult.error === "string"
                         ? saveResult.error
                         : "Failed to persist repository path.";
-                    throw new Error(`${message}${code}`);
+                    failOperation(`${message}${code}`);
                 }
 
                 const storedPath = typeof saveResult?.storedPath === "string" ? saveResult.storedPath : repoPath;
@@ -3025,7 +3021,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                 try {
                     fallbackCwd = await persistRepoPath(true);
                     if (!fallbackCwd) {
-                        throw new Error("Repository path is required before prefetch.");
+                        failOperation("Repository path is required before prefetch.");
                     }
 
                     const requestBuildResponse = await window.createBackendReq("UI_MESSAGE", {
@@ -3038,7 +3034,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                         const message = typeof requestBuildResponse.error === "string"
                             ? requestBuildResponse.error
                             : "Failed to prepare original configured repository prefetch request.";
-                        throw new Error(`${message}${code}`);
+                        failOperation(`${message}${code}`);
                     }
 
                     const originalConfiguredRepoPath =
@@ -3047,7 +3043,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                             ? requestBuildResponse.originalConfiguredRepoPath.trim()
                             : "";
                     if (!originalConfiguredRepoPath) {
-                        throw new Error("Original configured repository is unavailable.");
+                        failOperation("Original configured repository is unavailable.");
                     }
 
                     const originalConfiguredRepoPublicKey =
@@ -3092,7 +3088,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                         const message = typeof response.error === "string"
                             ? response.error
                             : "Failed to prefetch original configured repository.";
-                        throw new Error(`${message}${code}`);
+                        failOperation(`${message}${code}`);
                     }
 
                 const resolvedOriginalConfiguredRepoPath =
@@ -3193,10 +3189,10 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                 const { append = false, silent = false, dryRun = false } = options;
                 const operation = operationCatalog[operationId];
                 if (!operation) {
-                    throw new Error(`Unknown operation: ${operationId}`);
+                    failOperation(`Unknown operation: ${operationId}`);
                 }
                 if (!state.runtimePrepared) {
-                    throw new Error("Runtime is not prepared yet. Wait for initialization to finish.");
+                    failOperation("Runtime is not prepared yet. Wait for initialization to finish.");
                 }
                 const startedAt = Date.now();
 
@@ -3218,7 +3214,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                     });
 
                     if (!envelope || typeof envelope !== "object") {
-                        throw new Error("Plugin backend did not return a structured privileged request envelope.");
+                        failOperation("Plugin backend did not return a structured privileged request envelope.");
                     }
 
                     const envelopeCorrelationId = resolveEnvelopeCorrelationId(envelope);
@@ -3232,7 +3228,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                     );
                     if (backendFailed) {
                         const codeSuffix = backendErrorCode ? ` (${backendErrorCode})` : "";
-                        throw new Error(
+                        failOperation(
                             `Git request preparation failed${codeSuffix}: ${backendErrorText || "Plugin backend handler failed."}\nCorrelation ID: ${envelopeCorrelationId || "unknown"}`
                         );
                     }
@@ -3362,7 +3358,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                     const repoPath = String(repoInput.value || "").trim();
                     const selectedAssistant = resolveSelectedAssistant();
                     if (task === "commit-message" && (!state.lastStatus || state.lastStatus.staged === 0)) {
-                        throw new Error("No staged files detected. Run Status and stage changes before generating a commit message.");
+                        failOperation("No staged files detected. Run Status and stage changes before generating a commit message.");
                     }
                     const prompt = task === "commit-message"
                         ? [
@@ -3406,7 +3402,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                         const message = typeof response.error === "string"
                             ? response.error
                             : `AI assistance failed for task "${task}".`;
-                        throw new Error(`${message}${code}`);
+                        failOperation(`${message}${code}`);
                     }
 
                     const aiText = typeof response?.commitMessage === "string"
@@ -3417,7 +3413,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                                 : (typeof response?.text === "string" ? response.text.trim() : "")
                         );
                     if (!aiText) {
-                        throw new Error(`AI provider returned an empty response for task "${task}".`);
+                        failOperation(`AI provider returned an empty response for task "${task}".`);
                     }
 
                     if (task === "commit-message") {
@@ -3474,7 +3470,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                 let repoPath = "";
                 const message = String(commitMessageInput.value || "").trim();
                 if (!message) {
-                    throw new Error("Commit message is required. Generate one with AI or enter it manually.");
+                    failOperation("Commit message is required. Generate one with AI or enter it manually.");
                 }
 
                 try {
@@ -3490,7 +3486,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                     });
 
                     if (!envelope || typeof envelope !== "object") {
-                        throw new Error("Plugin backend did not return a structured commit request envelope.");
+                        failOperation("Plugin backend did not return a structured commit request envelope.");
                     }
 
                     const envelopeCorrelationId = resolveEnvelopeCorrelationId(envelope);
@@ -3503,7 +3499,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
                         || Boolean(backendErrorText)
                     ) {
                         const codeSuffix = backendErrorCode ? ` (${backendErrorCode})` : "";
-                        throw new Error(
+                        failOperation(
                             `Commit request preparation failed${codeSuffix}: ${backendErrorText || "Plugin backend handler failed."}\nCorrelation ID: ${envelopeCorrelationId || "unknown"}`
                         );
                     }
@@ -3668,8 +3664,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
             prefetchOriginalButton.addEventListener("click", async () => {
                 setBusy(true);
                 try {
-                    const originalPath = await prefetchOriginalRepoPath(false);
-                    repoInput.value = originalPath;
+                    repoInput.value = await prefetchOriginalRepoPath(false);
                 } catch (error) {
                     const message = error instanceof Error ? error.message : String(error);
                     setMeta(`Prefetch failed: ${message}`);

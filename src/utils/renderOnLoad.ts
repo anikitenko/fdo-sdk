@@ -195,94 +195,114 @@ export function createRenderOnLoadActionsSource(options: RenderOnLoadActionBindi
     const handlersSource = Object.entries(normalizedHandlers)
         .map(([handlerId, expression]) => `${JSON.stringify(handlerId)}: ${expression}`)
         .join(",\n    ");
-    const setupExpression = options.setup ? resolveSourceExpression(options.setup) : "null";
+    const setupExpression = options.setup ? resolveSourceExpression(options.setup as RenderOnLoadSource) : "null";
     const bindingsJson = JSON.stringify(normalizedBindings);
+    const lifecycleKey = options.lifecycleKey ?? JSON.stringify([normalizedBindings, normalizedHandlers]);
+    const reporter = options.onDiagnostic ? resolveSourceExpression(options.onDiagnostic as RenderOnLoadSource) : "null";
 
     return `(() => {
   const __fdoStrict = ${strict ? "true" : "false"};
-  const __fdoHandlers = {
-    ${handlersSource}
-  };
+  const __fdoHandlers = { ${handlersSource} };
   const __fdoBindings = ${bindingsJson};
-  const __fdoWarn = (message) => {
-    if (typeof console !== "undefined" && typeof console.warn === "function") {
-      console.warn(message);
-    }
-  };
-  const __fdoError = (message, error) => {
-    if (typeof console !== "undefined" && typeof console.error === "function") {
-      console.error(message, error);
-    }
-  };
-  const __fdoHandleFailure = (message, error) => {
-    if (__fdoStrict) {
-      const details = error instanceof Error ? error.message : String(error ?? "");
-      throw new Error(details ? \`\${message} \${details}\` : message);
-    }
-    __fdoError(message, error);
-  };
-  const __fdoInvokeHandler = (handlerId, event, element) => {
-    const handler = __fdoHandlers[handlerId];
-    if (typeof handler !== "function") {
-      __fdoHandleFailure(\`[FDO:onLoad] Unknown action handler "\${handlerId}".\`, null);
-      return;
-    }
+  const __fdoKey = ${JSON.stringify(lifecycleKey)};
+  const __fdoRegistrySymbol = Symbol.for("fdo.renderOnLoad.cleanup");
+  const __fdoRegistry = window[__fdoRegistrySymbol] || (window[__fdoRegistrySymbol] = new Map());
+  const __fdoPrevious = __fdoRegistry.get(__fdoKey);
+  if (__fdoPrevious) __fdoPrevious();
+  const __fdoReporter = ${reporter};
+  const __fdoReported = new Set();
+  const __fdoReport = (code, phase, message, error) => {
+    const detail = error instanceof Error ? error.message : String(error ?? "");
+    const diagnostic = { code, phase, message, ...(detail ? { detail: detail.slice(0, 500) } : {}), remediation: "Check selectors, self-contained handlers and setup cleanup; dispose this lifecycle key before replacing markup." };
+    const identity = code + message;
+    if (__fdoReported.has(identity)) return;
+    __fdoReported.add(identity);
     try {
-      const result = handler({ event, element, window, document });
-      if (result && typeof result.then === "function") {
-        result.catch((error) => {
-          __fdoHandleFailure(\`[FDO:onLoad] Action handler "\${handlerId}" rejected.\`, error);
-        });
-      }
-    } catch (error) {
-      __fdoHandleFailure(\`[FDO:onLoad] Action handler "\${handlerId}" failed.\`, error);
-    }
+      if (typeof __fdoReporter === "function") {
+        const result = __fdoReporter(diagnostic);
+        if (result && typeof result.then === "function") Promise.resolve(result).catch(() => {});
+      } else if (typeof console !== "undefined") console.error(message, error || diagnostic);
+    } catch (_) { /* A reporter cannot break cleanup or create unhandled rejections. */ }
   };
-  const __fdoSetup = ${setupExpression};
-  if (__fdoSetup !== null && __fdoSetup !== undefined) {
+  const __fdoRunCleanup = (cleanup) => {
+    try {
+      const result = cleanup();
+      if (result && typeof result.then === "function") Promise.resolve(result).catch((error) =>
+        __fdoReport("ONLOAD_CLEANUP_FAILED", "cleanup", "[FDO:onLoad] Setup cleanup failed.", error));
+    } catch (error) { __fdoReport("ONLOAD_CLEANUP_FAILED", "cleanup", "[FDO:onLoad] Setup cleanup failed.", error); }
+  };
+  let __fdoDisposed = false;
+  let __fdoSetupCleanup;
+  const __fdoListeners = [];
+  const __fdoCleanup = () => {
+    if (__fdoDisposed) return;
+    __fdoDisposed = true;
+    for (const [element, event, listener, capture] of __fdoListeners) {
+      try { element.removeEventListener(event, listener, capture); }
+      catch (error) { __fdoReport("ONLOAD_CLEANUP_FAILED", "cleanup", "[FDO:onLoad] Listener cleanup failed.", error); }
+    }
+    if (typeof window.removeEventListener === "function") window.removeEventListener("pagehide", __fdoCleanup);
+    if (__fdoRegistry.get(__fdoKey) === __fdoCleanup) __fdoRegistry.delete(__fdoKey);
+    if (__fdoSetupCleanup) __fdoRunCleanup(__fdoSetupCleanup);
+  };
+  __fdoRegistry.set(__fdoKey, __fdoCleanup);
+  if (typeof window.addEventListener === "function") window.addEventListener("pagehide", __fdoCleanup);
+  const __fdoAcceptCleanup = (result) => {
+    if (typeof result !== "function") return;
+    if (__fdoDisposed) {
+      __fdoRunCleanup(result);
+    } else __fdoSetupCleanup = result;
+  };
+  const __fdoSetupFailed = (error) => {
+    __fdoCleanup();
+    __fdoReport("ONLOAD_SETUP_FAILED", "setup", "[FDO:onLoad] Setup function failed.", error);
+  };
+  let __fdoPhase = "setup";
+  try {
+    const __fdoSetup = ${setupExpression};
     if (typeof __fdoSetup === "function") {
-      try {
-        const setupResult = __fdoSetup();
-        if (setupResult && typeof setupResult.then === "function") {
-          setupResult.catch((error) => __fdoHandleFailure("[FDO:onLoad] Setup function rejected.", error));
-        }
-      } catch (error) {
-        __fdoHandleFailure("[FDO:onLoad] Setup function failed.", error);
-      }
-    } else {
-      __fdoWarn("[FDO:onLoad] Setup value is not a function and was ignored.");
+      const result = __fdoSetup();
+      if (result && typeof result.then === "function") Promise.resolve(result).then(__fdoAcceptCleanup, __fdoSetupFailed);
+      else __fdoAcceptCleanup(result);
     }
-  }
-  for (const binding of __fdoBindings) {
-    const elements = Array.from(document.querySelectorAll(binding.selector));
-    if (elements.length === 0) {
-      if (binding.required) {
+    __fdoPhase = "binding";
+    for (const binding of __fdoBindings) {
+      const elements = Array.from(document.querySelectorAll(binding.selector));
+      if (elements.length === 0 && binding.required) {
         const message = \`[FDO:onLoad] No elements matched selector "\${binding.selector}" for event "\${binding.event}".\`;
-        if (__fdoStrict) {
-          throw new Error(message);
-        }
-        __fdoWarn(message);
+        __fdoReport("ONLOAD_SELECTOR_MISSING", "binding", message);
+        if (__fdoStrict) throw new Error(message);
       }
-      continue;
+      for (const element of elements) {
+        const listener = (event) => {
+          if (__fdoDisposed) return;
+          if (binding.preventDefault) event.preventDefault();
+          if (binding.stopPropagation) event.stopPropagation();
+          try {
+            const result = __fdoHandlers[binding.handler]({ event, element, window, document });
+            if (result && typeof result.then === "function") Promise.resolve(result).catch((error) =>
+              __fdoReport("ONLOAD_HANDLER_FAILED", "handler", \`[FDO:onLoad] Action handler "\${binding.handler}" failed.\`, error));
+          } catch (error) {
+            __fdoReport("ONLOAD_HANDLER_FAILED", "handler", \`[FDO:onLoad] Action handler "\${binding.handler}" failed.\`, error);
+          }
+        };
+        element.addEventListener(binding.event, listener, { capture: binding.capture, once: binding.once, passive: binding.passive });
+        __fdoListeners.push([element, binding.event, listener, Boolean(binding.capture)]);
+      }
     }
-    const listenerOptions = {
-      capture: Boolean(binding.capture),
-      once: Boolean(binding.once),
-      passive: Boolean(binding.passive),
-    };
-    for (const element of elements) {
-      element.addEventListener(binding.event, (event) => {
-        if (binding.preventDefault) {
-          event.preventDefault();
-        }
-        if (binding.stopPropagation) {
-          event.stopPropagation();
-        }
-        __fdoInvokeHandler(binding.handler, event, element);
-      }, listenerOptions);
-    }
+  } catch (error) {
+    __fdoCleanup();
+    __fdoReport("ONLOAD_INITIALIZATION_FAILED", __fdoPhase, "[FDO:onLoad] Initialization failed.", error);
+    if (__fdoStrict) throw error;
   }
+  return __fdoCleanup;
 })();`;
+}
+
+/** Dispose only the named frontend instance before rerender/teardown. */
+export function disposeRenderOnLoadActions(target: Window, lifecycleKey: string): void {
+    const registry = (target as unknown as Record<symbol, Map<string, () => void>>)[Symbol.for("fdo.renderOnLoad.cleanup")];
+    registry?.get(lifecycleKey)?.();
 }
 
 export function defineRenderOnLoadActions(options: RenderOnLoadActionBindingsModuleOptions): RenderOnLoadModule {

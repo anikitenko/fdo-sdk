@@ -1,5 +1,5 @@
 import pifyImport from 'pify';
-import { pify } from '../../src/utils/pify';
+import { pify } from '../../src';
 
 // Mock pify
 vi.mock('pify', () => {

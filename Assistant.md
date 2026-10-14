@@ -223,22 +223,24 @@ Why:
 Example:
 
 ```ts
-renderOnLoad() {
-  return defineRenderOnLoadActions({
-    handlers: {
-      runAction: async () => {
-        await window.createBackendReq("UI_MESSAGE", {
-          handler: "plugin.runAction",
-          content: {},
-        });
+class ExamplePlugin extends FDO_SDK {
+  renderOnLoad() {
+    return defineRenderOnLoadActions({
+      handlers: {
+        runAction: async () => {
+          await window.createBackendReq("UI_MESSAGE", {
+            handler: "plugin.runAction",
+            content: {},
+          });
+        },
       },
-    },
-    bindings: [
-      { selector: "#run", event: "click", handler: "runAction", required: true, preventDefault: true },
-    ],
-    strict: true,
-    language: "typescript",
-  });
+      bindings: [
+        { selector: "#run", event: "click", handler: "runAction", required: true, preventDefault: true },
+      ],
+      strict: true,
+      language: "typescript",
+    });
+  }
 }
 ```
 
@@ -285,13 +287,15 @@ Important safety rule:
 Recommended pattern:
 
 ```ts
-private sessionStore?: StoreType;
+class ExamplePlugin extends FDO_SDK {
+  private sessionStore?: StoreType;
 
-private getSessionStore(): StoreType {
-  if (!this.sessionStore) {
-    this.sessionStore = PluginRegistry.useStore("default");
+  private getSessionStore(): StoreType {
+    if (!this.sessionStore) {
+      this.sessionStore = PluginRegistry.useStore("default");
+    }
+    return this.sessionStore;
   }
-  return this.sessionStore;
 }
 ```
 

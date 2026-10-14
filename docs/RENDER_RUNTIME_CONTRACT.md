@@ -95,58 +95,68 @@ Practical rules:
 Example: use JSX-safe markup
 
 ```ts
-render(): string {
-  return `
-    <div>
-      <strong>Status</strong><br />
-      Ready
-    </div>
-  `;
+class ExamplePlugin extends FDO_SDK {
+  render(): string {
+    return `
+      <div>
+        <strong>Status</strong><br />
+        Ready
+      </div>
+    `;
+  }
 }
 ```
 
 Example: escape code-sample braces
 
 ```ts
-render(): string {
-  return `
-    <pre><code class="language-javascript">function greet(name) &#123;
-  return "Hello";
-&#125;</code></pre>
-  `;
+class ExamplePlugin extends FDO_SDK {
+  render(): string {
+    return `
+      <pre><code class="language-javascript">function greet(name) &#123;
+    return "Hello";
+  &#125;</code></pre>
+    `;
+  }
 }
 ```
 
 Do not rely on this shape:
 
 ```ts
-render(): string {
-  return `
-    <style>
-      .demo { padding: 20px; }
-    </style>
-    <pre><code>function greet(name) { return "Hello"; }</code></pre>
-  `;
+class ExamplePlugin extends FDO_SDK {
+  render(): string {
+    return `
+      <style>
+        .demo { padding: 20px; }
+      </style>
+      <pre><code>function greet(name) { return "Hello"; }</code></pre>
+    `;
+  }
 }
 ```
 
 Another practical example:
 
 ```ts
-render(): string {
-  return `
-    <p>Declared capabilities: broad host tool execution plus the narrow Docker CLI scope.</p>
-  `;
+class ExamplePlugin extends FDO_SDK {
+  render(): string {
+    return `
+      <p>Declared capabilities: broad host tool execution plus the narrow Docker CLI scope.</p>
+    `;
+  }
 }
 ```
 
 Prefer that over embedding raw display text such as:
 
 ```ts
-render(): string {
-  return `
-    <p><code>["system.process.exec", "system.process.scope.docker-cli"]</code></p>
-  `;
+class ExamplePlugin extends FDO_SDK {
+  render(): string {
+    return `
+      <p><code>["system.process.exec", "system.process.scope.docker-cli"]</code></p>
+    `;
+  }
 }
 ```
 
@@ -155,30 +165,34 @@ Even though that second example is only display text, some host fail-fast guards
 For JSON/result panels, prefer this shape:
 
 ```ts
-render(): string {
-  return `
-    <pre id="result-box">Snapshot will load after initialization...</pre>
-  `;
-}
+class ExamplePlugin extends FDO_SDK {
+  render(): string {
+    return `
+      <pre id="result-box">Snapshot will load after initialization...</pre>
+    `;
+  }
 
-renderOnLoad(): string {
-  return `
-    (() => {
-      const output = document.getElementById("result-box");
-      // fetch data through UI_MESSAGE and then:
-      output.textContent = JSON.stringify({ ok: true }, null, 2);
-    })();
-  `;
+  renderOnLoad(): string {
+    return `
+      (() => {
+        const output = document.getElementById("result-box");
+        // fetch data through UI_MESSAGE and then:
+        output.textContent = JSON.stringify({ ok: true }, null, 2);
+      })();
+    `;
+  }
 }
 ```
 
 Do not rely on embedding raw JSON directly in `render()`:
 
 ```ts
-render(): string {
-  return `
-    <pre>{ "ok": true }</pre>
-  `;
+class ExamplePlugin extends FDO_SDK {
+  render(): string {
+    return `
+      <pre>{ "ok": true }</pre>
+    `;
+  }
 }
 ```
 
@@ -205,19 +219,21 @@ Recommended authoring pattern:
 ```ts
 import { defineRenderOnLoad } from "@anikitenko/fdo-sdk";
 
-renderOnLoad() {
-  return defineRenderOnLoad(() => {
-    const button = document.getElementById("run");
-    button?.addEventListener("click", async () => {
-      await window.createBackendReq("UI_MESSAGE", {
-        handler: "plugin.run",
-        content: {},
+class ExamplePlugin extends FDO_SDK {
+  renderOnLoad() {
+    return defineRenderOnLoad(() => {
+      const button = document.getElementById("run");
+      button?.addEventListener("click", async () => {
+        await window.createBackendReq("UI_MESSAGE", {
+          handler: "plugin.run",
+          content: {},
+        });
       });
+    }, {
+      language: "typescript",
+      description: "typed on-load handler",
     });
-  }, {
-    language: "typescript",
-    description: "typed on-load handler",
-  });
+  }
 }
 ```
 

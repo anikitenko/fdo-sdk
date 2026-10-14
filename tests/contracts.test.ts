@@ -5,7 +5,7 @@ import {
     validatePluginMetadata,
     validateSerializedRenderPayload,
     validateUIMessagePayload,
-} from "../src/utils/contracts";
+} from "../src";
 import { MESSAGE_TYPE } from "../src/enums";
 
 describe("SDK contract validators", () => {

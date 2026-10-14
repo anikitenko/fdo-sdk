@@ -1,10 +1,10 @@
-import { atomicWriteFile, atomicWriteFileSync } from '../../src/utils/atomic';
+import { atomicWriteFile, atomicWriteFileSync } from '../../src';
 
 // Mock the write-file-atomic module
 vi.mock('write-file-atomic', () => {
   return {
     __esModule: true,
-    default: vi.fn().mockImplementation((...args: any[]) => {
+    default: vi.fn().mockImplementation(() => {
       return Promise.resolve();
     }),
   };

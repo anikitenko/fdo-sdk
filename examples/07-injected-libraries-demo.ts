@@ -12,7 +12,7 @@
  * - This example intentionally uses plain markup so the focus stays on injected globals and iframe runtime behavior
  */
 
-import { createClipboardReadRequest, createClipboardWriteRequest, FDO_SDK, FDOInterface, getInlinePrivilegedActionErrorFormatterSource, PluginMetadata, PluginCapability, PluginRegistry, extractPrivilegedActionRequest } from "@anikitenko/fdo-sdk";
+import { createClipboardReadRequest, createClipboardWriteRequest, FDO_SDK, FDOInterface, getInlinePrivilegedActionErrorFormatterSource, PluginMetadata, PluginCapability, PluginRegistry } from "@anikitenko/fdo-sdk";
 
 export default class InjectedLibrariesDemoPlugin extends FDO_SDK implements FDOInterface {
     private readonly _metadata: PluginMetadata = {
@@ -212,6 +212,7 @@ class Plugin extends FDO_SDK &#123;
         return `
             (() => {
                 const output = document.getElementById("helper-output");
+                /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
                 const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
                 const setOutput = (html) => {
                     if (output) {
@@ -255,7 +256,7 @@ class Plugin extends FDO_SDK &#123;
                 window.waitForElement("#editor", () => {
                     const editor = ace.edit("editor");
                     editor.setTheme("ace/theme/monokai");
-                    editor.session.setMode("ace/mode/typescript");
+                    editor.getSession().setMode("ace/mode/typescript");
                     editor.setValue(\`import { FDO_SDK, FDOInterface, PluginMetadata } from "@anikitenko/fdo-sdk";
 
 export default class MyPlugin extends FDO_SDK implements FDOInterface {
@@ -294,7 +295,7 @@ new MyPlugin();\`, 1);
                                 handler: "demo.getClipboardWriteRequest",
                                 content: { text: content }
                             });
-                            const requestPayload = extractPrivilegedActionRequest(envelopeOrRequest);
+                            const requestPayload = envelopeOrRequest?.result?.request ?? envelopeOrRequest?.request ?? envelopeOrRequest;
                             const fallbackCorrelationId = envelopeOrRequest?.result?.correlationId
                                 ?? envelopeOrRequest?.correlationId
                                 ?? "unknown";
@@ -325,7 +326,7 @@ new MyPlugin();\`, 1);
                                 handler: "demo.getClipboardReadRequest",
                                 content: {}
                             });
-                            const requestPayload = extractPrivilegedActionRequest(envelopeOrRequest);
+                            const requestPayload = envelopeOrRequest?.result?.request ?? envelopeOrRequest?.request ?? envelopeOrRequest;
                             const fallbackCorrelationId = envelopeOrRequest?.result?.correlationId
                                 ?? envelopeOrRequest?.correlationId
                                 ?? "unknown";
@@ -387,7 +388,7 @@ new MyPlugin();\`, 1);
 
                     window.waitForElement("#dynamic-element", (element) => {
                         notyf.success("Found the dynamic element!");
-                        element.style.animation = "pulse 0.5s";
+                        if (element instanceof HTMLElement) element.style.animation = "pulse 0.5s";
                     }, 2000);
                 });
 
@@ -408,7 +409,7 @@ new MyPlugin();\`, 1);
                 });
 
                 window.addGlobalEventListener("keydown", (event) => {
-                    if (event.key === "F1") {
+                    if (event instanceof KeyboardEvent && event.key === "F1") {
                         event.preventDefault();
                         notyf.open({
                             type: "info",

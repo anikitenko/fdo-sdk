@@ -112,26 +112,30 @@ Try modifying the example to add your own features. The inline comments explain 
 ### Plugin Metadata
 All plugins must define metadata:
 ```typescript
-private readonly _metadata: PluginMetadata = {
-  name: "Your Plugin Name",
-  version: "1.0.0",
-  author: "Your Name",
-  description: "What your plugin does",
-  icon: "icon.png"
-};
+class ExamplePlugin extends FDO_SDK {
+  private readonly _metadata: PluginMetadata = {
+    name: "Your Plugin Name",
+    version: "1.0.0",
+    author: "Your Name",
+    description: "What your plugin does",
+    icon: "icon.png"
+  };
+}
 ```
 
 ### Lifecycle Methods
 All plugins must implement init() and render():
 ```typescript
-init(): void {
-  // Setup code: register handlers, initialize stores, etc.
-  this.log("Plugin initialized");
-}
+class ExamplePlugin extends FDO_SDK {
+  init(): void {
+    // Setup code: register handlers, initialize stores, etc.
+    this.log("Plugin initialized");
+  }
 
-render(): string {
-  // Return HTML/UI definition
-  return "<div>Your UI here</div>";
+  render(): string {
+    // Return HTML/UI definition
+    return "<div>Your UI here</div>";
+  }
 }
 ```
 

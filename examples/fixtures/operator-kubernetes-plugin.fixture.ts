@@ -3,7 +3,7 @@ import {
   createOperatorToolCapabilityPreset,
   createPrivilegedActionBackendRequest,
   createScopedWorkflowRequest,
-  extractPrivilegedActionRequest,
+
   FDOInterface,
   FDO_SDK,
   getInlinePrivilegedActionErrorFormatterSource,
@@ -88,7 +88,8 @@ export default class OperatorKubernetesFixturePlugin extends FDO_SDK implements 
         const previewObjectsButton = document.getElementById("kubectl-preview-objects");
         const inspectRestartWorkflowButton = document.getElementById("kubectl-inspect-restart-workflow");
         const output = document.getElementById("kubectl-workflow-result");
-        const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
+        /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
+                const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
 
         if (!previewObjectsButton || !inspectRestartWorkflowButton || !output) {
           return;
@@ -108,7 +109,7 @@ export default class OperatorKubernetesFixturePlugin extends FDO_SDK implements 
               content: {},
             });
             const fallbackCorrelationId = envelope?.result?.correlationId ?? envelope?.correlationId ?? "unknown";
-            const requestPayload = extractPrivilegedActionRequest(envelope);
+            const requestPayload = envelope?.result?.request ?? envelope?.request ?? envelope;
             const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
             if (response && response.ok) {
               setOutput(response);

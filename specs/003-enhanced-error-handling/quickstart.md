@@ -1,10 +1,12 @@
 # Enhanced Error Handling Quickstart
 
+Historical design sketches in this document are shown as text; consult the published SDK declarations and current authoring guides for executable APIs.
+
 ## Basic Usage
 
 Add error handling to any plugin method with the `@handleError` decorator:
 
-```typescript
+```text
 import { handleError } from '@anikitenko/fdo-sdk';
 
 class MyPlugin extends BasePlugin {
@@ -19,7 +21,7 @@ class MyPlugin extends BasePlugin {
 
 ### Basic Error Message
 
-```typescript
+```text
 @handleError({
   errorMessage: "Failed to fetch user data"
 })
@@ -30,7 +32,7 @@ async getUser(id: string): Promise<Result<User>> {
 
 ### Custom Error UI
 
-```typescript
+```text
 @handleError({
   returnErrorUI: true,
   errorUIRenderer: (error) => ({
@@ -46,7 +48,7 @@ render(): HTMLElement {
 
 ### Notification Configuration
 
-```typescript
+```text
 @handleError({
   showNotification: true,
   notificationConfig: {
@@ -67,7 +69,7 @@ async saveData(data: any): Promise<Result<void>> {
 
 Register notification categories in your plugin's init method:
 
-```typescript
+```text
 class MyPlugin extends BasePlugin {
   async init() {
     await this.registerNotificationCategories([
@@ -83,7 +85,7 @@ class MyPlugin extends BasePlugin {
 
 Add retry or recovery actions to your error handlers:
 
-```typescript
+```text
 @handleError({
   notificationConfig: {
     category: 'network',
@@ -129,7 +131,7 @@ async retryOperation(params: any): Promise<void> {
 
 Enable debug mode for detailed error information:
 
-```typescript
+```text
 @handleError({
   debug: true,
   logContext: true
@@ -140,7 +142,7 @@ Enable debug mode for detailed error information:
 
 The decorator preserves type information:
 
-```typescript
+```text
 // Result type is preserved
 @handleError()
 async getData(): Promise<Result<Data>> {

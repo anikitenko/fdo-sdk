@@ -100,7 +100,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
   /**
    * Handle increment button click.
    * 
-   * @param data - Data passed from the UI (can include button context, user info, etc.)
+   * @param _data - Data passed from the UI (can include button context, user info, etc.)
    * @returns Result object that can be used to update the UI
    */
   private handleIncrement(_data: unknown): any {
@@ -126,7 +126,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
   /**
    * Handle decrement button click.
    * 
-   * @param data - Data passed from the UI
+   * @param _data - Data passed from the UI
    * @returns Result object
    */
   private handleDecrement(_data: unknown): any {

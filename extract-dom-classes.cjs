@@ -1,6 +1,6 @@
 const path = require("path");
 const { Project } = require("ts-morph");
-const { RawSource } = require("webpack-sources");
+const { sources: { RawSource }, Compilation } = require("webpack");
 
 class DOMMetadataPlugin {
     constructor(options = {}) {
@@ -13,7 +13,7 @@ class DOMMetadataPlugin {
      * This includes usage hints, common patterns, and AI-friendly descriptions
      */
     generateAIMetadata(className, constructors, methods) {
-        const metadata = {
+        return {
             className,
             // Generate a concise summary
             summary: this.generateSummary(className, constructors, methods),
@@ -27,7 +27,6 @@ class DOMMetadataPlugin {
             quickReference: this.generateQuickReference(className, constructors, methods)
         };
         
-        return metadata;
     }
     
     generateSummary(className, constructors, methods) {
@@ -127,12 +126,13 @@ class DOMMetadataPlugin {
         return reference;
     }
 
+    /** @param {import('webpack').Compiler} compiler */
     apply(compiler) {
         compiler.hooks.thisCompilation.tap("Plugin", (compilation) => {
             compilation.hooks.processAssets.tap(
                 {
                     name: "Plugin",
-                    stage: compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_ADDITIONS
+                    stage: Compilation.PROCESS_ASSETS_STAGE_ADDITIONS
                 },
                 () => {
                     try {
@@ -187,8 +187,9 @@ class DOMMetadataPlugin {
 
                                         const parameters = ctor.getParameters().map(param => ({
                                             name: param.getName(),
-                                            type: param.getType().getText(),
+                                            type: param.getType().getText(param).replace(/import\("[^"]+"\)\./g, ""),
                                             optional: param.isOptional(),
+                                            rest: param.isRestParameter(),
                                             description: paramTags[param.getName()] || ""
                                         }));
 
@@ -229,16 +230,22 @@ class DOMMetadataPlugin {
 
                                         const parameters = method.getParameters().map(param => ({
                                             name: param.getName(),
-                                            type: param.getType().getText(),
+                                            type: param.getType().getText(param).replace(/import\("[^"]+"\)\./g, ""),
                                             description: paramTags[param.getName()] || "",
-                                            optional: param.isOptional()
+                                            optional: param.isOptional(),
+                                            rest: param.isRestParameter()
                                         }));
 
+                                        if (typeof extraTags.example === "string") {
+                                            extraTags.example = extraTags.example.replace(/<caption>[\s\S]*?<\/caption>/g, "").trim()
+                                                .replace(new RegExp(`(?<![.\\w])${name}\\(`, "g"), `new ${className}().${name}(`);
+                                        }
                                         return {
                                             name,
                                             description,
                                             parameters,
-                                            ...extraTags
+                                            ...extraTags,
+                                            returnType: method.getReturnType().getText(method),
                                         };
                                     });
 
@@ -257,8 +264,66 @@ class DOMMetadataPlugin {
                         const json = JSON.stringify(result, null, 2);
 
                         compilation.emitAsset(this.outFile, new RawSource(json));
+                        const contract = {
+                            contractVersion: "1.0.0",
+                            sdkVersion: require("./package.json").version,
+                            valueKinds: {
+                                "html-string": "Trusted serialized markup, never an Element. Text helpers escape content; composition helpers accept trusted HTML.",
+                                "class-name-string": "CSS class token; pass through classes or class attributes, not as markup.",
+                                "animation-name-string": "CSS animation name; use in animation/animationName declarations.",
+                                "render-on-load-module": "Frontend source descriptor; never execute for static preview or in the backend.",
+                                "dom-element": "Browser Element obtained only in frontend behavior; DOM builders do not return this kind."
+                            },
+                            styleOwnership: {
+                                default: "Legacy shared Goober sheet, drained by renderHTML; cross-instance isolation is not guaranteed.",
+                                isolated: "Call collector.collectStylesFrom(...helpers) before composition. Only attached instances contribute. renderHTML retains and emits the deduplicated sheet on every render.",
+                                lifetime: "One collector and fresh helpers per plugin/view. Release references at teardown; replace the collector to reset styles."
+                            },
+                            lifecycle: {
+                                key: "Use a unique stable lifecycleKey per frontend instance; identical generated options otherwise share an implicit key.",
+                                teardown: "disposeRenderOnLoadActions(window, key) before replacing markup; pagehide also disposes. Setup may return cleanup synchronously or asynchronously.",
+                                diagnostics: "onDiagnostic receives code, phase, message and remediation once per distinct failure per initialization. Strict throws synchronous initialization failures; handler and asynchronous failures are reported without unhandled rejections."
+                            },
+                            preview: { backendExecution: false, frontendExecution: false, inlineHandlers: false, policy: "Interpret allowlisted composition calls from authored source in a sandbox with isolated style owners; preserve source and unsupported expressions. Never evaluate arbitrary plugin code." },
+                            classes: result.map(entry => ({
+                                name: entry.className,
+                                extends: entry.className === "DOM" ? null : "DOM",
+                                constructors: entry.constructors,
+                                methods: entry.methods.map(method => {
+                                    const name = method.name;
+                                    const kind = name === "createClassFromStyle" ? "class-name-string"
+                                        : name === "createStyleKeyframe" ? "animation-name-string"
+                                        : name === "collectStylesFrom" ? "style-collector"
+                                        : ["combineProperties", "mergeOptions"].includes(name) ? "properties"
+                                        : ["createAttributes", "createOnAttributes"].includes(name) ? "attribute-string" : "html-string";
+                                    const example = typeof method.example === "string" ? method.example.replace(/<caption>[\s\S]*?<\/caption>/g, "").trim()
+                                        .replace(new RegExp(`(?<![.\\w])${name}\\(`, "g"), `new ${entry.className}().${name}(`) : null;
+                                    return {
+                                        name, parameters: method.parameters, returnType: method.returnType,
+                                        returnKind: kind,
+                                        compositionArguments: method.parameters.filter(p => ["children", "element", "content", "label", "styleObj", "keyframe", "helpers", "defaultClass", "onClick", "onChange"].includes(p.name)).map(p => ({
+                                            name: p.name,
+                                            kind: p.name === "content" ? "plain-text"
+                                                : p.name === "styleObj" ? "style-map"
+                                                : p.name === "keyframe" ? "keyframe-css-string"
+                                                : p.name === "helpers" ? "style-collector"
+                                                : p.name === "defaultClass" ? "class-name-string"
+                                                : ["onClick", "onChange"].includes(p.name) ? "frontend-handler"
+                                                : p.name === "label" && name === "createOptgroup" ? "attribute-value" : "trusted-html-string",
+                                            rest: p.rest
+                                        })),
+                                        sideEffects: name === "collectStylesFrom" ? ["assign-style-owner"] : name === "renderHTML" ? ["emit-css", "legacy-drain-shared-styles", "emit-host-script-placeholder"] : ["createAttributes", "createOnAttributes", "createElement", "mergeOptions"].includes(name) ? [] : ["register-css"],
+                                        staticPreviewSafe: !["createButton", "createOnAttributes", "collectStylesFrom"].includes(name),
+                                        constraints: "Static preview requires validated literal props, no serialized event functions, trusted/sanitized fragments and an isolated style collector. IDs may be generated when omitted.",
+                                        example,
+                                    };
+                                })
+                            }))
+                        };
+                        compilation.emitAsset("dom-authoring-contract.json", new RawSource(JSON.stringify(contract, null, 2)));
+                        compilation.emitAsset("dom-authoring-contract.schema.json", new RawSource(require("fs").readFileSync(path.resolve(__dirname, "scripts/dom-authoring-contract.schema.json"), "utf8")));
                     } catch (err) {
-                        console.error("❌ Error generating DOM metadata:", err);
+                        compilation.errors.push(new Error(`Error generating DOM metadata: ${err.message}`));
                     }
                 }
             )

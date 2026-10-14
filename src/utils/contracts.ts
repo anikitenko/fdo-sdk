@@ -354,7 +354,7 @@ function validateClipboardWriteActionRequest(payload: Record<string, unknown>): 
     return payload as HostPrivilegedActionRequest;
 }
 
-function validateFilesystemMutateActionRequest(payload: Record<string, unknown>): FilesystemMutateActionRequest {
+function validateScopedActionPayload(payload: Record<string, unknown>): Record<string, unknown> {
     if (!isRecord(payload.payload)) {
         throw new Error('Host privileged action "payload" must be an object.');
     }
@@ -367,6 +367,11 @@ function validateFilesystemMutateActionRequest(payload: Record<string, unknown>)
     if (!isValidScopeId(candidatePayload.scope)) {
         throw new Error('Host privileged action payload field "scope" must match /^[a-z0-9][a-z0-9._-]*$/.');
     }
+    return candidatePayload;
+}
+
+function validateFilesystemMutateActionRequest(payload: Record<string, unknown>): FilesystemMutateActionRequest {
+    const candidatePayload = validateScopedActionPayload(payload);
 
     if (!Array.isArray(candidatePayload.operations) || candidatePayload.operations.length === 0) {
         throw new Error('Host privileged action payload field "operations" must be a non-empty array.');
@@ -429,18 +434,7 @@ function validateFilesystemMutateActionRequest(payload: Record<string, unknown>)
 }
 
 function validateProcessExecActionRequest(payload: Record<string, unknown>): ProcessExecActionRequest {
-    if (!isRecord(payload.payload)) {
-        throw new Error('Host privileged action "payload" must be an object.');
-    }
-
-    const candidatePayload = payload.payload as Record<string, unknown>;
-
-    if (typeof candidatePayload.scope !== "string" || candidatePayload.scope.trim().length === 0) {
-        throw new Error('Host privileged action payload field "scope" must be a non-empty string.');
-    }
-    if (!isValidScopeId(candidatePayload.scope)) {
-        throw new Error('Host privileged action payload field "scope" must match /^[a-z0-9][a-z0-9._-]*$/.');
-    }
+    const candidatePayload = validateScopedActionPayload(payload);
 
     if (typeof candidatePayload.command !== "string" || candidatePayload.command.trim().length === 0) {
         throw new Error('Host privileged action payload field "command" must be a non-empty string.');

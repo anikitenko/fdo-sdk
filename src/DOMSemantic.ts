@@ -1,4 +1,4 @@
-import {DOM} from "./DOM";
+import {DOM, DOMOptions} from "./DOM";
 
 export class DOMSemantic extends DOM {
     /**
@@ -10,7 +10,7 @@ export class DOMSemantic extends DOM {
     }
 
     private buildProps(
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }>,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }>,
         id?: string
     ): Record<string, any> {
         return this.applyCustomAttributes(this.combineProperties("", options, id), options);
@@ -28,7 +28,7 @@ export class DOMSemantic extends DOM {
      */
     public createArticle(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -47,7 +47,7 @@ export class DOMSemantic extends DOM {
      */
     public createSection(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -66,7 +66,7 @@ export class DOMSemantic extends DOM {
      */
     public createNav(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -85,7 +85,7 @@ export class DOMSemantic extends DOM {
      */
     public createHeader(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -104,7 +104,7 @@ export class DOMSemantic extends DOM {
      */
     public createFooter(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -123,7 +123,7 @@ export class DOMSemantic extends DOM {
      */
     public createAside(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -142,7 +142,7 @@ export class DOMSemantic extends DOM {
      */
     public createMain(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);

@@ -76,10 +76,10 @@ export type RenderOnLoadModule = {
 export type RenderOnLoadOutput = RenderOnLoadSource | RenderOnLoadModule;
 
 export type RenderOnLoadActionHandlerContext = {
-    event: unknown;
-    element: unknown;
-    window: unknown;
-    document: unknown;
+    event: Event;
+    element: Element;
+    window: Window;
+    document: Document;
 };
 
 export type RenderOnLoadActionHandler = string | ((context: RenderOnLoadActionHandlerContext) => void | Promise<void>);
@@ -96,10 +96,23 @@ export type RenderOnLoadActionBinding = {
     required?: boolean;
 };
 
+export type RenderOnLoadDiagnostic = {
+    detail?: string;
+    code: string;
+    message: string;
+    remediation: string;
+    phase: "setup" | "binding" | "handler" | "cleanup";
+};
+
 export type RenderOnLoadActionBindingsModuleOptions = {
     handlers: Record<string, RenderOnLoadActionHandler>;
     bindings: RenderOnLoadActionBinding[];
-    setup?: RenderOnLoadSource;
+    /** Self-contained frontend function; return cleanup, optionally asynchronously. */
+    setup?: string | (() => void | (() => void) | Promise<void | (() => void)>);
+    /** Stable key per frontend instance. Reinitialization disposes only this key. */
+    lifecycleKey?: string;
+    /** Self-contained reporter expression; receives structured diagnostics. */
+    onDiagnostic?: string | ((diagnostic: RenderOnLoadDiagnostic) => void);
     strict?: boolean;
     language?: RenderOnLoadLanguage;
     hints?: RenderOnLoadHint[];

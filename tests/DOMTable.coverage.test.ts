@@ -16,7 +16,7 @@ describe("DOMTable coverage extras", () => {
     it("should render onClick via otherProps in header", () => {
         const header = domTable.createTableHeader(["H"], {}, undefined, { onClick: () => {} });
     // onClick should be serialized by createOnAttributes (any function representation)
-    expect(header).toMatch(/onClick=\{.+\}/);
+    expect(header).toMatch(/onClick=\{.+}/);
     });
 
     it("should allow disableDefaultClass to remove default class", () => {

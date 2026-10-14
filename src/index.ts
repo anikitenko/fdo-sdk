@@ -120,6 +120,7 @@ export {
     createRenderOnLoadActionsSource,
     defineRenderOnLoad,
     defineRenderOnLoadActions,
+    disposeRenderOnLoadActions,
     getRenderOnLoadTemplate,
     listRenderOnLoadTemplates,
     getRenderOnLoadMonacoHints,
@@ -270,3 +271,5 @@ export class FDO_SDK {
         return this._logger;
     }
 }
+
+export * from "./ui";

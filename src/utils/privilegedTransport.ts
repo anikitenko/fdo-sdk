@@ -72,7 +72,7 @@ export async function requestPrivilegedAction<TResult = unknown, TRequest extend
         request,
     };
     const handler = options?.handler ?? "requestPrivilegedAction";
-    return runtimeWindow.createBackendReq(handler, payload) as Promise<PrivilegedActionResponse<TResult>>;
+    return await runtimeWindow.createBackendReq(handler, payload) as PrivilegedActionResponse<TResult>;
 }
 
 function resolveEnvelopeCorrelationId(envelopeOrRequest: unknown): string | undefined {

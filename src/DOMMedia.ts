@@ -1,4 +1,4 @@
-import {DOM} from "./DOM";
+import {DOM, DOMOptions} from "./DOM";
 
 export class DOMMedia extends DOM {
     /**
@@ -24,7 +24,7 @@ export class DOMMedia extends DOM {
     public createImage(
         src: string,
         alt: string,
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string,
         otherProps?: Record<string, any>
     ): string {

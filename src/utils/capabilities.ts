@@ -27,7 +27,7 @@ const FILESYSTEM_SCOPE_CAPABILITY_PREFIX = "system.fs.scope.";
 const PROCESS_SCOPE_CAPABILITY_PREFIX = "system.process.scope.";
 const HOST_WRITE_CAPABILITY = "system.host.write";
 const HOSTS_WRITE_CAPABILITY = "system.hosts.write";
-const MISSING_CAPABILITY_ERROR_PATTERN = /^Capability "([^"]+)" is required to (.+)\. Configure PluginRegistry\.configureCapabilities\(\{ granted: \["[^"]+"\] \}\) in the host before plugin initialization\.$/;
+const MISSING_CAPABILITY_ERROR_PATTERN = /^Capability "([^"]+)" is required to (.+)\. Configure PluginRegistry\.configureCapabilities\(\{ granted: \["[^"]+"] }\) in the host before plugin initialization\.$/;
 
 function increment(counter: Record<string, number>, key: string): void {
     counter[key] = (counter[key] ?? 0) + 1;

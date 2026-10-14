@@ -30,46 +30,46 @@ Feature dir: `/Users/onikiten/dev/fdo-sdk/specs/001-more-dom-elements`
 Goal: Provide a `DOMTable` class that generates valid HTML table markup (table, thead, tbody, tfoot, tr, th, td, caption) and supports styling, attributes and events.
 Independent test criteria: A plugin using only `src/DOMTable.ts` and `tests/DOMTable.test.ts` must be able to render a table with headers and rows and pass unit tests that assert thead/tbody/th/td structure.
 
-- [ ] T016 [US1] Implement `createTable()`, `createTableHead()`, `createTableBody()`, `createTableFoot()` methods in `/Users/onikiten/dev/fdo-sdk/src/DOMTable.ts`
-- [ ] T017 [US1] Implement row/cell helpers `createTableRow()`, `createTableHeader()`, `createTableCell()` and `createCaption()` in `/Users/onikiten/dev/fdo-sdk/src/DOMTable.ts`
-- [ ] T018 [US1] Add JSDoc (with @uiName) and usage examples to `/Users/onikiten/dev/fdo-sdk/src/DOMTable.ts`
-- [ ] T019 [US1] Implement unit tests exercising headers, rows, styling and events in `/Users/onikiten/dev/fdo-sdk/tests/DOMTable.test.ts`
-- [ ] T020 [US1] Add a minimal integration example using `DOMTable` in `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts` and verify rendering via `/Users/onikiten/dev/fdo-sdk/package.json` test entry
+- [ ] T016 \[US1\] Implement `createTable()`, `createTableHead()`, `createTableBody()`, `createTableFoot()` methods in `/Users/onikiten/dev/fdo-sdk/src/DOMTable.ts`
+- [ ] T017 \[US1\] Implement row/cell helpers `createTableRow()`, `createTableHeader()`, `createTableCell()` and `createCaption()` in `/Users/onikiten/dev/fdo-sdk/src/DOMTable.ts`
+- [ ] T018 \[US1\] Add JSDoc (with @uiName) and usage examples to `/Users/onikiten/dev/fdo-sdk/src/DOMTable.ts`
+- [ ] T019 \[US1\] Implement unit tests exercising headers, rows, styling and events in `/Users/onikiten/dev/fdo-sdk/tests/DOMTable.test.ts`
+- [ ] T020 \[US1\] Add a minimal integration example using `DOMTable` in `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts` and verify rendering via `/Users/onikiten/dev/fdo-sdk/package.json` test entry
 
 ## Phase 4 — User Story 2 (US2) — Display Images and Media (Priority: P2)
 
 Goal: Provide `DOMMedia.createImage()` supporting src, alt, width, height, loading and styling. Independent test criteria: A unit test that asserts img element attributes and alt text correctness.
 
-- [ ] T021 [P] [US2] Implement `createImage()` in `/Users/onikiten/dev/fdo-sdk/src/DOMMedia.ts`
-- [ ] T022 [US2] Add JSDoc (with @uiName) and usage examples to `/Users/onikiten/dev/fdo-sdk/src/DOMMedia.ts`
-- [ ] T023 [US2] Implement unit tests verifying src/alt/width/height/loading in `/Users/onikiten/dev/fdo-sdk/tests/DOMMedia.test.ts`
-- [ ] T024 [US2] Add image usage example to `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts`
-- [ ] T025 [US2] Verify tests for DOMMedia pass via `/Users/onikiten/dev/fdo-sdk/package.json` test runner
+- [ ] T021 [P] \[US2\] Implement `createImage()` in `/Users/onikiten/dev/fdo-sdk/src/DOMMedia.ts`
+- [ ] T022 \[US2\] Add JSDoc (with @uiName) and usage examples to `/Users/onikiten/dev/fdo-sdk/src/DOMMedia.ts`
+- [ ] T023 \[US2\] Implement unit tests verifying src/alt/width/height/loading in `/Users/onikiten/dev/fdo-sdk/tests/DOMMedia.test.ts`
+- [ ] T024 \[US2\] Add image usage example to `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts`
+- [ ] T025 \[US2\] Verify tests for DOMMedia pass via `/Users/onikiten/dev/fdo-sdk/package.json` test runner
 
 ## Phase 5 — User Story 3 (US3) — Semantic Page Sections (Priority: P3)
 
 Goal: Provide semantic element helpers (article, section, nav, header, footer, aside, main) in `DOMSemantic`. Independent test criteria: Unit tests assert that semantic tags are produced instead of generic divs.
 
-- [ ] T026 [P] [US3] Implement semantic element methods in `/Users/onikiten/dev/fdo-sdk/src/DOMSemantic.ts`
-- [ ] T027 [US3] Add JSDoc (with @uiName) and examples in `/Users/onikiten/dev/fdo-sdk/src/DOMSemantic.ts`
-- [ ] T028 [US3] Implement unit tests in `/Users/onikiten/dev/fdo-sdk/tests/DOMSemantic.test.ts` asserting semantic tag output
-- [ ] T029 [US3] Add semantic element usage examples to `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts`
+- [ ] T026 [P] \[US3\] Implement semantic element methods in `/Users/onikiten/dev/fdo-sdk/src/DOMSemantic.ts`
+- [ ] T027 \[US3\] Add JSDoc (with @uiName) and examples in `/Users/onikiten/dev/fdo-sdk/src/DOMSemantic.ts`
+- [ ] T028 \[US3\] Implement unit tests in `/Users/onikiten/dev/fdo-sdk/tests/DOMSemantic.test.ts` asserting semantic tag output
+- [ ] T029 \[US3\] Add semantic element usage examples to `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts`
 
 ## Phase 6 — User Story 4 (US4) — Ordered and Definition Lists (Priority: P3)
 
 Goal: Extend `DOMNested` to support `ol`, `dl`, `dt`, `dd`. Independent test criteria: Unit tests assert proper ol and dl structures are produced and maintain existing unordered-list behavior.
 
-- [ ] T030 [P] [US4] Implement `createOrderedList()`, `createDefinitionList()`, `createDefinitionTerm()`, `createDefinitionDescription()` in `/Users/onikiten/dev/fdo-sdk/src/DOMNested.ts`
-- [ ] T031 [US4] Add/modify unit tests in `/Users/onikiten/dev/fdo-sdk/tests/DOMNested.test.ts` to cover new list types
-- [ ] T032 [US4] Add ordered/definition list examples to `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts`
+- [ ] T030 [P] \[US4\] Implement `createOrderedList()`, `createDefinitionList()`, `createDefinitionTerm()`, `createDefinitionDescription()` in `/Users/onikiten/dev/fdo-sdk/src/DOMNested.ts`
+- [ ] T031 \[US4\] Add/modify unit tests in `/Users/onikiten/dev/fdo-sdk/tests/DOMNested.test.ts` to cover new list types
+- [ ] T032 \[US4\] Add ordered/definition list examples to `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts`
 
 ## Phase 7 — User Story 5 (US5) — Interactive Select Dropdowns (Priority: P2)
 
 Goal: Extend `DOMInput` to create `select`, `option`, and `optgroup` with value binding and event handlers. Independent test criteria: Unit tests that assert select/options render and onChange handlers are attached.
 
-- [ ] T033 [P] [US5] Implement `createSelect()`, `createOption()`, `createOptgroup()` in `/Users/onikiten/dev/fdo-sdk/src/DOMInput.ts`
-- [ ] T034 [US5] Update `/Users/onikiten/dev/fdo-sdk/tests/DOMInput.test.ts` with select/option/optgroup tests
-- [ ] T035 [US5] Add select dropdown examples to `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts`
+- [ ] T033 [P] \[US5\] Implement `createSelect()`, `createOption()`, `createOptgroup()` in `/Users/onikiten/dev/fdo-sdk/src/DOMInput.ts`
+- [ ] T034 \[US5\] Update `/Users/onikiten/dev/fdo-sdk/tests/DOMInput.test.ts` with select/option/optgroup tests
+- [ ] T035 \[US5\] Add select dropdown examples to `/Users/onikiten/dev/fdo-sdk/examples/dom_elements_plugin.ts`
 
 ## Final Phase — Polish & Cross-cutting Concerns
 

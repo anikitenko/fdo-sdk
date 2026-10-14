@@ -39,23 +39,37 @@
   "exports": {
     ".": {
       "types": "./dist/@types/index.d.ts",
+      "import": "./dist/fdo-sdk.mjs",
       "require": "./dist/fdo-sdk.bundle.js",
       "default": "./dist/fdo-sdk.bundle.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./dom-metadata.json": "./dist/dom-metadata.json",
+    "./dom-authoring-contract.json": "./dist/dom-authoring-contract.json",
+    "./dom-authoring-contract.schema.json": "./dist/dom-authoring-contract.schema.json",
+    "./ui": {
+      "types": "./dist/@types/ui/index.d.ts",
+      "import": "./dist/ui.mjs",
+      "require": "./dist/ui.cjs",
+      "default": "./dist/ui.mjs"
+    },
+    "./ui-components.json": "./dist/ui-components.json",
+    "./ui-components.schema.json": "./dist/ui-components.schema.json"
   },
   "files": [
     "bin/**/*.js",
     "scripts/fdo-sdk-migrate.mjs",
     "dist/**/*.d.ts",
     "dist/**/*.js",
+    "dist/**/*.mjs",
     "dist/**/*.json",
     "docs/**/*.md",
-    "examples"
+    "examples",
+    "dist/**/*.cjs"
   ],
   "scripts": {
     "prepare": "husky",
-    "build": "npm run build:bundle && npm run build:types",
+    "build": "npm run build:bundle && npm run build:types && npm run build:esm && npm run build:ui && npm run build:ui-contract",
     "build:bundle": "webpack --config webpack.config.cjs",
     "build:types": "tsc --project tsconfig.build.json",
     "test:examples": "tsc --project examples/tsconfig.json --noEmit",
@@ -63,31 +77,36 @@
     "verify:types:pack": "node scripts/verify-types-pack.mjs",
     "verify:docs": "node scripts/verify-docs.mjs",
     "migrate": "node scripts/fdo-sdk-migrate.mjs",
-    "verify:pack": "npm run verify:types:pack",
+    "verify:pack": "npm run verify:authoring && npm run verify:types:pack",
     "prepack": "npm run build && npm run verify:types:local",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "commitlint": "commitlint --from=HEAD~1 --to=HEAD --verbose",
     "coverage:open": "npx opn coverage/lcov-report/index.html || true",
-    "prepublishOnly": "npm test && npm run test:examples && npm run verify:docs && npm run build && npm run verify:pack"
+    "prepublishOnly": "npm test && npm run test:examples && npm run verify:docs && npm run build && npm run verify:pack",
+    "verify:authoring": "node scripts/verify-authoring-release.mjs",
+    "build:esm": "node scripts/generate-esm-exports.cjs",
+    "build:ui": "webpack --config webpack.ui.config.cjs",
+    "build:ui-contract": "node scripts/generate-ui-contract.cjs"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.5.0",
-    "@commitlint/config-conventional": "^20.5.0",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@types/write-file-atomic": "^4.0.3",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/coverage-v8": "^5.0.4",
+    "ajv": "^8.20.0",
     "husky": "^9.1.7",
     "ts-loader": "^9.5.4",
-    "ts-morph": "^27.0.2",
-    "typescript": "^6.0.2",
-    "vitest": "^4.1.2",
-    "webpack": "^5.105.4",
-    "webpack-cli": "^7.0.2",
-    "webpack-sources": "^3.3.4"
+    "ts-morph": "^28.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "5.0.4",
+    "webpack": "^5.111.1",
+    "webpack-cli": "^7.2.3",
+    "webpack-sources": "^3.6.0"
   },
   "dependencies": {
     "@expo/sudo-prompt": "github:expo/sudo-prompt",
-    "goober": "^2.1.18",
+    "goober": "^2.1.19",
     "pify": "^6.1.0",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0",

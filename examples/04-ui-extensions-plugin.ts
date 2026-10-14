@@ -196,7 +196,6 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
   /**
    * Handle quick search action.
    * 
-   * @param data - Data from the quick action
    * @returns Result object
    */
   private handleQuickSearch(): any {
@@ -221,7 +220,6 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
   /**
    * Handle quick create action.
    * 
-   * @param data - Data from the quick action
    * @returns Result object
    */
   private handleQuickCreate(): any {
@@ -246,7 +244,6 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
   /**
    * Handle quick settings action.
    * 
-   * @param data - Data from the quick action
    * @returns Result object
    */
   private handleQuickSettings(): any {
@@ -271,7 +268,6 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
   /**
    * Handle show dashboard from side panel.
    * 
-   * @param data - Data from the side panel
    * @returns Result object
    */
   private handleShowDashboard(): any {
@@ -296,7 +292,6 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
   /**
    * Handle show reports from side panel.
    * 
-   * @param data - Data from the side panel
    * @returns Result object
    */
   private handleShowReports(): any {
@@ -321,7 +316,6 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
   /**
    * Handle show settings from side panel.
    * 
-   * @param data - Data from the side panel
    * @returns Result object
    */
   private handleShowSettings(): any {

@@ -1,13 +1,26 @@
 import {css as gooberCss, extractCss, keyframes, setup} from 'goober';
 
+/** Goober declarations, nested selectors and conditional rules. Numeric values are emitted verbatim. */
+export interface DOMStyleMap {
+    [propertyOrSelector: string]: string | number | null | undefined | DOMStyleMap;
+}
 
-// Set up goober for SSR. The first parameter is a pragma (which is optional here),
-// and the second parameter is the target for style injection.
-// For SSR, we don't need a target, so we pass undefined.
+
+// No rendering pragma is needed for HTML-string composition. Explicit style
+// sheets are passed through Goober's css context, rather than its setup API.
 setup(null);
+
+/** Element authoring options. Flat Record<string, string> styles remain valid. */
+export interface DOMOptions {
+    classes: string[];
+    style: DOMStyleMap;
+    disableDefaultClass: boolean;
+}
 
 export class DOM {
     private readonly selfCloseTag: boolean
+    private styleSheet?: { data: string };
+    private registeredStyles = false;
     private static readonly ATTRIBUTE_ALIAS_PRIORITY: Record<string, number> = {
         class: 2,
         className: 1,
@@ -40,7 +53,7 @@ export class DOM {
             globalObject.window !== null &&
             typeof globalObject.document === "undefined";
 
-        if (!shouldMaskWindow) {
+        if (!shouldMaskWindow || this.styleSheet) {
             return operation();
         }
 
@@ -57,32 +70,68 @@ export class DOM {
     }
 
     /**
+     * Collect this instance and helper styles in one isolated sheet. Call before composing markup.
+     * Repeated renders retain CSS; duplicate registrations are deduplicated by Goober.
+     * @param helpers - Helper instances whose future styles belong to this collector.
+     * @returns This collector, for chaining.
+     * @uiSkip
+     * @example const collector = new DOM().collectStylesFrom(new DOMText());
+     */
+    public collectStylesFrom(...helpers: DOM[]): this {
+        const sheet = this.styleSheet ?? { data: "" };
+        // Goober selects a browser target through querySelector/firstChild. Keep
+        // collection string-only in both runtimes, without replacing window or
+        // injecting into document.head. SSR directly reads this same data field.
+        if (!this.styleSheet) Object.assign(sheet, {
+            querySelector: () => ({ firstChild: sheet, parentNode: sheet }),
+        });
+        for (const helper of [this, ...helpers]) {
+            if (!helper.styleSheet && helper.registeredStyles) {
+                const error = new Error("Call collectStylesFrom before any styles are registered on the collector or helpers.");
+                Object.assign(error, {code: "DOM_STYLE_COLLECTOR_LATE", remediation: "Create fresh helpers and attach them before composing markup."});
+                throw error;
+            }
+            if (helper.styleSheet && helper.styleSheet !== sheet && helper.styleSheet.data) {
+                const error = new Error("Collect styles before registration; use a fresh helper to change owners.");
+                Object.assign(error, {code: "DOM_STYLE_OWNER_CONFLICT", remediation: "Create helpers per render owner and collectStylesFrom before composition."});
+                throw error;
+            }
+        }
+        this.styleSheet = sheet;
+        for (const helper of helpers) helper.styleSheet = sheet;
+        return this;
+    }
+
+    /**
      * Creates a style using goober’s css function.
      *
-     * This function converts the style object into a CSS string and passes it
-     * to goober’s css tagged template literal to generate a class name.
+     * Passes declarations, nested selectors and conditional rules to Goober's
+     * object serializer and registers CSS with this instance's style owner.
      *
      * @param styleObj A record of CSS properties and values
      * @returns {string} Generated class name
      * @uiName Create class from style
-     * @example const class = createClassFromStyle({
+     * @example const className = createClassFromStyle({
      *   "background-color": 'red',
      *   color: 'white',
      *   padding: '10px',
      *   "border-radius": '5px',
      * });
      */
-    public createClassFromStyle(styleObj: Record<string, string>): string {
-        return this.runWithSSRCompatibleGoober(() => gooberCss({...styleObj}))
+    public createClassFromStyle(styleObj: DOMStyleMap): string {
+        this.registeredStyles = true;
+        return this.runWithSSRCompatibleGoober(() => this.styleSheet
+            ? gooberCss.call({target: this.styleSheet}, {...styleObj})
+            : gooberCss({...styleObj}))
     }
 
     /**
      * Creates a style using goober’s keyframes function.
      *
-     * This function converts the style object into a CSS string and passes it
-     * to goober’s keyframes tagged template literal to generate a class name.
+     * Registers a keyframe body and returns its animation name. Use the result
+     * in animation/animationName, rather than as an element class.
      *
-     * @returns {string} - The generated class name.
+     * @returns {string} - The generated animation name (use in animation/animationName).
      * @param keyframe - The keyframe string to create.
      * @uiName Create keyframe from style
      * @example const className = createStyleKeyframe(`
@@ -95,7 +144,10 @@ export class DOM {
      * `);
      */
     public createStyleKeyframe(keyframe: string): string {
-        return this.runWithSSRCompatibleGoober(() => keyframes`${keyframe}`)
+        this.registeredStyles = true;
+        return this.runWithSSRCompatibleGoober(() => this.styleSheet
+            ? gooberCss.bind({target: this.styleSheet, k: 1})`${keyframe}`
+            : keyframes`${keyframe}`)
     }
 
     /**
@@ -109,14 +161,14 @@ export class DOM {
      * @uiSkip
      */
     public renderHTML(element: string): string {
-        const cssText = this.runWithSSRCompatibleGoober(() => extractCss());
+        const cssText = this.styleSheet?.data ?? this.runWithSSRCompatibleGoober(() => extractCss());
         return `<style>${cssText}</style>${element}<script id="plugin-script-placeholder" nonce="plugin-script-inject"></script>`
     }
 
     /**
      * Creates a generic HTML element.
      * @param tag - The HTML tag name (e.g., 'div', 'button', 'p')
-     * @param props - An object of attributes and event listeners
+     * @param props - An object of attributes and legacy serialized event functions (no listeners are installed)
      * @param children - Trusted HTML child fragments. Use DOMText helpers for untrusted/user text.
      * @returns {string} - A raw HTML element string
      * @example const div = createElement('div', { className: 'container' }, 'Hello, World!');
@@ -127,7 +179,7 @@ export class DOM {
         const attributes = this.createAttributes(props);
         const onAttributes = this.createOnAttributes(props);
         const closeTagWithContent = `>${content.join('')}</${tag}>`
-        const closeTag = this.selfCloseTag ? ` />` : closeTagWithContent
+        const closeTag = this.selfCloseTag && tag !== "textarea" ? ` />` : closeTagWithContent
 
         let openTag;
         if (attributes && !onAttributes) {
@@ -152,7 +204,7 @@ export class DOM {
      * @example const props = combineProperties('default-class', { classes: ['class1', 'class2'], style: { color: 'red' }, disableDefaultClass: false }, 'element-id');
      * @uiSkip
      */
-    public combineProperties(defaultClass: string, options: Partial<typeof DOM.DEFAULT_OPTIONS>, id: string = ""): Record<string, any> {
+    public combineProperties(defaultClass: string, options: Partial<DOMOptions>, id: string = ""): Record<string, any> {
         const {classes, style, disableDefaultClass} = this.mergeOptions(options);
         const defaultPropClass = disableDefaultClass ? "" : defaultClass;
 
@@ -172,7 +224,7 @@ export class DOM {
 
     /**
      * Helper to build attributes of element
-     * @param props - An object of attributes and event listeners
+     * @param props - An object of attributes and legacy serialized event functions (no listeners are installed)
      * @returns {string} - A string of attributes.
      * @uiSkip
      */
@@ -201,7 +253,7 @@ export class DOM {
 
     /**
      * Helper to build On attributes of element
-     * @param props - An object of attributes and event listeners
+     * @param props - An object of attributes and legacy serialized event functions (no listeners are installed)
      * @returns {string} - A string of attributes.
      * @uiSkip
      */
@@ -218,7 +270,7 @@ export class DOM {
      * @returns {Record<string, any>} - An object of merged options
      * @uiSkip
      */
-    public mergeOptions(userOptions?: Partial<typeof DOM.DEFAULT_OPTIONS>): Record<string, any> {
+    public mergeOptions(userOptions?: Partial<DOMOptions>): Record<string, any> {
         return {...DOM.DEFAULT_OPTIONS, ...userOptions};
     }
 
@@ -231,7 +283,7 @@ export class DOM {
      */
     protected applyCustomAttributes(
         props: Record<string, any>,
-        options?: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }>
+        options?: Partial<DOMOptions & { customAttributes?: Record<string, string> }>
     ): Record<string, any> {
         if (!options?.customAttributes) {
             return props;

@@ -1,4 +1,4 @@
-import {DOM} from "./DOM";
+import {DOM, DOMOptions} from "./DOM";
 
 export class DOMTable extends DOM {
     /**
@@ -10,7 +10,7 @@ export class DOMTable extends DOM {
     }
 
     private buildProps(
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }>,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }>,
         id?: string
     ): Record<string, any> {
         return this.applyCustomAttributes(this.combineProperties("", options, id), options);
@@ -24,13 +24,13 @@ export class DOMTable extends DOM {
      * @returns {string} - The rendered table element.
      * @uiName Create table
      * @example <caption>Create a table with headers and rows.</caption>
-     * const thead = new DOMTable().createTableHead([...]);
-     * const tbody = new DOMTable().createTableBody([...]);
+     * const thead = new DOMTable().createTableHead(["Cell"]);
+     * const tbody = new DOMTable().createTableBody(["Cell"]);
      * const table = new DOMTable().createTable([thead, tbody]);
      */
     public createTable(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -45,12 +45,12 @@ export class DOMTable extends DOM {
      * @returns {string} - The rendered thead element.
      * @uiName Create table head
      * @example <caption>Create a table head with header row.</caption>
-     * const headerRow = new DOMTable().createTableRow([...]);
+     * const headerRow = new DOMTable().createTableRow(["Cell"]);
      * const thead = new DOMTable().createTableHead([headerRow]);
      */
     public createTableHead(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -65,13 +65,13 @@ export class DOMTable extends DOM {
      * @returns {string} - The rendered tbody element.
      * @uiName Create table body
      * @example <caption>Create a table body with data rows.</caption>
-     * const row1 = new DOMTable().createTableRow([...]);
-     * const row2 = new DOMTable().createTableRow([...]);
+     * const row1 = new DOMTable().createTableRow(["Cell"]);
+     * const row2 = new DOMTable().createTableRow(["Cell"]);
      * const tbody = new DOMTable().createTableBody([row1, row2]);
      */
     public createTableBody(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -86,12 +86,12 @@ export class DOMTable extends DOM {
      * @returns {string} - The rendered tfoot element.
      * @uiName Create table foot
      * @example <caption>Create a table footer with summary row.</caption>
-     * const footerRow = new DOMTable().createTableRow([...]);
+     * const footerRow = new DOMTable().createTableRow(["Cell"]);
      * const tfoot = new DOMTable().createTableFoot([footerRow]);
      */
     public createTableFoot(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -112,7 +112,7 @@ export class DOMTable extends DOM {
      */
     public createTableRow(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);
@@ -132,7 +132,7 @@ export class DOMTable extends DOM {
      */
     public createTableHeader(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string,
         otherProps?: Record<string, any>
     ): string {
@@ -153,7 +153,7 @@ export class DOMTable extends DOM {
      */
     public createTableCell(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string,
         otherProps?: Record<string, any>
     ): string {
@@ -173,7 +173,7 @@ export class DOMTable extends DOM {
      */
     public createCaption(
         children: any[],
-        options: Partial<typeof DOM.DEFAULT_OPTIONS & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
+        options: Partial<DOMOptions & { customAttributes?: Record<string, string> }> = DOM.DEFAULT_OPTIONS,
         id?: string
     ): string {
         const props = this.buildProps(options, id);

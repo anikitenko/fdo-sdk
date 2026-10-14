@@ -1,8 +1,8 @@
-import {DOM} from "./DOM";
+import {DOM, DOMOptions} from "./DOM";
 
 export class DOMLink extends DOM {
     private readonly id: string | undefined
-    private readonly options: Partial<typeof DOM.DEFAULT_OPTIONS>
+    private readonly options: Partial<DOMOptions>
     private readonly props: Record<string, any> | undefined
 
     /**
@@ -12,7 +12,7 @@ export class DOMLink extends DOM {
      * @param props - The properties to apply to the link.
      * @constructor - Creates a new DOMLink instance with the given style options and properties.
      */
-    constructor(id: string, styleOptions: Partial<typeof DOM.DEFAULT_OPTIONS> = DOM.DEFAULT_OPTIONS,
+    constructor(id: string = "", styleOptions: Partial<DOMOptions> = DOM.DEFAULT_OPTIONS,
                 props?: Record<string, any>) {
         super()
         this.id = id

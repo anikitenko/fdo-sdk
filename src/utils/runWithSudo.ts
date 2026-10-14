@@ -1,4 +1,3 @@
-import { dialog } from "electron";
 import sudo from "@expo/sudo-prompt";
 import { pify } from "./pify";
 import { requireCapability } from "./capabilities";
@@ -19,6 +18,9 @@ export async function runWithSudo(
 ): Promise<string> {
     requireCapability("sudo.prompt", "request elevated privileges through runWithSudo");
 
+    // Keep plain SDK/metadata authoring imports usable outside Electron.
+    // Capability validation still precedes access to the privileged runtime.
+    const { dialog } = await import("electron");
     const confirmed = await dialog.showMessageBox({
         type: "warning",
         buttons: ["Cancel", "Proceed"],
