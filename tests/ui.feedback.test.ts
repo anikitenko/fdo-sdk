@@ -41,6 +41,21 @@ function fixture(withProgress = true) {
 }
 
 describe('feedback composition', () => {
+    test('omits absent ARIA options without replacing caller-provided values', () => {
+        const dom = new DOM().collectStylesFrom();
+        const toast = createToast(dom, { id: 'default-toast', message: 'Saved' });
+        for (const attribute of ['aria-label', 'aria-labelledby', 'aria-describedby']) expect(toast).not.toContain(`${attribute}=`);
+        const progress = createProgressBar(dom, { id: 'default-progress', label: 'Download' });
+        expect(progress).toContain('aria-label="Download"');
+        expect(progress).not.toContain('aria-labelledby='); expect(progress).not.toContain('aria-describedby=');
+        const linked = createProgressBar(dom, { id: 'linked-progress', ariaLabelledBy: 'external-label' });
+        expect(linked).not.toContain('aria-label='); expect(linked).not.toContain('aria-describedby=');
+        expect(linked).toContain('aria-labelledby="external-label"');
+        const labelled = createToast(dom, { id: 'labelled-toast', message: 'Saved', ariaLabel: 'Notice', ariaLabelledBy: 'title', ariaDescribedBy: 'description' });
+        expect(labelled).toContain('aria-label="Notice"'); expect(labelled).toContain('aria-labelledby="title"'); expect(labelled).toContain('aria-describedby="description"');
+        const empty = createToast(dom, { id: 'empty-label', message: 'Saved', ariaLabel: '', ariaLabelledBy: '', ariaDescribedBy: '' });
+        for (const attribute of ['aria-label', 'aria-labelledby', 'aria-describedby']) expect(empty).toContain(`${attribute}=""`);
+    });
     test('native labelled progress keeps HTML strings, style ownership and indeterminate state', () => {
         const dom = new DOM().collectStylesFrom();
         const html = createProgressBar(dom, { id: 'job', label: 'A < B', options: { style: { '--fdo-ui-progress-color': 'red' } } });

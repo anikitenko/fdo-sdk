@@ -7,6 +7,15 @@ import { component, slot, UIElement, actionFixture, toastFixture, disclosureFixt
 
 const flush = async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
 describe('authoring component composition and previews', () => {
+    test('inline alert omits absent ARIA attributes and preserves explicit labels/descriptions', () => {
+        const dom = new DOM().collectStylesFrom();
+        const html = createInlineAlert(dom, { id: 'default-alert', message: 'Review your settings.' });
+        for (const attribute of ['aria-label', 'aria-labelledby', 'aria-describedby']) expect(html).not.toContain(`${attribute}=`);
+        const labelled = createInlineAlert(dom, { id: 'labelled-alert', message: 'Review your settings.', ariaLabel: 'Validation', ariaLabelledBy: 'title', ariaDescribedBy: 'description' });
+        expect(labelled).toContain('aria-label="Validation"'); expect(labelled).toContain('aria-labelledby="title"'); expect(labelled).toContain('aria-describedby="description"');
+        const empty = createInlineAlert(dom, { id: 'empty-label', message: 'Message', ariaLabel: '', ariaLabelledBy: '', ariaDescribedBy: '' });
+        for (const attribute of ['aria-label', 'aria-labelledby', 'aria-describedby']) expect(empty).toContain(`${attribute}=""`);
+    });
     test('returns escaped text with scoped/native relationships and trusted bodies', () => {
         const dom = new DOM().collectStylesFrom();
         expect(createInlineAlert(dom, { id: 'a', title: '<Title>', message: '<error>', variant: 'error', ariaLabel: 'Caller' })).toContain('aria-label="Caller"');

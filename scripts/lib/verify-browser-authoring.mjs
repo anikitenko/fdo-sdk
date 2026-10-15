@@ -28,6 +28,7 @@ export async function authoringBrowserChecks({ evaluate, check, accessible, clic
         document.querySelector('#author-accordion-local summary').id='author-local-summary'; document.querySelector('#author-accordion-remote summary').id='author-remote-summary';
     })()`);
     await evaluate(`authorAlert.update({message:'<b>Required field</b>', variant:'error'})`);
+    await check(`!document.getElementById('author-alert').hasAttribute('aria-labelledby') && !document.getElementById('author-alert').hasAttribute('aria-describedby')`, 'inline alert omits absent accessible relationships');
     await accessible('alert', 'Validation');
     await check(`document.querySelector('#author-alert [data-fdo-slot="message"]').textContent === '<b>Required field</b>' && !document.querySelector('#author-alert b')`, 'inline alert preserves accessible labels and plain text');
     await click('author-run');

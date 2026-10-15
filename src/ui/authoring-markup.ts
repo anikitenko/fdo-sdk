@@ -14,7 +14,10 @@ export function createInlineAlert(dom: DOM, options: InlineAlertMarkupOptions): 
         '&[data-fdo-variant="warning"]': { borderColor: 'var(--fdo-ui-warning-color, #a50)' },
         '&[data-fdo-variant="success"]': { borderColor: 'var(--fdo-ui-success-color, #16703c)' },
     }), hidden: options.visible === false, role: variant === 'warning' || variant === 'error' ? 'alert' : 'status', 'aria-atomic': 'true',
-    'data-fdo-variant': variant, 'aria-label': options.ariaLabel, 'aria-labelledby': options.ariaLabelledBy, 'aria-describedby': options.ariaDescribedBy,
+    'data-fdo-variant': variant,
+    ...(options.ariaLabel !== undefined ? { 'aria-label': options.ariaLabel } : {}),
+    ...(options.ariaLabelledBy !== undefined ? { 'aria-labelledby': options.ariaLabelledBy } : {}),
+    ...(options.ariaDescribedBy !== undefined ? { 'aria-describedby': options.ariaDescribedBy } : {}),
     }, slot('title', options.title ?? '') + slot('message', options.message));
 }
 /** Compose a caller-placed, labelled notification region. Toast HTML remains hidden until explicitly enqueued. */

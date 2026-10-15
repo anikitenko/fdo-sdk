@@ -5,4 +5,4 @@ const names = Object.keys(require('../dist/fdo-sdk.bundle.js')).filter(name => n
 for (const name of names) {
     if (!/^[A-Za-z_$][\w$]*$/.test(name)) throw new Error(`Invalid SDK export identifier: ${name}`);
 }
-fs.writeFileSync('dist/fdo-sdk.mjs', `import sdk from './fdo-sdk.bundle.js';\nexport const { ${names.join(', ')} } = sdk;\n`);
+fs.writeFileSync('dist/fdo-sdk.mjs', `import sdk from './fdo-sdk.bundle.js';\nexport const { ${names.join(', ')} } = sdk;\nexport default sdk;\n`);

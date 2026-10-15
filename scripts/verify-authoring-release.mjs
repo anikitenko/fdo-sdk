@@ -20,18 +20,31 @@ try {
     run('npm', ['install', path.join(fixture, packed.filename), `@types/node@${JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@types/node/package.json'), 'utf8')).version}`, '--ignore-scripts', '--no-audit', '--no-fund', ...(process.env.FDO_RELEASE_OFFLINE === '1' ? ['--offline'] : [])], fixture);
     const fixtureRequire = createRequire(path.join(fixture, 'package.json'));
     const loadFixture = specifier => fixtureRequire(specifier);
-    fs.writeFileSync(path.join(fixture, 'public-imports.mjs'), `import { DOM, DOMText, defineRenderOnLoadActions } from '@anikitenko/fdo-sdk';
+    fs.writeFileSync(path.join(fixture, 'public-imports.mjs'), `import sdk, { DOM, DOMText, defineRenderOnLoadActions } from '@anikitenko/fdo-sdk';
+import * as namespace from '@anikitenko/fdo-sdk';
+import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
+const require = createRequire(import.meta.url);
+const commonjs = require('@anikitenko/fdo-sdk');
+assert.strictEqual(sdk, commonjs, 'Native ESM default must preserve the CommonJS module object');
+assert.strictEqual(namespace.default, sdk);
+assert.strictEqual(sdk.DOM, DOM);
+assert.strictEqual(sdk.DOMText, DOMText);
+assert.strictEqual(sdk.defineRenderOnLoadActions, defineRenderOnLoadActions);
 if (typeof DOM !== 'function' || typeof DOMText !== 'function' || typeof defineRenderOnLoadActions !== 'function') throw Error('Missing native ESM public imports');
 `);
     run(process.execPath, [path.join(fixture, 'public-imports.mjs')], fixture);
     // Compiled against the installed tarball, not the repository's module resolver.
     // language=TEXT
-    const publicTypeSource = `import * as sdk from '@anikitenko/fdo-sdk';
+    const publicTypeSource = `import defaultSDK, * as sdk from '@anikitenko/fdo-sdk';
 import * as ui from '@anikitenko/fdo-sdk/ui';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 const require = createRequire(import.meta.url);
-assert.deepEqual(Object.keys(sdk).sort(), Object.keys(require('@anikitenko/fdo-sdk')).sort());
+assert.strictEqual(defaultSDK, require('@anikitenko/fdo-sdk'));
+const defaultDOM: typeof sdk.DOM = defaultSDK.DOM;
+assert.strictEqual(defaultDOM, sdk.DOM);
+assert.deepEqual(Object.keys(sdk).filter(name => name !== 'default').sort(), Object.keys(require('@anikitenko/fdo-sdk')).sort());
 assert.deepEqual(Object.keys(ui).sort(), Object.keys(require('@anikitenko/fdo-sdk/ui')).sort());
 const html: string = ui.createConfirmationDialog(new ui.DOM(), {id: 'typed', title: 'Confirm', options: {style:{'&:hover':{color:'red'}}}});
 void html;

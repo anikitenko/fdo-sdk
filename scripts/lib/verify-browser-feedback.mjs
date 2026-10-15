@@ -15,6 +15,7 @@ export async function feedbackBrowserChecks({ evaluate, check, accessible, click
         document.getElementById('outside').focus(); feedbackToast.show(); feedbackOther.show();
     })()`);
     await check(`document.activeElement.id === 'outside' && feedbackToast.getState().open && feedbackOther.getState().open`, 'toasts never capture focus or close another instance');
+    await check(`['aria-label','aria-labelledby','aria-describedby'].every(name => !document.getElementById('feedback-toast').hasAttribute(name)) && ['aria-labelledby','aria-describedby'].every(name => !document.getElementById('feedback-progress').hasAttribute(name))`, 'absent ARIA options never become literal undefined attributes');
     await accessible('progressbar', 'Files uploaded');
     await accessible('progressbar', 'Upload progress');
     await check(`document.getElementById('feedback-progress').matches(':indeterminate') && getComputedStyle(document.getElementById('feedback-toast')).backgroundColor === 'rgb(10, 20, 30)'`, 'native indeterminate progress and owned toast customization');

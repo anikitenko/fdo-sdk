@@ -19,7 +19,9 @@ export function createProgressBar(dom: DOM, options: ProgressBarMarkupOptions): 
     return new DOM().createElement('progress', {
         ...attributes(options.id, 'fdo.progress-bar'), max: values.max, ...(values.value === null ? {} : { value: values.value }),
         'data-fdo-state': values.value === null ? 'indeterminate' : 'determinate',
-        'aria-label': options.label || undefined, 'aria-labelledby': options.ariaLabelledBy, 'aria-describedby': options.ariaDescribedBy,
+        ...(options.label !== undefined ? { 'aria-label': options.label } : {}),
+        ...(options.ariaLabelledBy !== undefined ? { 'aria-labelledby': options.ariaLabelledBy } : {}),
+        ...(options.ariaDescribedBy !== undefined ? { 'aria-describedby': options.ariaDescribedBy } : {}),
         class: ['fdo-ui-progress-bar', css, ...(options.options?.classes ?? [])].join(' '),
     }, new DOMText().collectStylesFrom().createText(options.label ?? ''));
 }
@@ -44,7 +46,9 @@ export function createToast(dom: DOM, options: ToastMarkupOptions): string {
     return markup.createElement('div', {
         ...attributes(options.id, 'fdo.toast'), hidden: true, 'data-fdo-state': 'closed', 'data-fdo-variant': variant,
         role: variant === 'error' || variant === 'warning' ? 'alert' : 'status', 'aria-atomic': 'true',
-        'aria-label': options.ariaLabel, 'aria-labelledby': options.ariaLabelledBy, 'aria-describedby': options.ariaDescribedBy,
+        ...(options.ariaLabel !== undefined ? { 'aria-label': options.ariaLabel } : {}),
+        ...(options.ariaLabelledBy !== undefined ? { 'aria-labelledby': options.ariaLabelledBy } : {}),
+        ...(options.ariaDescribedBy !== undefined ? { 'aria-describedby': options.ariaDescribedBy } : {}),
         class: ['fdo-ui-toast', css, ...(options.options?.classes ?? [])].join(' '),
     }, slot('title', text.createText(options.title ?? '')) + slot('message', text.createText(options.message)) + progress + markup.createElement('button', {
         type: 'button', 'data-fdo-action': 'dismiss', class: 'fdo-ui-toast__dismiss',
