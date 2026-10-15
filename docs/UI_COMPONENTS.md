@@ -4,11 +4,13 @@ The API follows the existing SDK split: pure HTML-string composition with `DOM`,
 
 ## Public API
 
-| Component           | Composition                                      | Frontend mount                                      | Controller                                                   |
-| ------------------- | ------------------------------------------------ | --------------------------------------------------- | ------------------------------------------------------------ |
-| Dialog              | `createDialog(dom, options): string`             | `mountDialog(root, options?)`                       | `open(opener?)`, `close(reason?)`, `getState()`, `destroy()` |
-| Confirmation Dialog | `createConfirmationDialog(dom, options): string` | `mountConfirmationDialog(root, { onConfirm, ... })` | Dialog methods plus `confirm(): Promise<boolean>`            |
-| Popover             | `createPopover(dom, options): string`            | `mountPopover(root, { anchor, ... })`               | Dialog methods plus `updatePosition()`                       |
+| Component           | Composition                                      | Frontend mount                                      | Controller                                                                                                                  |
+| ------------------- | ------------------------------------------------ | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Dialog              | `createDialog(dom, options): string`             | `mountDialog(root, options?)`                       | `open(opener?)`, `close(reason?)`, `getState()`, `destroy()`                                                                |
+| Confirmation Dialog | `createConfirmationDialog(dom, options): string` | `mountConfirmationDialog(root, { onConfirm, ... })` | Dialog methods plus `confirm(): Promise<boolean>`                                                                           |
+| Popover             | `createPopover(dom, options): string`            | `mountPopover(root, { anchor, ... })`               | Dialog methods plus `updatePosition()`                                                                                      |
+| Progress Bar        | `createProgressBar(dom, options): string`        | `mountProgressBar(root, options?)`                  | `setValue(value, max?)`, `getState()`, `destroy()`                                                                          |
+| Toast               | `createToast(dom, options): string`              | `mountToast(root, options?)`                        | `show()`, `close(reason?)`, `update(content)`, `setProgress(value, max?)`, `pause()`, `resume()`, `getState()`, `destroy()` |
 
 [Generated API documentation](UI_COMPONENT_API.generated.md) contains compiler-derived signatures, editable property types and all exported option/controller types. The [complete example](../examples/14-sdk-ui-components.ts) provides separate markup and mount functions with explicit cleanup.
 
@@ -81,7 +83,7 @@ This initial set requires native dialog/popover APIs. Unsupported primitives fai
 
 ## Authoring contract and host integration work
 
-Package exports `@anikitenko/fdo-sdk/ui-components.json` and `@anikitenko/fdo-sdk/ui-components.schema.json` describe identities, compiler-derived editable property types and signatures, HTML child slots, states, events and static-preview requirements. Contract version **1.0.0** uses the same major/minor/patch rules as the existing [authoring contract](AUTHORING_AND_LIVE_UI.md). Unknown majors are unsupported. The build derives metadata/docs from SDK definitions and TypeScript source, without invoking handlers. Metadata readers can recognize a root's `data-fdo-component` and `data-fdo-component-version` without mounting it.
+Package exports `@anikitenko/fdo-sdk/ui-components.json` and `@anikitenko/fdo-sdk/ui-components.schema.json` describe identities, compiler-derived editable property types and signatures, HTML child slots, states, events and static-preview requirements. Contract version **1.2.0** uses the same major/minor/patch rules as the existing [authoring contract](AUTHORING_AND_LIVE_UI.md). Unknown majors are unsupported. The build derives metadata/docs from SDK definitions and TypeScript source, without invoking handlers. Metadata readers can recognize a root's `data-fdo-component` and `data-fdo-component-version` without mounting it.
 
 FDO must separately:
 
@@ -94,4 +96,12 @@ FDO must separately:
 
 ## Verified results
 
-The complete SDK suite passes 632 tests across 58 files, with coverage thresholds met. The installed-tarball gate checks both UI module formats, metadata/schema exports, declarations and all packaged examples. Chrome 155.0.8059.80 passes 53 checks: 29 existing overlay checks and 24 component checks, including string-only browser composition without global style injection. These checks do not substitute for FDO iframe/Electron/CSP integration tests.
+The complete SDK suite passes 668 tests across 60 files, with coverage thresholds met. The installed-tarball gate checks both UI module formats, metadata/schema exports, declarations and all packaged examples. Chrome 155.0.8059.80 passes 95 checks: 29 existing overlay checks and 66 component checks, including string-only browser composition without global style injection. These checks do not substitute for FDO iframe/Electron/CSP integration tests.
+
+## Progress bars and toasts
+
+Use the [feedback components guide](FEEDBACK_COMPONENTS.md) for native progress bars, severity-based toasts, optional progress inside a toast, timeout pausing and host-owned placement.
+
+## Authoring components and static previews
+
+The [authoring guide](AUTHORING_COMPONENTS.md) documents Inline Alert, Toast Region, Async Action Button, Tabs, native Disclosure/Accordion, and the generated static preview gallery, including package exports and FDO integration responsibilities.

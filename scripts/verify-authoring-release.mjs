@@ -20,16 +20,31 @@ try {
     run('npm', ['install', path.join(fixture, packed.filename), `@types/node@${JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@types/node/package.json'), 'utf8')).version}`, '--ignore-scripts', '--no-audit', '--no-fund', ...(process.env.FDO_RELEASE_OFFLINE === '1' ? ['--offline'] : [])], fixture);
     const fixtureRequire = createRequire(path.join(fixture, 'package.json'));
     const loadFixture = specifier => fixtureRequire(specifier);
-    fs.writeFileSync(path.join(fixture, 'public-imports.mjs'), `import { DOM, DOMText, defineRenderOnLoadActions } from '@anikitenko/fdo-sdk';
+    fs.writeFileSync(path.join(fixture, 'public-imports.mjs'), `import sdk, { DOM, DOMText, defineRenderOnLoadActions } from '@anikitenko/fdo-sdk';
+import * as namespace from '@anikitenko/fdo-sdk';
+import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
+const require = createRequire(import.meta.url);
+const commonjs = require('@anikitenko/fdo-sdk');
+assert.strictEqual(sdk, commonjs, 'Native ESM default must preserve the CommonJS module object');
+assert.strictEqual(namespace.default, sdk);
+assert.strictEqual(sdk.DOM, DOM);
+assert.strictEqual(sdk.DOMText, DOMText);
+assert.strictEqual(sdk.defineRenderOnLoadActions, defineRenderOnLoadActions);
 if (typeof DOM !== 'function' || typeof DOMText !== 'function' || typeof defineRenderOnLoadActions !== 'function') throw Error('Missing native ESM public imports');
 `);
     run(process.execPath, [path.join(fixture, 'public-imports.mjs')], fixture);
-    fs.writeFileSync(path.join(fixture, 'public-imports.mts'), `import * as sdk from '@anikitenko/fdo-sdk';
+    // Compiled against the installed tarball, not the repository's module resolver.
+    // language=TEXT
+    const publicTypeSource = `import defaultSDK, * as sdk from '@anikitenko/fdo-sdk';
 import * as ui from '@anikitenko/fdo-sdk/ui';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 const require = createRequire(import.meta.url);
-assert.deepEqual(Object.keys(sdk).sort(), Object.keys(require('@anikitenko/fdo-sdk')).sort());
+assert.strictEqual(defaultSDK, require('@anikitenko/fdo-sdk'));
+const defaultDOM: typeof sdk.DOM = defaultSDK.DOM;
+assert.strictEqual(defaultDOM, sdk.DOM);
+assert.deepEqual(Object.keys(sdk).filter(name => name !== 'default').sort(), Object.keys(require('@anikitenko/fdo-sdk')).sort());
 assert.deepEqual(Object.keys(ui).sort(), Object.keys(require('@anikitenko/fdo-sdk/ui')).sort());
 const html: string = ui.createConfirmationDialog(new ui.DOM(), {id: 'typed', title: 'Confirm', options: {style:{'&:hover':{color:'red'}}}});
 void html;
@@ -41,11 +56,28 @@ const confirmation: ui.ConfirmationDialogController = ui.mountConfirmationDialog
 void confirmation.confirm();
 const popover: ui.PopoverController = ui.mountPopover(document.createElement('div'), {anchor: document.createElement('button'), placement:'top-end'});
 popover.updatePosition();
+const alert: ui.InlineAlertController = ui.mountInlineAlert(document.createElement('div'));
+alert.update({message:'Updated', variant:'warning'});
+const action: ui.AsyncActionButtonController = ui.mountAsyncActionButton(document.createElement('div'), {onAction: async ({signal}) => { void signal.aborted; }});
+const pending: Promise<boolean> = action.run();
+void pending; action.cancel(); action.reset(); action.setDisabled(false);
+const region: ui.ToastRegionController = ui.mountToastRegion(document.createElement('section'), {maxVisible:1, maxQueued:2});
+const accepted: boolean = region.enqueue(document.createElement('div'), {key:'task', duration:5000});
+void accepted; region.dismiss('task');
+const tabs: ui.TabsController = ui.mountTabs(document.createElement('div'), {activation:'manual'});
+tabs.select('general');
+const disclosure: ui.DisclosureController = ui.mountDisclosure(document.createElement('details'));
+disclosure.toggle();
+const accordion: ui.AccordionController = ui.mountAccordion(document.createElement('section'));
+accordion.setOpen('first', true);
+void [alert.getState(), action.getState(), region.getState(), tabs.getState(), disclosure.getState(), accordion.getState()];
+for (const controller of [alert, action, region, tabs, disclosure, accordion]) controller.destroy();
 }
 void frontendTypeChecks;
 const style: sdk.DOMStyleMap = { '&:hover': { color: 'red' } };
 new sdk.DOM().collectStylesFrom().createClassFromStyle(style);
-`);
+`;
+    fs.writeFileSync(path.join(fixture, 'public-imports.mts'), publicTypeSource);
     const sdk = loadFixture('@anikitenko/fdo-sdk'); // No Electron shim or backend initialization.
     const ui = loadFixture('@anikitenko/fdo-sdk/ui');
     const uiContract = loadFixture('@anikitenko/fdo-sdk/ui-components.json');
@@ -54,13 +86,23 @@ new sdk.DOM().collectStylesFrom().createClassFromStyle(style);
     assert(validateUI(uiContract), JSON.stringify(validateUI.errors));
     assert.deepEqual(uiContract.components.map(c => c.identity), ui.UI_COMPONENT_DEFINITIONS.map(c => c.identity));
     for (const c of uiContract.components) { assert.equal(typeof ui[c.create], 'function'); assert.equal(typeof ui[c.mount], 'function'); }
+    const previewContract = loadFixture('@anikitenko/fdo-sdk/ui-previews.json');
+    const previewSchema = loadFixture('@anikitenko/fdo-sdk/ui-previews.schema.json');
+    const validatePreviews = new Ajv2020({ strict: true }).compile(previewSchema);
+    assert(validatePreviews(previewContract), JSON.stringify(validatePreviews.errors));
+    assert.equal(previewContract.componentContractVersion, uiContract.contractVersion);
+    assert.deepEqual(previewContract.cases, ui.UI_COMPONENT_PREVIEWS);
+    for (const component of uiContract.components) for (const state of component.states) assert(previewContract.cases.some(preview => preview.identity === component.identity && preview.state === state));
+    const galleryPath = fixtureRequire.resolve('@anikitenko/fdo-sdk/ui-gallery.html');
+    const galleryHTML = fs.readFileSync(galleryPath, 'utf8');
+    assert(!/<script\b|\son[a-z]+=|createBackendReq/i.test(galleryHTML), 'Gallery must contain no scripts, handlers or backend transport');
     const packageRoot = path.dirname(fixtureRequire.resolve('@anikitenko/fdo-sdk/package.json'));
     const verified = verifyAuthoring(packageRoot, path.join(fixture, 'package.json'));
     for (const entry of verified.contract.classes) {
         const instance = new sdk[entry.name]();
         for (const method of entry.methods) assert.equal(typeof instance[method.name], 'function', `${entry.name}.${method.name}`);
     }
-    fs.writeFileSync(path.join(fixture, 'metadata-examples.ts'), `import components from '@anikitenko/fdo-sdk/ui-components.json';\nimport uiSchema from '@anikitenko/fdo-sdk/ui-components.schema.json';\nvoid [components.contractVersion, uiSchema.properties];\n` + verified.source);
+    fs.writeFileSync(path.join(fixture, 'metadata-examples.ts'), `import components from '@anikitenko/fdo-sdk/ui-components.json';\nimport uiSchema from '@anikitenko/fdo-sdk/ui-components.schema.json';\nvoid [components.contractVersion, uiSchema.properties];\nimport previews from '@anikitenko/fdo-sdk/ui-previews.json';\nimport previewSchema from '@anikitenko/fdo-sdk/ui-previews.schema.json';\nvoid [previews.cases, previewSchema.title];\n` + verified.source);
     fs.cpSync(path.join(packageRoot, 'examples'), path.join(fixture, 'examples'), { recursive: true });
     // Resolve exclusively through the installed package; discard repository paths.
     fs.writeFileSync(path.join(fixture, 'tsconfig.json'), JSON.stringify({
