@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.7.0...fdo-sdk-v1.7.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **examples:** correct HostsManager icon and strengthen coverage checks ([#72](https://github.com/anikitenko/fdo-sdk/issues/72)) ([18a8837](https://github.com/anikitenko/fdo-sdk/commit/18a88372475af1398b7a859abf6d2c17c2e89909))
+
 ## [1.7.1] - Unreleased
 
 ### Fixed
