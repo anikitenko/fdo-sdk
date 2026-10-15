@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - Unreleased
+
+### Fixed
+
+- Use the supported BlueprintJS v6 `globe-network` icon in the packaged HostsManager example.
+- Validate packaged example metadata against the SDK runtime validator during release checks.
+- Expand Git operations and service content hub tests with handler validation, broker failures and degraded-service scenarios.
+
+This patch preserves public APIs and requires no plugin code migration.
+
 ## [1.7.0](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.6.0...fdo-sdk-v1.7.0) (2026-10-15)
 
 

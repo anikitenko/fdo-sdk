@@ -39,7 +39,7 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
         version: "1.0.0",
         author: "FDO Explorer",
         description: "A real-world multi-file example for managing host environments.",
-        icon: "social-network",
+        icon: "globe-network",
     };
 
     get metadata(): PluginMetadata {

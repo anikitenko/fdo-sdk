@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { verifyAuthoring } from './lib/verify-authoring.mjs';
+import { readExampleMetadata } from './lib/verify-example-metadata.mjs';
 import { componentBrowserChecks } from './lib/verify-browser-components.mjs';
 import { verifyBrowserOverlays } from './lib/verify-browser-overlays.mjs';
 
@@ -98,6 +99,11 @@ new sdk.DOM().collectStylesFrom().createClassFromStyle(style);
     assert(!/<script\b|\son[a-z]+=|createBackendReq/i.test(galleryHTML), 'Gallery must contain no scripts, handlers or backend transport');
     const packageRoot = path.dirname(fixtureRequire.resolve('@anikitenko/fdo-sdk/package.json'));
     const verified = verifyAuthoring(packageRoot, path.join(fixture, 'package.json'));
+    const exampleMetadata = readExampleMetadata(path.join(packageRoot, 'examples'));
+    for (const entry of exampleMetadata) {
+        assert.doesNotThrow(() => sdk.validatePluginMetadata(entry.metadata), `Invalid packaged example metadata: ${entry.file}`);
+    }
+    console.log(`Validated metadata for ${exampleMetadata.length} installed plugin examples without executing their backends.`);
     for (const entry of verified.contract.classes) {
         const instance = new sdk[entry.name]();
         for (const method of entry.methods) assert.equal(typeof instance[method.name], 'function', `${entry.name}.${method.name}`);
