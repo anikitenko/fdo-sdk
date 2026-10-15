@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.6.0...fdo-sdk-v1.7.0) (2026-10-15)
+
+
+### Features
+
+* **ui:** expand authoring components and add static preview gallery ([#70](https://github.com/anikitenko/fdo-sdk/issues/70)) ([7e7e8ba](https://github.com/anikitenko/fdo-sdk/commit/7e7e8bad5426834f72b79205f381b793c34f8179))
+
 ## [1.6.0](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.5.4...fdo-sdk-v1.6.0) (2026-10-14)
 
 
