@@ -19,6 +19,7 @@ beforeEach(() => {
     delete (globalThis as { __FDO_CONTENT_BROKER?: unknown }).__FDO_CONTENT_BROKER;
     delete (globalThis as { __FDO_AUTH_BROKER?: unknown }).__FDO_AUTH_BROKER;
     delete (globalThis as { __FDO_AI_LIST_ASSISTANTS?: unknown }).__FDO_AI_LIST_ASSISTANTS;
+    for (const name of ['__FDO_AI_REQUEST', '__FDO_SESSION_REQUEST', '__FDO_BROWSER_BROKER']) delete (globalThis as any)[name];
 });
 
 describe("Service content hub example handlers", () => {
@@ -351,5 +352,77 @@ describe("Service content hub example handlers", () => {
             sessionId: "session-device-2",
             authDeviceCode: "",
         });
+    });
+});
+
+describe('Service content hub validation and broker failure scenarios', () => {
+    const context = { providerId: 'custom-api', endpointUrl: 'https://content.example.test', sessionId: 'session', workspaceId: 'workspace' };
+    const call = (name: string, payload: unknown = context) => PluginRegistry.callHandler(`serviceHub.v1.${name}`, payload);
+    const grantNetwork = () => PluginRegistry.configureCapabilities({ granted: ['system.network', 'system.network.https', 'system.network.scope.external-services'] });
+    beforeEach(() => { new ServiceContentHubPlugin(); grantNetwork(); });
+    test.each([
+        ['content.listWorkspaces', {}, 'SESSION_REQUIRED'],
+        ['content.listItems', {}, 'CONTEXT_REQUIRED'],
+        ['content.search', { sessionId: 'session', query: '' }, 'SEARCH_INPUT_INVALID'],
+        ['auth.refresh', {}, 'SESSION_REQUIRED'],
+        ['auth.logout', {}, 'SESSION_REQUIRED'],
+    ])('%s validates missing required context', async (handler, payload, code) => {
+        expect(await call(handler as string, payload)).toMatchObject({ ok: false, code });
+    });
+    test('normalizes and persists context, rejects unsafe endpoints, and stores favorites by identity', async () => {
+        expect(await call('saveContext', { ...context, accountId: ' user ', path: '/documents', authConfig: { clientId: 'client', tenantId: 'tenant' } })).toMatchObject({ ok: true, context: { accountId: 'user', authClientId: 'client' } });
+        expect(await call('saveContext', { ...context, endpointUrl: 'file:///etc/hosts' })).toMatchObject({ ok: false, code: 'ENDPOINT_URL_INVALID' });
+        expect(await call('addFavorite', { item: { id: 'doc', name: 'Document', webUrl: 'https://content.example.test/doc' } })).toMatchObject({ ok: true });
+        expect(await call('addFavorite', { item: { id: 'doc', name: 'Document' } })).toMatchObject({ ok: true });
+        const prepared = await call('prepare') as any; expect(prepared.favorites).toHaveLength(1); expect(prepared.context.authClientId).toBe('client');
+    });
+    test('auth start/refresh/logout persist session transitions and clear authentication state', async () => {
+        const start = vi.fn().mockResolvedValue({ sessionId: 'session-new', accountId: 'user' });
+        const refresh = vi.fn().mockResolvedValue({ sessionId: 'session-refreshed' }); const logout = vi.fn().mockResolvedValue({});
+        (globalThis as any).__FDO_AUTH_BROKER = { start, refresh, logout };
+        expect(await call('auth.start')).toMatchObject({ ok: true, sessionId: 'session-new' });
+        expect(await call('auth.refresh', { ...context, sessionId: 'session-new' })).toMatchObject({ ok: true, sessionId: 'session-refreshed', authDeviceCode: '' });
+        expect(await call('auth.logout', { ...context, sessionId: 'session-refreshed' })).toMatchObject({ ok: true });
+        expect((await call('prepare') as any).context.sessionId).toBe(''); expect(logout).toHaveBeenCalledTimes(1);
+    });
+    test.each([
+        ['token expired', 'AUTH_TOKEN_EXPIRED'], ['permission denied 403', 'AUTH_SCOPE_DENIED'], ['401 unauthorized', 'AUTH_REQUIRED'], ['invalid payload', 'AUTH_START_FAILED'],
+    ])('auth start classifies %s without exposing a false success', async (message, code) => {
+        (globalThis as any).__FDO_AUTH_BROKER = { start: vi.fn().mockRejectedValue(Error(message)) };
+        expect(await call('auth.start')).toMatchObject({ ok: false, code, error: expect.stringContaining(message) });
+    });
+    test('missing brokers, missing sessions and empty provider responses are actionable failures', async () => {
+        expect(await call('auth.start')).toMatchObject({ ok: false, code: 'AUTH_START_FAILED' });
+        (globalThis as any).__FDO_AUTH_BROKER = { start: vi.fn().mockResolvedValue({}) };
+        expect(await call('auth.start')).toMatchObject({ ok: false, code: 'AUTH_START_FAILED' });
+        (globalThis as any).__FDO_AUTH_BROKER.start.mockResolvedValue({ ok: false, code: 'CONSENT_DENIED', error: 'Consent denied' });
+        expect(await call('auth.start')).toMatchObject({ ok: false, code: 'CONSENT_DENIED' });
+    });
+    test('content results normalize provider data, persist pagination and build share links through an explicit broker', async () => {
+        const request = vi.fn().mockResolvedValue({ items: [{ id: 'doc', name: 'Document', webUrl: 'https://content.example.test/doc' }, null, { name: 'No id' }], nextCursor: 'page-2' });
+        (globalThis as any).__FDO_CONTENT_BROKER = { request };
+        for (const handler of ['content.listWorkspaces', 'content.listItems', 'content.search']) {
+            const result = await call(handler, { ...context, query: 'Document', cursor: 'page-1' }) as any;
+            expect(result).toMatchObject({ ok: true, nextCursor: 'page-2' }); expect(result.items[0]).toMatchObject({ id: 'doc', name: 'Document' });
+        }
+        request.mockResolvedValue({ webUrl: 'https://content.example.test/shared' });
+        expect(await call('content.createShareLink', { ...context, itemId: 'doc' })).toMatchObject({ ok: true, webUrl: 'https://content.example.test/shared' });
+        request.mockResolvedValue({}); expect(await call('content.createShareLink', { ...context, itemId: 'doc' })).toMatchObject({ ok: false, code: 'CREATE_SHARE_LINK_FAILED' });
+    });
+    test('content upstream failures retain classified codes and never invoke an implicit browser', async () => {
+        (globalThis as any).__FDO_CONTENT_BROKER = { request: vi.fn().mockRejectedValue(Error('403 forbidden')) };
+        expect(await call('content.listItems')).toMatchObject({ ok: false, code: 'AUTH_SCOPE_DENIED' });
+        expect(await call('openBrowser', { webUrl: 'javascript:alert(1)' })).toMatchObject({ ok: false, code: 'ENDPOINT_URL_INVALID' });
+        const open = vi.fn().mockResolvedValue({ ok: true }); (globalThis as any).__FDO_BROWSER_BROKER = { open };
+        expect(await call('openBrowser', { webUrl: 'https://content.example.test/doc' })).toMatchObject({ ok: true }); expect(open).toHaveBeenCalledTimes(1);
+    });
+    test('AI provider success, fallback, malformed replies and failures remain deterministic', async () => {
+        expect(await PluginRegistry.callHandler('fdo.ai.request.v1', { summary: { count: 3 } })).toMatchObject({ ok: true, source: 'fallback', message: expect.stringContaining('3 result') });
+        (globalThis as any).__FDO_AI_REQUEST = vi.fn().mockResolvedValue({ text: 'Summary' });
+        expect(await PluginRegistry.callHandler('fdo.ai.request.v1', {})).toMatchObject({ ok: true, source: 'fdo-ai', message: 'Summary' });
+        (globalThis as any).__FDO_AI_REQUEST.mockRejectedValue(Error('Provider down'));
+        expect(await PluginRegistry.callHandler('fdo.ai.request.v1', {})).toMatchObject({ ok: false, code: 'AI_ASSIST_FAILED' });
+        (globalThis as any).__FDO_AI_LIST_ASSISTANTS = vi.fn().mockRejectedValue(Error('Discovery down'));
+        expect(await PluginRegistry.callHandler('fdo.ai.assistants.list.v1', {})).toMatchObject({ ok: false, code: 'AI_ASSISTANTS_LIST_FAILED' });
     });
 });

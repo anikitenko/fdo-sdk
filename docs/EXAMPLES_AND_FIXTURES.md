@@ -84,6 +84,8 @@ const result = await window.createBackendReq("UI_MESSAGE", {
 The examples surface is considered stable only when all of the following stay true:
 
 - `npm run test:examples` passes
+- `npm run verify:pack` validates every packaged example's literal `PluginMetadata` with the installed SDK runtime, including BlueprintJS v6 icon names; HostsManager uses `globe-network`
+- Host coverage suites merge counters from registered backend handlers and serialized frontend callbacks for split-runtime examples such as Git operations and service content hub. Backend-only counters cannot represent their full line coverage. Exercise validation failures, broker errors and real frontend controls with deterministic test services; keep privileged execution simulated and retain the existing coverage thresholds
 - public example docs do not reference local-only or internal planning files
 - public example docs do not reference stale docs domains
 - `createBackendReq(...)` examples reflect the real `UI_MESSAGE` handler pattern
