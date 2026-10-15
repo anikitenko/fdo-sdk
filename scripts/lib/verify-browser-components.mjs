@@ -1,3 +1,6 @@
+import { authoringBrowserChecks } from './verify-browser-authoring.mjs';
+import { feedbackBrowserChecks } from './verify-browser-feedback.mjs';
+
 export function componentBrowserChecks(moduleSource, markup) {
     return async ({ evaluate, check, accessible, click, key, settle }) => {
         const evaluateAsync = expression => evaluate(`(async () => { ${expression} })()`);
@@ -50,6 +53,8 @@ export function componentBrowserChecks(moduleSource, markup) {
         await evaluate(`p.destroy(); p.destroy(); a.destroy(); b.destroy(); c.destroy(); window.dispatchEvent(new Event('resize'))`);
         await check(`document.getElementById('anchor').getAttribute('aria-controls') === 'caller' && document.getElementById('anchor').getAttribute('aria-expanded') === 'false' && document.getElementById('p').style.color === 'rgb(1, 2, 3)' && document.getElementById('p').style.left === '' && document.getElementById('p').style.maxHeight === ''`, 'idempotent cleanup restores caller attributes/styles');
         await check(`errors.length === 0 && window.__backendCalls === 0`, 'no lifecycle diagnostics or implicit backend requests');
+        await feedbackBrowserChecks({ evaluate, check, accessible, click });
+        await authoringBrowserChecks({ evaluate, check, accessible, click, key, settle });
         console.log('SDK components: browser lifecycle, async work, positioning and accessibility checks passed.');
     };
 }

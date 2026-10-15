@@ -45,6 +45,10 @@ export async function verifyBrowserOverlays(markup, onLoad, componentChecks) {
         const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
         const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
         await send('Page.enable', {}, sessionId);
+        await send('Page.bringToFront', {}, sessionId);
+        // Headless pages can remain hidden on macOS despite bringToFront.
+        // https://chromedevtools.github.io/devtools-protocol/tot/Emulation/#method-setFocusEmulationEnabled
+        await send('Emulation.setFocusEmulationEnabled', { enabled: true }, sessionId);
         await send('Page.navigate', { url: 'data:text/html,<!doctype html><html lang="en"><head><title>SDK overlay release fixture</title></head><body></body></html>' }, sessionId);
         const evaluate = async expression => {
             const result = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }, sessionId);
@@ -65,15 +69,16 @@ export async function verifyBrowserOverlays(markup, onLoad, componentChecks) {
         };
         const settle = () => evaluate('new Promise(resolve => setTimeout(resolve, 40))');
         const click = async id => {
-            const point = await evaluate(`(() => { const r = document.getElementById(${JSON.stringify(id)}).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+            const point = await evaluate(`(() => { const element = document.getElementById(${JSON.stringify(id)}); element.scrollIntoView({block:'center'}); const r = element.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
             await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', clickCount: 1 }, sessionId);
             await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...point, button: 'left', clickCount: 1 }, sessionId);
             await settle();
         };
         const key = async (key, modifiers = 0) => {
-            const code = key === 'Escape' ? 27 : 9;
-            await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key, windowsVirtualKeyCode: code, nativeVirtualKeyCode: code, modifiers }, sessionId);
-            await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key, windowsVirtualKeyCode: code, nativeVirtualKeyCode: code, modifiers }, sessionId);
+            const code = { Escape:27, Tab:9, Enter:13, ' ':32, ArrowLeft:37, ArrowUp:38, ArrowRight:39, ArrowDown:40, Home:36, End:35 }[key];
+            if (!code) throw Error(`Unsupported browser key: ${key}`);
+            await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, nativeVirtualKeyCode: code, modifiers }, sessionId);
+            await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: key === ' ' ? 'Space' : key, windowsVirtualKeyCode: code, nativeVirtualKeyCode: code, modifiers }, sessionId);
             await settle();
         };
         await evaluate(`new Promise(resolve => { if (document.readyState === 'complete') resolve(); else window.addEventListener('load', resolve, {once: true}); })`);

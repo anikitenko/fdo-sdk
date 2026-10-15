@@ -54,7 +54,10 @@
       "default": "./dist/ui.mjs"
     },
     "./ui-components.json": "./dist/ui-components.json",
-    "./ui-components.schema.json": "./dist/ui-components.schema.json"
+    "./ui-components.schema.json": "./dist/ui-components.schema.json",
+    "./ui-previews.json": "./dist/ui-previews.json",
+    "./ui-previews.schema.json": "./dist/ui-previews.schema.json",
+    "./ui-gallery.html": "./dist/ui-gallery.html"
   },
   "files": [
     "bin/**/*.js",
@@ -65,7 +68,8 @@
     "dist/**/*.json",
     "docs/**/*.md",
     "examples",
-    "dist/**/*.cjs"
+    "dist/**/*.cjs",
+    "dist/**/*.html"
   ],
   "scripts": {
     "prepare": "husky",

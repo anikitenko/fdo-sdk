@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Project } = require('ts-morph');
-const { UI_COMPONENT_CONTRACT_VERSION, UI_COMPONENT_DEFINITIONS } = require('../dist/ui.cjs');
+const { UI_COMPONENT_CONTRACT_VERSION, UI_COMPONENT_DEFINITIONS, UI_COMPONENT_PREVIEWS, createComponentGallery, DOM } = require('../dist/ui.cjs');
 const project = new Project({ tsConfigFilePath: path.resolve('tsconfig.json') });
 const api = project.getSourceFiles('src/ui/*.ts');
 const functions = api.flatMap(file => file.getFunctions()).filter(fn => fn.isExported());
@@ -16,16 +16,25 @@ const components = UI_COMPONENT_DEFINITIONS.map(component => {
     const editableProperties = component.properties.map(name => {
         let type = props;
         let property;
+        let optionalPath = false;
         for (const part of name.split('.')) {
             property = type.getProperty(part);
             if (!property) throw Error(`Missing editable property ${component.identity}.${name}`);
+            optionalPath ||= property.isOptional();
             type = property.getTypeAtLocation(property.getDeclarations()[0]).getNonNullableType();
         }
-        return { name, type: normalize(type.getText(property.getDeclarations()[0])), kind: name === 'id' ? 'identity' : name === 'options.style' ? 'style-map' : name === 'options.classes' ? 'class-names' : 'text', optional: property.isOptional() };
+        const leaf = name.split('.').pop();
+        return { name, type: normalize(type.getText(property.getDeclarations()[0])), kind: ['visible', 'disabled', 'open', 'multiple'].includes(leaf) ? 'boolean' : leaf === 'items' ? 'collection' : ['variant', 'orientation'].includes(leaf) ? 'enum' : leaf === 'value' ? 'number-or-null' : leaf === 'max' ? 'number' : name === 'variant' ? 'enum' : name === 'progress' ? 'component-options' : name === 'id' ? 'identity' : name.endsWith('.style') ? 'style-map' : name.endsWith('.classes') ? 'class-names' : 'text', optional: optionalPath };
     });
     return {
         ...component, editableProperties,
-        closeReasons: project.getSourceFileOrThrow('src/ui/types.ts').getTypeAliasOrThrow('UICloseReason').getType().getUnionTypes().map(type => type.getLiteralValue()),
+        ...(component.itemType ? { itemProperties: project.getSourceFileOrThrow('src/ui/types.ts').getInterfaceOrThrow(component.itemType).getProperties().map(property => {
+            const type = property.getType().getNonNullableType();
+            const description = property.getJsDocs().map(doc => doc.getDescription()).join(' ');
+            return { name: property.getName(), type: normalize(type.getText(property)), optional: property.hasQuestionToken(),
+                kind: /trusted html/i.test(description) ? 'trusted-html' : property.getName() === 'key' ? 'identity' : type.isBoolean() ? 'boolean' : 'text' };
+        }) } : {}),
+        closeReasons: component.closeReasonType === null ? [] : project.getSourceFileOrThrow('src/ui/types.ts').getTypeAliasOrThrow(component.closeReasonType ?? 'UICloseReason').getType().getUnionTypes().map(type => type.getLiteralValue()),
         returnKinds: { create: 'html-string', mount: 'frontend-controller' },
         eventContracts: component.events.map(name => {
             const iface = project.getSourceFileOrThrow('src/ui/types.ts').getInterfaceOrThrow(component.mountType).getType();
@@ -36,7 +45,7 @@ const components = UI_COMPONENT_DEFINITIONS.map(component => {
         identityAttribute: 'data-fdo-component', versionAttribute: 'data-fdo-component-version',
         stateAttribute: 'data-fdo-state', slotAttribute: 'data-fdo-slot',
         signatures: { create: signature(create), mount: signature(mount) },
-        preview: { markupOnly: true, handlers: false, backendExecution: false, requirements: ['Render validated serializable properties with an isolated DOM style collector.', 'Sanitize trusted HTML slots.', 'Do not mount or invoke callbacks for static preview.', 'Open/pending/error preview states are host-owned visual simulations; preserve authored source.'] },
+        preview: { markupOnly: true, handlers: false, backendExecution: false, requirements: ['Render validated serializable properties with an isolated DOM style collector.', 'Sanitize trusted HTML slots.', 'Do not mount or invoke callbacks for static preview.', 'Open/pending/error/indeterminate preview states are host-owned visual simulations; preserve authored source.'] },
     };
 });
 const contract = { contractVersion: UI_COMPONENT_CONTRACT_VERSION, sdkVersion: require('../package.json').version, components };
@@ -51,7 +60,7 @@ const documentation = [
         '```typescript', `declare function ${component.signatures.create};`, `declare function ${component.signatures.mount};`, '```', '',
         '| Editable property | Type | Optional |', '| --- | --- | --- |',
         ...component.editableProperties.map(p => `| \`${p.name}\` | \`${p.type.replace(/\|/g, '&#124;')}\` | ${p.optional} |`), '',
-        `HTML slots: ${component.slots.map(slot => `\`${slot.name}\``).join(', ')}. States: ${component.states.map(state => `\`${state}\``).join(', ')}.`, '',
+        `Child slots: ${component.slots.map(slot => `\`${slot.name}\``).join(', ') || 'none'}. States: ${component.states.map(state => `\`${state}\``).join(', ')}.`, '',
         `Events: ${component.events.map(event => `\`${event}\``).join(', ')}.`, '',
     ]),
     '## Exported types', '',
@@ -64,3 +73,16 @@ function formatTable(block) {
     return rows.map((row, index) => '| ' + row.map((cell, column) => index === 1 ? '-'.repeat(widths[column]) : cell.padEnd(widths[column])).join(' | ') + ' |').join('\n') + '\n';
 }
 fs.writeFileSync('docs/UI_COMPONENT_API.generated.md', (documentation.join('\n') + '\n').replace(/(?:^\|[^\n]+\|\n)+/gm, formatTable));
+
+// SDK-owned serializable cases are the gallery and browser-regression source of truth.
+for (const component of UI_COMPONENT_DEFINITIONS) {
+    for (const state of component.states) {
+        if (!UI_COMPONENT_PREVIEWS.some(preview => preview.identity === component.identity && preview.state === state)) throw Error(`Missing preview ${component.identity}:${state}`);
+    }
+}
+const previews = { contractVersion: '1.0.0', componentContractVersion: UI_COMPONENT_CONTRACT_VERSION, cases: UI_COMPONENT_PREVIEWS };
+fs.writeFileSync('dist/ui-previews.json', JSON.stringify(previews, null, 2) + '\n');
+fs.copyFileSync('scripts/ui-previews.schema.json', 'dist/ui-previews.schema.json');
+const galleryDOM = new DOM().collectStylesFrom();
+const gallery = galleryDOM.renderHTML(createComponentGallery(galleryDOM)).replace(/<script id="plugin-script-placeholder"[^>]*><\/script>/, '');
+fs.writeFileSync('dist/ui-gallery.html', '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FDO SDK component gallery</title></head><body><main><h1>FDO SDK component gallery</h1><p>Static, inert visual states. No handlers or backend code execute.</p>' + gallery + '</main></body></html>\n');

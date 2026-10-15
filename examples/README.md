@@ -326,3 +326,11 @@ Thank you for helping improve the FDO SDK examples!
 [13-overlay-patterns.ts](13-overlay-patterns.ts) contains native dialog, custom dialog/alertdialog and native popover examples. See [overlay behavior and limitations](../docs/OVERLAY_PATTERNS.md).
 
 [14-sdk-ui-components.ts](14-sdk-ui-components.ts) demonstrates SDK-provided composition, frontend mounting, async confirmation and cleanup through the browser-safe `/ui` export.
+
+### Progress bars and toasts
+
+[15-feedback-components.ts](15-feedback-components.ts) composes native progress and a toast with embedded progress, then mounts, updates and cleans up those components through the browser-safe UI entry.
+
+### Authoring components and static previews
+
+[16-authoring-components.ts](16-authoring-components.ts) composes and mounts alerts, a bounded toast region, an async action button, tabs and disclosures/accordions with explicit cleanup. [17-static-component-gallery.ts](17-static-component-gallery.ts) renders every SDK state without mounting handlers.

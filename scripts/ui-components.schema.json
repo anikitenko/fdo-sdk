@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://docs.sdk.fdo.alexvwan.me/schemas/ui-components/1.0.0",
+  "$id": "https://docs.sdk.fdo.alexvwan.me/schemas/ui-components/1.2.0",
   "type": "object",
   "required": [
     "contractVersion",
@@ -66,7 +66,14 @@
           "primitive": {
             "enum": [
               "dialog",
-              "popover"
+              "popover",
+              "progress",
+              "live-region",
+              "section",
+              "button",
+              "tabs",
+              "details",
+              "accordion"
             ]
           },
           "role": {
@@ -130,7 +137,13 @@
                     "identity",
                     "text",
                     "style-map",
-                    "class-names"
+                    "class-names",
+                    "number",
+                    "number-or-null",
+                    "enum",
+                    "component-options",
+                    "boolean",
+                    "collection"
                   ]
                 },
                 "optional": {
@@ -156,7 +169,12 @@
                   "type": "string"
                 },
                 "kind": {
-                  "const": "trusted-html"
+                  "enum": [
+                    "trusted-html",
+                    "text",
+                    "component",
+                    "collection"
+                  ]
                 }
               }
             }

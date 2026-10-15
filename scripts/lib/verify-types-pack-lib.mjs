@@ -115,7 +115,7 @@ export function verifyPackFileList(files) {
     fail("tarball is missing dist/@types/index.d.ts");
   }
 
-  for (const file of ["dist/fdo-sdk.mjs", "dist/dom-metadata.json", "dist/dom-authoring-contract.json", "dist/dom-authoring-contract.schema.json", "dist/ui.cjs", "dist/ui.mjs", "dist/@types/ui/index.d.ts", "dist/ui-components.json", "dist/ui-components.schema.json", "docs/UI_COMPONENT_API.generated.md"]) {
+  for (const file of ["dist/fdo-sdk.mjs", "dist/dom-metadata.json", "dist/dom-authoring-contract.json", "dist/dom-authoring-contract.schema.json", "dist/ui.cjs", "dist/ui.mjs", "dist/@types/ui/index.d.ts", "dist/ui-components.json", "dist/ui-components.schema.json", "dist/ui-previews.json", "dist/ui-previews.schema.json", "dist/ui-gallery.html", "docs/UI_COMPONENT_API.generated.md"]) {
     if (!files.includes(file)) fail(`tarball is missing ${file}`);
   }
 
