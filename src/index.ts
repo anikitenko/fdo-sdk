@@ -2,10 +2,12 @@ import {Logger} from "./Logger";
 import "./ambient/fdo-host";
 import {Communicator} from "./Communicator";
 import {PluginRegistry} from "./PluginRegistry";
+import { SecretStore, SSHClient } from "./utils/hostServices";
 import type { RenderOnLoadOutput } from "./types";
 import { createNoopRenderOnLoadSource, resolveRenderOnLoadSource } from "./utils/renderOnLoad";
 import { SDK_API_VERSION } from "./version";
 
+export { SecretStore, SSHClient, HostServiceError } from "./utils/hostServices";
 export { atomicWriteFile, atomicWriteFileSync } from "./utils/atomic";
 export { BLUEPRINT_V6_ICON_NAMES, isBlueprintV6IconName } from "./utils/blueprintIcons";
 export {
@@ -21,6 +23,8 @@ export { runWithSudo } from "./utils/runWithSudo";
 export { emitDeprecationWarning, formatDeprecationMessage } from "./utils/deprecation";
 export {
     createAICapabilityBundle,
+    createSecretsCapabilityBundle,
+    createSSHCapabilityBundle,
     createCapabilityBundle,
     createFilesystemCapabilityBundle,
     createNetworkCapabilityBundle,
@@ -160,6 +164,10 @@ export class FDO_SDK {
     public static readonly API_VERSION: string = SDK_API_VERSION
     static readonly TYPE_TAG = Symbol("FDO_SDK")
     private _logger: Logger = new Logger({ context: { component: "FDO_SDK" } })
+    /** Backend-only, host-managed universal secret storage. */
+    public readonly secrets: SecretStore = new SecretStore();
+    /** Backend-only SSH execution using host-managed profiles. */
+    public readonly ssh: SSHClient = new SSHClient();
     private loggerScope: string = "global";
     private readonly communicator: Communicator = new Communicator()
 

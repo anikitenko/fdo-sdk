@@ -25,6 +25,8 @@ export interface PluginInitPayload {
 }
 
 const KNOWN_PLUGIN_CAPABILITIES = new Set<PluginCapability>([
+    "secrets.set", "secrets.get", "secrets.delete", "secrets.list", "secrets.use", "secrets.consume",
+    "ssh.use", "ssh.exec", "ssh.profiles.list",
     "system.ai",
     "system.ai.assistants.list",
     "system.ai.request",

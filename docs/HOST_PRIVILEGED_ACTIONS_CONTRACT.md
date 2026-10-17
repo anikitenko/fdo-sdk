@@ -2,6 +2,12 @@
 
 This document defines the SDK-side contract for host-mediated privileged operations.
 
+## Backend secrets, SSH and reusable connection profiles
+
+Universal secrets and builtin SSH use a separate authenticated backend service bridge. Their canonical contract is [Universal secrets and builtin SSH](./SECRETS_AND_SSH.md); the implementation message is [FDO host secrets and SSH handoff](./FDO_HOST_SECRETS_SSH_HANDOFF.md). These services are not additions to the iframe privileged-action request union or validator below.
+
+The contract includes base-plus-operation permissions (`secrets.use` and `ssh.use`), host-owned storage and profiles, credential references, trust verification, profile reuse for Git with separate consumer authorization, Git transport requirements, and minor release compatibility. The SDK facade requires host implementation. Git profile integration is documented future host work, not a shipped SDK Git transport.
+
 ## Goal
 
 Allow narrowly scoped privileged operations without granting plugins broad filesystem escape from `PLUGIN_HOME`.

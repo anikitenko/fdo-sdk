@@ -284,6 +284,12 @@ For operator UX and diagnostics, the SDK also provides structured capability rem
 
 For a dedicated authoring guide, see [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/OPERATOR_PLUGIN_PATTERNS.md).
 
+## Universal Secrets and SSH
+
+Plugin backend code can use `this.secrets` for host-managed universal secret storage and `this.ssh` for builtin SSH execution against authorized connection profiles. Declare the required secret operations and SSH capabilities through `declareCapabilities()`. The FDO host must configure the backend service transport; calls fail closed until host support is installed. Secrets are separate from JSON storage.
+
+See [secrets and SSH usage and protocol](./docs/SECRETS_AND_SSH.md) and [FDO host implementation handoff](./docs/FDO_HOST_SECRETS_SSH_HANDOFF.md).
+
 ## Storage Notes
 
 - `PluginRegistry.useStore("default")` returns an in-memory store scoped to the active plugin.

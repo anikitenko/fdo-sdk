@@ -5,6 +5,7 @@ import {
     CapabilityDescriptor,
     MissingCapabilityDiagnostic,
     PluginCapability,
+    HostServiceCapability,
 } from "../types";
 
 type CapabilityAudit = {
@@ -71,6 +72,12 @@ function buildMissingCapabilityErrorMessage(capability: PluginCapability, action
 
 function getCapabilityPrerequisites(capability: string): string[] {
     const prerequisites = new Set<string>();
+    if (capability.startsWith("secrets.") && capability !== "secrets.use") prerequisites.add("secrets.use");
+    if (capability.startsWith("ssh.") && capability !== "ssh.use") prerequisites.add("ssh.use");
+    if (capability === "ssh.exec") {
+        prerequisites.add("secrets.use");
+        prerequisites.add("secrets.consume");
+    }
 
     if (capability.startsWith(STORAGE_BACKEND_CAPABILITY_PREFIX)) {
         prerequisites.add("storage");
@@ -304,6 +311,26 @@ export function createNetworkCapabilityBundle(
 }
 
 export function describeCapability(capability: PluginCapability | string): CapabilityDescriptor {
+    if (["secrets.set", "secrets.get", "secrets.delete", "secrets.list", "secrets.use", "secrets.consume"].includes(capability)) {
+        return {
+            capability,
+            label: `Secrets: ${capability.slice("secrets.".length)}`,
+            description: capability === "secrets.use"
+                ? "Base permission to access the host-managed secret store; pair with specific secret operation capabilities."
+                : "Allows this operation in the plugin's secret namespace when paired with secrets.use. The host enforces authorization.",
+            category: "secrets",
+        };
+    }
+    if (capability === "ssh.use" || capability === "ssh.exec" || capability === "ssh.profiles.list") {
+        return {
+            capability,
+            label: capability === "ssh.use" ? "SSH Access" : capability === "ssh.exec" ? "SSH Execution" : "SSH Profiles List",
+            description: capability === "ssh.use"
+                ? "Base permission to access SSH services; pair with specific SSH operation capabilities."
+                : "Allows this operation on authorized profiles when paired with ssh.use. Execution also requires secrets.use and secrets.consume.",
+            category: "ssh",
+        };
+    }
     if (capability === "system.ai") {
         return {
             capability,
@@ -607,4 +634,20 @@ export function resetCapabilityStateForTests(): void {
     for (const key of Object.keys(audit.deniedCount)) {
         delete audit.deniedCount[key];
     }
+}
+
+/** Declare only the operations required by the plugin; there is no implicit full-access grant. */
+export function createSecretsCapabilityBundle(
+    operations: Array<"set" | "get" | "delete" | "list" | "consume" | "use"> = ["get"]
+): PluginCapability[] {
+    if (!Array.isArray(operations) || !operations.length
+        || operations.some(operation => !["set", "get", "delete", "list", "consume", "use"].includes(operation))) {
+        throw new Error("At least one supported secret operation is required.");
+    }
+    return createCapabilityBundle(["secrets.use", ...operations.map(operation => `secrets.${operation}` as HostServiceCapability)]);
+}
+
+/** SSH uses references inside the host, so plaintext secret reads are not required. */
+export function createSSHCapabilityBundle(): PluginCapability[] {
+    return createCapabilityBundle(["ssh.use", "ssh.exec", "ssh.profiles.list", "secrets.use", "secrets.consume"]);
 }
