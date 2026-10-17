@@ -1,4 +1,5 @@
 import path from "path";
+import { configureHostServices } from "./utils/hostServices";
 import { FDO_SDK, StoreType } from "./index";
 import { PluginMetadata } from "./PluginMetadata";
 import {
@@ -11,6 +12,7 @@ import {
     SidePanelConfig,
     CapabilityConfiguration,
     StorageConfiguration,
+    HostServicesConfiguration,
     StoreFactory,
     StoreFactoryContext,
     StoreRegistration,
@@ -59,6 +61,11 @@ export class PluginRegistry {
         },
     };
     private static readonly storeInstances: Record<string, Record<string, StoreWithLifecycle>> = {};
+
+    /** Host bootstrap only; bind this transport to the worker's authenticated plugin identity. */
+    public static configureHostServices(configuration: HostServicesConfiguration | null): void {
+        configureHostServices(configuration);
+    }
 
     public static configureStorage(configuration: StorageConfiguration): void {
         this.storageConfiguration = {
@@ -303,6 +310,7 @@ export class PluginRegistry {
     }
 
     public static clearPlugin(): void {
+        configureHostServices(null);
         void this.disposeStoreScope(this.getPluginScopeForLogging(this.pluginInstance));
         this.pluginInstance = null;
         this.pluginMetadata = null;

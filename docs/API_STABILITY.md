@@ -54,6 +54,7 @@ This document defines which SDK surfaces are stable contracts versus internal im
   - `registerHandler`
   - `useStore`
   - `registerStore`
+  - `configureHostServices`
   - `configureStorage`
   - `configureCapabilities`
 - Documented decorator behavior (`handleError`)
@@ -67,6 +68,14 @@ This document defines which SDK surfaces are stable contracts versus internal im
 - Workflow helper exports:
   - `createScopedWorkflowRequest`
   - `requestScopedWorkflow`
+
+- Backend secret and SSH service surfaces:
+  - `FDO_SDK.secrets` / `SecretStore`
+  - `FDO_SDK.ssh` / `SSHClient`
+  - `HostServiceError` and exported service types
+  - `createSecretsCapabilityBundle` and `createSSHCapabilityBundle`
+  - base-plus-operation capability requirements and backend protocol v1 in [the service contract](./SECRETS_AND_SSH.md)
+  - host implementation is required; Git profile integration is a documented future extension, not a runtime API guarantee
 
 ## Provisional Surfaces
 

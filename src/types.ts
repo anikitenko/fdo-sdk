@@ -144,6 +144,7 @@ export type PluginCapability =
     | "storage.json"
     | StorageBackendCapability
     | AICapability
+    | HostServiceCapability
     | "system.network"
     | NetworkTransportCapability
     | NetworkScopeCapability
@@ -414,6 +415,8 @@ export type AICapabilityPresetDefinition = {
 export type CapabilityCategory =
     | "ai"
     | "storage"
+    | "secrets"
+    | "ssh"
     | "network"
     | "network-scope"
     | "sudo"
@@ -451,6 +454,7 @@ export type CapabilityPreflightReport = {
     action: string;
     declared: string[];
     granted: string[];
+    /** Declared capabilities whose own grant or any prerequisite grant is missing. */
     missing: CapabilityPreflightMissingDiagnostic[];
     undeclaredGranted: CapabilityDescriptor[];
     remediations: string[];
@@ -764,3 +768,63 @@ export type DiagnosticFixTemplate = {
     steps: string[];
     docs?: string[];
 };
+
+/** Secret operations require secrets.use plus an operation grant; SSH consumes references without secrets.get. */
+export type HostServiceCapability =
+    | "secrets.set" | "secrets.get" | "secrets.delete" | "secrets.list" | "secrets.use" | "secrets.consume"
+    | "ssh.use" | "ssh.exec" | "ssh.profiles.list";
+
+/** References are names in the authenticated plugin namespace, not bearer credentials. */
+export type SecretReference = Readonly<{ kind: "secret"; key: string }>;
+export type SecretMetadata = { key: string; updatedAt: string };
+export type SSHProfileSummary = { id: string; label: string };
+export type SSHAuthentication =
+    | { type: "password"; passwordRef: SecretReference }
+    | { type: "privateKey"; privateKeyRef: SecretReference; passphraseRef?: SecretReference };
+
+/** Host-owned profile shape. Plugins select an existing authorized profile by id. */
+export type SSHConnectionProfile = SSHProfileSummary & {
+    host: string;
+    port: number;
+    username: string;
+    authentication: SSHAuthentication;
+    /** SHA256 fingerprint enrolled through a trusted host flow. Missing/mismatched keys must fail. */
+    trustedHostKey: string;
+};
+export type SSHExecOptions = {
+    profileId: string;
+    /** Remote shell command. The host must enforce its command policy. */
+    command: string;
+    /** Default 30 seconds; the host may impose a lower ceiling. */
+    timeoutMs?: number;
+    /** Combined stdout/stderr byte limit; default 1 MiB. */
+    maxOutputBytes?: number;
+};
+export type SSHExecResult = {
+    stdout: string;
+    stderr: string;
+    exitCode: number | null;
+    signal: string | null;
+    durationMs: number;
+    truncated: boolean;
+};
+
+/** Backend-only protocol v1. No plugin id, storage path or raw SSH credentials are accepted. */
+export type HostServiceRequest =
+    | { action: "secrets.set"; payload: { key: string; value: string } }
+    | { action: "secrets.get" | "secrets.delete"; payload: { key: string } }
+    | { action: "secrets.list" | "ssh.profiles.list"; payload: Record<string, never> }
+    | { action: "ssh.exec"; payload: Required<SSHExecOptions> };
+
+/**
+ * Host bootstrap adapter, bound to a trusted plugin identity and lifecycle.
+ * request resolves with the action result (not the legacy privileged-action envelope)
+ * and rejects on transport, authorization or service failures. No logging of payloads.
+ */
+export type HostServicesConfiguration = {
+    request(request: HostServiceRequest): Promise<unknown>;
+};
+
+export type HostServiceErrorCode =
+    | "ACCESS_DENIED" | "UNAVAILABLE" | "LOCKED" | "TIMEOUT"
+    | "HOST_KEY_REJECTED" | "CONNECTION_FAILED" | "INVALID_REQUEST";
