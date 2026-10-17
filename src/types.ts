@@ -454,6 +454,7 @@ export type CapabilityPreflightReport = {
     action: string;
     declared: string[];
     granted: string[];
+    /** Declared capabilities whose own grant or any prerequisite grant is missing. */
     missing: CapabilityPreflightMissingDiagnostic[];
     undeclaredGranted: CapabilityDescriptor[];
     remediations: string[];

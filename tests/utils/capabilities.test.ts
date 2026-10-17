@@ -280,3 +280,58 @@ describe("capabilities", () => {
         expect(parseMissingCapabilityError(new Error("something else"))).toBeNull();
     });
 });
+
+describe("preflight prerequisites for granted operations", () => {
+    const sshPrerequisites = ["ssh.use", "secrets.use", "secrets.consume"];
+
+    test.each(Array.from({ length: 8 }, (_, mask) => ({
+        grantedPrerequisites: sshPrerequisites.filter((_, index) => (mask & (1 << index)) !== 0),
+        missingPrerequisites: sshPrerequisites.filter((_, index) => (mask & (1 << index)) === 0).sort(),
+    })))("checks granted ssh.exec with prerequisites $grantedPrerequisites", ({ grantedPrerequisites, missingPrerequisites }) => {
+        const report = runCapabilityPreflight({
+            declared: ["ssh.exec"],
+            granted: ["ssh.exec", ...grantedPrerequisites],
+        });
+
+        expect(report.ok).toBe(missingPrerequisites.length === 0);
+        if (missingPrerequisites.length === 0) {
+            expect(report.missing).toEqual([]);
+            expect(report.remediations).toEqual([]);
+            return;
+        }
+        expect(report.missing).toHaveLength(1);
+        expect(report.missing[0]).toMatchObject({
+            capability: "ssh.exec",
+            requiredCapabilities: ["secrets.consume", "secrets.use", "ssh.exec", "ssh.use"],
+            missingPrerequisites,
+            grantedPrerequisites: [...grantedPrerequisites].sort(),
+        });
+        expect(report.remediations).toHaveLength(1);
+        for (const prerequisite of missingPrerequisites) {
+            expect(report.remediations[0]).toContain(`"${prerequisite}"`);
+        }
+        expect(report.summary).toBe("Missing capabilities or prerequisites for 1 declared capability (ssh.exec).");
+    });
+
+    test.each([
+        { capability: "secrets.get", prerequisite: "secrets.use" },
+        { capability: "ssh.profiles.list", prerequisite: "ssh.use" },
+        { capability: "storage.json", prerequisite: "storage" },
+        { capability: "system.process.scope.git", prerequisite: "system.process.exec" },
+    ])("checks $prerequisite for granted $capability", ({ capability, prerequisite }) => {
+        const report = runCapabilityPreflight({ declared: [capability], granted: [capability] });
+        expect(report.ok).toBe(false);
+        expect(report.missing[0]).toMatchObject({ capability, missingPrerequisites: [prerequisite] });
+        expect(runCapabilityPreflight({ declared: [capability], granted: [capability, prerequisite] }).ok).toBe(true);
+    });
+
+    test("reports missing operations and granted operations with unmet prerequisites together", () => {
+        const report = runCapabilityPreflight({
+            declared: ["ssh.exec", "secrets.list", "secrets.list"],
+            granted: ["ssh.exec", "ssh.use", "secrets.consume"],
+        });
+        expect(report.ok).toBe(false);
+        expect(report.missing.map(entry => entry.capability)).toEqual(["secrets.list", "ssh.exec"]);
+        expect(report.missing.every(entry => entry.missingPrerequisites.includes("secrets.use"))).toBe(true);
+    });
+});

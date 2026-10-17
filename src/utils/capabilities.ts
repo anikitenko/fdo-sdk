@@ -570,7 +570,6 @@ export function runCapabilityPreflight(options: {
     const grantedSet = new Set(granted);
 
     const missing: CapabilityPreflightMissingDiagnostic[] = declared
-        .filter((capability) => !grantedSet.has(capability))
         .map((capability) => {
             const descriptor = describeCapability(capability);
             const prerequisites = getCapabilityPrerequisites(capability);
@@ -589,7 +588,8 @@ export function runCapabilityPreflight(options: {
                 missingPrerequisites,
                 grantedPrerequisites,
             };
-        });
+        })
+        .filter((entry) => !grantedSet.has(entry.capability) || entry.missingPrerequisites.length > 0);
 
     const undeclaredGranted = granted
         .filter((capability) => !declaredSet.has(capability))
@@ -600,6 +600,8 @@ export function runCapabilityPreflight(options: {
     );
     const summary = missing.length === 0
         ? "All declared capabilities are granted."
+        : missing.some((entry) => grantedSet.has(entry.capability))
+        ? `Missing capabilities or prerequisites for ${missing.length} declared capability${missing.length === 1 ? "" : "ies"} (${missing.map((entry) => entry.capability).join(", ")}).`
         : `Missing ${missing.length} declared capability${missing.length === 1 ? "" : "ies"} (${missing.map((entry) => entry.capability).join(", ")}).`;
 
     return {
