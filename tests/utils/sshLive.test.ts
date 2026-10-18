@@ -156,13 +156,111 @@ test('monitoring teardown closes subscriptions and suppresses later delivery', a
     expect(close).toHaveBeenCalledOnce();
 });
 
-test('grant revocation prevents further event delivery and cancel calls', async () => {
+test('grant revocation prevents delivery and caller cancellation while cleaning up execution', async () => {
     const cancel = vi.fn();
     setup({ startSSHExecution: async () => ({ events: values({ sequence: 0, stream: 'stdout', data: 'ok' }), result: Promise.resolve(completed), cancel }) });
     const execution = await ssh.start(options);
     await execution.result;
     PluginRegistry.configureCapabilities({ granted: [] });
     await expect(execution.events[Symbol.asyncIterator]().next()).rejects.toThrow('Capability');
+    expect(cancel).toHaveBeenCalledOnce();
     await expect(execution.cancel()).rejects.toThrow('Capability');
+    expect(cancel).toHaveBeenCalledOnce();
+});
+
+test.each([undefined, null, {}, { [Symbol.asyncIterator]: () => ({}) }])(
+    'cancels a started execution when its event source is malformed: %j', async events => {
+        let rejectResult!: (reason: unknown) => void;
+        const cancel = vi.fn(() => {
+            rejectResult({ code: 'CANCELLED' });
+            return Promise.reject(new Error('provider cancellation failed'));
+        });
+        setup({ startSSHExecution: async () => ({
+            events: events as AsyncIterable<unknown>,
+            result: new Promise((_, reject) => { rejectResult = reject; }), cancel,
+        }) });
+        await expect(ssh.start(options)).rejects.toThrow('Invalid host service response');
+        expect(cancel).toHaveBeenCalledOnce();
+        PluginRegistry.configureHostServices(null);
+        expect(cancel).toHaveBeenCalledOnce();
+    },
+);
+
+test.each(['clear', 'replace'] as const)('invalidates provider rejections after transport %s', async action => {
+    let rejectResult!: (reason: unknown) => void;
+    const cancel = vi.fn(async () => {
+        rejectResult({ code: 'CANCELLED', message: 'SECRET' });
+        return { remoteProcessStopped: null };
+    });
+    setup({ startSSHExecution: async () => ({
+        events: values(), result: new Promise((_, reject) => { rejectResult = reject; }), cancel,
+    }) });
+    const execution = await ssh.start(options);
+    if (action === 'clear') PluginRegistry.configureHostServices(null);
+    else setup();
+    await expect(execution.result).rejects.toMatchObject({ code: 'UNAVAILABLE', message: 'Host service request failed (UNAVAILABLE).' });
+    expect(cancel).toHaveBeenCalledOnce();
+});
+
+test.each([false, true])('teardown closes output after result settles (consumer started: %j)', async consume => {
+    const close = vi.fn().mockResolvedValue({ done: true });
+    const cancel = vi.fn().mockResolvedValue({ remoteProcessStopped: null });
+    setup({ startSSHExecution: async () => ({
+        events: { [Symbol.asyncIterator]: () => ({
+            next: async () => ({ value: { sequence: 0, stream: 'stdout', data: 'ok' }, done: false }),
+            return: close,
+        }) },
+        result: Promise.resolve(completed), cancel,
+    }) });
+    const execution = await ssh.start(options);
+    const consumer = consume ? execution.events[Symbol.asyncIterator]() : undefined;
+    if (consumer) await consumer.next();
+    await execution.result;
+    expect(close).not.toHaveBeenCalled();
+    PluginRegistry.configureHostServices(null);
+    expect(close).toHaveBeenCalledOnce();
+    expect(cancel).toHaveBeenCalledOnce();
+    if (consumer) await consumer.return?.();
+    expect(close).toHaveBeenCalledOnce();
+});
+
+test.each([false, true])('releases completed execution after result and output close (result first: %j)', async resultFirst => {
+    let finish!: (value: unknown) => void;
+    const cancel = vi.fn();
+    const close = vi.fn().mockResolvedValue({ done: true });
+    setup({ startSSHExecution: async () => ({
+        events: { [Symbol.asyncIterator]: () => ({ next: async () => ({ done: true }), return: close }) },
+        result: new Promise(resolve => { finish = resolve; }), cancel,
+    }) });
+    const execution = await ssh.start(options);
+    if (resultFirst) { finish(completed); await execution.result; }
+    for await (const _event of execution.events) { /* drain */ }
+    if (!resultFirst) { finish(completed); await execution.result; }
+    PluginRegistry.configureHostServices(null);
+    expect(close).toHaveBeenCalledOnce();
     expect(cancel).not.toHaveBeenCalled();
+});
+
+test('retains teardown cleanup while asynchronous output closure is pending', async () => {
+    let finishClose!: () => void;
+    let notifyCloseStarted!: () => void;
+    const closeStarted = new Promise<void>(resolve => { notifyCloseStarted = resolve; });
+    const close = vi.fn(() => new Promise<{ done: true }>(resolve => {
+        finishClose = () => resolve({ done: true });
+        notifyCloseStarted();
+    }));
+    const cancel = vi.fn().mockResolvedValue({ remoteProcessStopped: null });
+    setup({ startSSHExecution: async () => ({
+        events: { [Symbol.asyncIterator]: () => ({ next: async () => ({ done: true }), return: close }) },
+        result: Promise.resolve(completed), cancel,
+    }) });
+    const execution = await ssh.start(options);
+    await execution.result;
+    const outputDone = execution.events[Symbol.asyncIterator]().next();
+    await closeStarted;
+    PluginRegistry.configureHostServices(null);
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(close).toHaveBeenCalledOnce();
+    finishClose();
+    await outputDone;
 });

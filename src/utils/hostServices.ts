@@ -126,6 +126,11 @@ function iteratorFor(source: unknown): AsyncIterator<unknown> {
     return iterator;
 }
 
+async function nextHostEvent(iterator: AsyncIterator<unknown>): Promise<IteratorResult<unknown>> {
+    try { return await iterator.next(); }
+    catch (error) { throw safeError(error); }
+}
+
 function closeIterator(iterator: AsyncIterator<unknown>): void {
     try { void Promise.resolve(iterator.return?.()).catch(() => {}); } catch { /* Best-effort teardown. */ }
 }
@@ -224,8 +229,7 @@ export class SSHClient {
         try {
             while (true) {
                 assertCurrent(transport, "ssh.status.watch");
-                let next: IteratorResult<unknown>;
-                try { next = await iterator.next(); } catch (error) { throw safeError(error); }
+                const next = await nextHostEvent(iterator);
                 assertCurrent(transport, "ssh.status.watch");
                 if (next.done) return;
                 const status = next.value;
@@ -252,13 +256,50 @@ export class SSHClient {
         try { host = await transport.startSSHExecution(payload); }
         catch (error) { throw safeError(error); }
         if (!host || typeof host.cancel !== "function" || !host.result || typeof host.result.then !== "function") invalidResponse();
+        let iterator: AsyncIterator<unknown> | undefined;
+        let resultSettled = false;
+        let eventsClosed = false;
+        let closingEvents: Promise<void> | undefined;
+        let cleaned = false;
+        const releaseIfFinished = () => {
+            if (resultSettled && eventsClosed) activeResources.delete(cleanup);
+        };
+        const closeEvents = (): Promise<void> => {
+            if (!closingEvents) {
+                let closing: Promise<unknown>;
+                try { closing = Promise.resolve(iterator?.return?.()); }
+                catch { closing = Promise.resolve(); }
+                closingEvents = closing.catch(() => {}).then(() => {
+                    eventsClosed = true;
+                    releaseIfFinished();
+                });
+            }
+            return closingEvents;
+        };
+        const cleanup = () => {
+            if (cleaned) return;
+            cleaned = true;
+            activeResources.delete(cleanup);
+            void closeEvents();
+            // Register cancellation before validating events: start already launched the command.
+            try { void Promise.resolve(host.cancel()).catch(() => {}); } catch { /* Best-effort teardown. */ }
+        };
+        activeResources.add(cleanup);
         // Attach immediately: a caller may be consuming events before awaiting result.
         const result = Promise.resolve(host.result).then(value => {
             assertCurrent(transport, "ssh.exec");
             return execResult(value, payload.maxOutputBytes);
-        }, error => { throw safeError(error); });
-        void result.catch(() => {});
-        const iterator = iteratorFor(host.events);
+        }, error => {
+            assertCurrent(transport, "ssh.exec");
+            throw safeError(error);
+        });
+        const settleResult = () => { resultSettled = true; releaseIfFinished(); };
+        void result.then(settleResult, settleResult);
+        let outputIterator: AsyncIterator<unknown>;
+        try {
+            outputIterator = iterator = iteratorFor(host.events);
+            assertCurrent(transport, "ssh.exec");
+        } catch (error) { cleanup(); throw error; }
         let cancelPromise: Promise<SSHCancelResult> | undefined;
         const cancel = async (): Promise<SSHCancelResult> => {
             assertCurrent(transport, "ssh.exec");
@@ -268,14 +309,6 @@ export class SSHClient {
                 return { remoteProcessStopped: value.remoteProcessStopped as boolean | null };
             });
         };
-        const cleanup = () => {
-            closeIterator(iterator);
-            // Host cancellation is required to be idempotent and scoped to this execution.
-            try { void Promise.resolve(host.cancel()).catch(() => {}); } catch { /* Best-effort teardown. */ }
-        };
-        activeResources.add(cleanup);
-        try { assertCurrent(transport, "ssh.exec"); }
-        catch (error) { activeResources.delete(cleanup); cleanup(); throw error; }
         let sequence = 0;
         let bytes = 0;
         let consumed = false;
@@ -286,8 +319,7 @@ export class SSHClient {
                 try {
                     while (true) {
                         assertCurrent(transport, "ssh.exec");
-                        let next: IteratorResult<unknown>;
-                        try { next = await iterator.next(); } catch (error) { throw safeError(error); }
+                        const next = await nextHostEvent(outputIterator);
                         assertCurrent(transport, "ssh.exec");
                         if (next.done) return;
                         const event = next.value;
@@ -297,10 +329,12 @@ export class SSHClient {
                         if (bytes > payload.maxOutputBytes) invalidResponse();
                         yield { sequence: event.sequence as number, stream: event.stream, data: event.data };
                     }
-                } finally { closeIterator(iterator); }
+                } catch (error) {
+                    cleanup();
+                    throw error;
+                } finally { await closeEvents(); }
             },
         };
-        void result.finally(() => { activeResources.delete(cleanup); }).catch(() => {});
         return { events, result, cancel };
     }
 }
