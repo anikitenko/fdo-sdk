@@ -102,3 +102,7 @@ The identifiers `settings` and the surrounding handler are supplied by the plugi
 ## Acceptance checks in FDO
 
 Verify fresh initial status, heartbeat loss, reconnect, stale UI and teardown without shell probes. Test missing grants, cross-plugin IDs, revocation during monitoring/execution, pinned-key mismatch and credential rotation. Confirm output arrives before completion; exercise stdout/stderr ordering, split and malformed UTF-8, exact combined caps, truncation, slow/no consumers and commands that exceed deadlines. Test cancel before/after completion, timeout, disconnect and view closure; ensure no command retry and no false termination claim. Exercise missing/unwritable roots, disk full, flush rejection, later recovery and restart persistence. Test packaged Windows/macOS/Linux SSH without an external SSH executable. SDK mock tests cannot establish host/network integration.
+
+## Interactive sessions are a separate flow
+
+Use [the terminal and X11 host handoff](./FDO_HOST_TERMINAL_X11_HANDOFF.md) to add PTY sessions. Keep this document’s reviewed noninteractive execution unchanged; arbitrary terminal input requires explicit interactive authorization and independent view/forwarding cleanup.

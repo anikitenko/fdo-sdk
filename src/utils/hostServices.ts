@@ -1,7 +1,8 @@
+import { openTerminal } from "./sshTerminal";
 import type {
     HostServiceRequest, HostServicesConfiguration, SecretMetadata, SecretReference,
     SSHExecOptions, SSHExecResult, SSHProfileSummary, HostServiceErrorCode,
-    SSHExecution, SSHConnectionStatus, SSHOutputEvent, SSHCancelResult, HostServiceCapability,
+    SSHTerminalOptions, SSHTerminalSession, SSHExecution, SSHConnectionStatus, SSHOutputEvent, SSHCancelResult, HostServiceCapability,
 } from "../types";
 import { requireCapability } from "./capabilities";
 
@@ -23,13 +24,14 @@ export function configureHostServices(value: HostServicesConfiguration | null): 
     if (value !== null && (!value || typeof value.request !== "function")) {
         throw new Error("Host services require a request transport.");
     }
-    for (const key of ["watchSSHStatus", "startSSHExecution"] as const) {
+    for (const key of ["watchSSHStatus", "startSSHExecution", "openSSHTerminal"] as const) {
         if (value?.[key] !== undefined && typeof value[key] !== "function") throw new Error("Invalid SSH host adapter.");
     }
     for (const cleanup of activeResources) cleanup();
     activeResources.clear();
     configuration = value === null ? undefined : Object.freeze({
         request: value.request.bind(value),
+        openSSHTerminal: value.openSSHTerminal?.bind(value),
         watchSSHStatus: value.watchSSHStatus?.bind(value),
         startSSHExecution: value.startSSHExecution?.bind(value),
     });
@@ -56,17 +58,18 @@ function authorize(action: HostServiceCapability): void {
         throw new Error("Host services are only available in the plugin backend runtime.");
     }
     if (action.startsWith("ssh.")) requireCapability("ssh.use", "access SSH services");
-    if (action.startsWith("secrets.") || action === "ssh.exec" || action === "ssh.status.watch") {
+    if (action.startsWith("secrets.") || action === "ssh.exec" || action === "ssh.status.watch" || action === "ssh.terminal.open" || action === "ssh.x11.forward") {
         requireCapability("secrets.use", "access the secret store");
     }
     requireCapability(action, "access host services");
-    if (action === "ssh.exec" || action === "ssh.status.watch") {
+    if (action === "ssh.exec" || action === "ssh.status.watch" || action === "ssh.terminal.open" || action === "ssh.x11.forward") {
         requireCapability("secrets.consume", "consume secret references for SSH");
     }
 }
 
 function safeError(error: unknown): HostServiceError {
-    const codes: HostServiceErrorCode[] = ["ACCESS_DENIED", "UNAVAILABLE", "LOCKED", "TIMEOUT", "CANCELLED", "HOST_KEY_REJECTED", "CONNECTION_FAILED", "INVALID_REQUEST"];
+    const codes: HostServiceErrorCode[] = ["ACCESS_DENIED", "UNAVAILABLE", "LOCKED", "TIMEOUT", "CANCELLED", "HOST_KEY_REJECTED", "CONNECTION_FAILED", "INVALID_REQUEST", "BACKPRESSURE", "SESSION_CLOSED", "IDLE_TIMEOUT", "SESSION_LIMIT",
+        "X11_UNSUPPORTED", "X11_UNAVAILABLE", "X11_AUTH_UNAVAILABLE", "X11_FORWARDING_DENIED"];
     return new HostServiceError(record(error) && codes.includes(error.code as HostServiceErrorCode)
         ? error.code as HostServiceErrorCode : "UNAVAILABLE");
 }
@@ -180,6 +183,22 @@ export class SecretStore {
 
 /** Builtin SSH facade. The host ships the SSH implementation and owns connection profiles. */
 export class SSHClient {
+    /** PTY shell with explicit interactive authorization; never falls back to exec/start. */
+    async openTerminal(options: SSHTerminalOptions, signal?: AbortSignal): Promise<SSHTerminalSession> {
+        let transport: Readonly<HostServicesConfiguration>;
+        try { transport = getTransport("ssh.terminal.open"); }
+        catch { throw new HostServiceError(configuration ? "ACCESS_DENIED" : "UNAVAILABLE"); }
+        const wantsX11 = options?.x11 !== undefined;
+        const check = () => {
+            try {
+                assertCurrent(transport, "ssh.terminal.open");
+                if (wantsX11) assertCurrent(transport, "ssh.x11.forward");
+            } catch { throw new HostServiceError(configuration === transport ? "ACCESS_DENIED" : "UNAVAILABLE"); }
+        };
+        check();
+        return openTerminal(options, signal, transport.openSSHTerminal, check, activeResources, safeError);
+    }
+
     async listProfiles(): Promise<SSHProfileSummary[]> {
         const result = await request({ action: "ssh.profiles.list", payload: {} });
         if (!record(result) || !Array.isArray(result.profiles)) invalidResponse();

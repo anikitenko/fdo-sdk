@@ -334,3 +334,7 @@ Thank you for helping improve the FDO SDK examples!
 ### Authoring components and static previews
 
 [16-authoring-components.ts](16-authoring-components.ts) composes and mounts alerts, a bounded toast region, an async action button, tabs and disclosures/accordions with explicit cleanup. [17-static-component-gallery.ts](17-static-component-gallery.ts) renders every SDK state without mounting handlers.
+
+## Interactive SSH and host references
+
+[18-interactive-ssh-plugin.ts](./18-interactive-ssh-plugin.ts) demonstrates separately authorized PTY shells, one-packet acknowledged output and optional X11 requests. It needs the new adapter and proposed host renderer described in [SSH terminals](../docs/SSH_TERMINALS.md). [host/sshTerminal.cjs](./host/sshTerminal.cjs) and [host/x11Forwarding.cjs](./host/x11Forwarding.cjs) are host-only reference implementations, never plugin imports. See the [host handoff](../docs/FDO_HOST_TERMINAL_X11_HANDOFF.md) for authentication, consent, platform prerequisites and integration testing.

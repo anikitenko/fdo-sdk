@@ -772,7 +772,7 @@ export type DiagnosticFixTemplate = {
 /** Secret operations require secrets.use plus an operation grant; SSH consumes references without secrets.get. */
 export type HostServiceCapability =
     | "secrets.set" | "secrets.get" | "secrets.delete" | "secrets.list" | "secrets.use" | "secrets.consume"
-    | "ssh.use" | "ssh.exec" | "ssh.profiles.list" | "ssh.status.watch";
+    | "ssh.use" | "ssh.exec" | "ssh.profiles.list" | "ssh.status.watch" | "ssh.terminal.open" | "ssh.x11.forward";
 
 /** References are names in the authenticated plugin namespace, not bearer credentials. */
 export type SecretReference = Readonly<{ kind: "secret"; key: string }>;
@@ -846,6 +846,50 @@ export type HostSSHExecution = {
     cancel(): Promise<unknown>;
 };
 
+/** Explicitly authorized arbitrary shell input; independent of ssh.exec command policy. */
+export type SSHTerminalOptions = {
+    profileId: string;
+    term?: string;
+    rows?: number;
+    columns?: number;
+    idleTimeoutMs?: number;
+    sessionTimeoutMs?: number;
+    /** Separate grant and host consent. No display, socket or cookie crosses this boundary. */
+    x11?: { mode: "trusted" | "untrusted" };
+};
+export type SSHTerminalOpenOptions = Required<Omit<SSHTerminalOptions, "x11">> & Pick<SSHTerminalOptions, "x11">;
+export type SSHTerminalOutput = { sequence: number; data: Uint8Array };
+export type SSHTerminalResult = {
+    reason: "exited" | "closed" | "cancelled";
+    exitCode: number | null;
+    signal: string | null;
+    /** Evidence about the shell only, never all descendants. */
+    remoteProcessStopped: boolean | null;
+};
+export type SSHTerminalSession = {
+    /** Raw bytes, one consumer, chunks <= 32 KiB. PTY usually merges stderr into stdout. */
+    output: AsyncIterable<SSHTerminalOutput>;
+    result: Promise<SSHTerminalResult>;
+    /** UTF-8 string or raw bytes. Resolves on host write/drain acknowledgement, not remote execution. */
+    write(data: string | Uint8Array): Promise<void>;
+    resize(rows: number, columns: number): Promise<void>;
+    /** SSH input half-close; Ctrl+D in a PTY is instead terminal input (\x04). */
+    endInput(): Promise<void>;
+    /** Release channel/forwarding without claiming termination. */
+    close(): Promise<void>;
+    cancel(): Promise<SSHCancelResult>;
+};
+/** Backend adapter only; never serialize iterators, promises, cookies or sockets into the UI. */
+export type HostSSHTerminalSession = {
+    output: AsyncIterable<unknown>;
+    result: Promise<unknown>;
+    write(data: Uint8Array): Promise<void>;
+    resize(rows: number, columns: number): Promise<void>;
+    endInput(): Promise<void>;
+    close(): Promise<void>;
+    cancel(): Promise<unknown>;
+};
+
 /** Backend-only protocol v1. No plugin id, storage path or raw SSH credentials are accepted. */
 export type HostServiceRequest =
     | { action: "secrets.set"; payload: { key: string; value: string } }
@@ -863,8 +907,11 @@ export type HostServicesConfiguration = {
     /** Optional live adapters. An absent adapter fails with UNAVAILABLE, without buffered fallback. */
     watchSSHStatus?(options: { profileId: string }): Promise<AsyncIterable<unknown>>;
     startSSHExecution?(options: Required<SSHExecOptions>): Promise<HostSSHExecution>;
+    openSSHTerminal?(options: SSHTerminalOpenOptions): Promise<HostSSHTerminalSession>;
 };
 
 export type HostServiceErrorCode =
     | "ACCESS_DENIED" | "UNAVAILABLE" | "LOCKED" | "TIMEOUT" | "CANCELLED"
-    | "HOST_KEY_REJECTED" | "CONNECTION_FAILED" | "INVALID_REQUEST";
+    | "HOST_KEY_REJECTED" | "CONNECTION_FAILED" | "INVALID_REQUEST"
+    | "BACKPRESSURE" | "SESSION_CLOSED" | "IDLE_TIMEOUT" | "SESSION_LIMIT"
+    | "X11_UNSUPPORTED" | "X11_UNAVAILABLE" | "X11_AUTH_UNAVAILABLE" | "X11_FORWARDING_DENIED";
