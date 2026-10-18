@@ -13,6 +13,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.3](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.8.2...fdo-sdk-v1.8.3) (2026-10-18)
+
+
+### Bug Fixes
+
+* **ssh:** support interactive PTY sessions and optional X11 forwarding ([#80](https://github.com/anikitenko/fdo-sdk/issues/80)) ([71ce9b5](https://github.com/anikitenko/fdo-sdk/commit/71ce9b5088454720fcdfc1e8a657012f9c1ea175))
+
 ## [1.8.2](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.8.1...fdo-sdk-v1.8.2) (2026-10-18)
 
 
