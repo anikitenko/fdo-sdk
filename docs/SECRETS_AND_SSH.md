@@ -18,7 +18,7 @@ Declare permissions through the existing `declareCapabilities()` hook. Declarati
 | `secrets.consume` | Allow an authorized host service to consume a referenced secret (requires `secrets.use`) |
 | `ssh.use` | Base permission to access SSH services; grants no operation by itself |
 | `ssh.exec` | Execute a remote command on an authorized host profile |
-| `ssh.profiles.list` | List authorized profile IDs and labels |
+| `ssh.profiles.list` | List authorized SSH command profile IDs and labels, plus optional host, port, username, authentication type and trusted host-key fingerprint; excludes credentials, secret references and command policies |
 
 Every secret operation requires **`secrets.use` plus the specific operation capability**: for example, reading requires `secrets.use` + `secrets.get`, and listing requires `secrets.use` + `secrets.list`. Neither the base permission alone nor an operation alone is sufficient. Permission to write never implicitly permits reading or deletion.
 
@@ -64,7 +64,7 @@ Raw secret entry should preferably use a host-owned credential UI. If backend pl
 
 ## SSH
 
-`ssh.listProfiles()` returns authorized `{ id, label }` summaries. `ssh.exec({ profileId, command, timeoutMs?, maxOutputBytes? })` executes one noninteractive remote shell command. Defaults are a 30-second command deadline and 1 MiB combined stdout/stderr capture. The host may impose lower ceilings. Results contain `stdout`, `stderr`, `exitCode`, `signal`, `durationMs`, and `truncated`. A nonzero remote exit is a successful transport result; transport and service failures reject.
+`ssh.listProfiles()` returns command-authorized profile summaries with `id` and `label`, plus optional `host`, `port`, `username`, `authenticationType` (`password` or `privateKey`) and `trustedHostKey`. Each optional field is validated independently and absent on older hosts. Credentials, secret reference keys, authentication objects and command policies are excluded by the SDK allowlist. Listing still requires only `ssh.use` + `ssh.profiles.list`, with no new permission or secret read grant. The fingerprint is public trust metadata, not a private key. These summaries are not an inventory of Git-only profiles: the current host filters this action to the `ssh.exec` consumer. `ssh.exec({ profileId, command, timeoutMs?, maxOutputBytes? })` executes one noninteractive remote shell command. Defaults are a 30-second command deadline and 1 MiB combined stdout/stderr capture. The host may impose lower ceilings. Results contain `stdout`, `stderr`, `exitCode`, `signal`, `durationMs`, and `truncated`. A nonzero remote exit is a successful transport result; transport and service failures reject.
 
 Profiles belong to the host. The exported `SSHConnectionProfile` describes an id, label, host, port, username, authentication references, and a trusted SHA256 host-key fingerprint. Password and private-key authentication are supported by the contract. Profiles must be authorized for the caller, with credential references resolved in its namespace. Profile creation, credential entry and host-key enrollment occur through host-owned flows in this initial API.
 
@@ -74,18 +74,32 @@ This initial API supports buffered execution. Interactive terminals, SFTP, forwa
 
 ## Reusing SSH profiles for Git
 
-SSH profiles describe connection identity and trust, so the host should reuse the same profile model for remote command execution and Git over SSH. Reuse means resolving an authorized profile through a common host service. It does not mean copying credentials into Git configuration or sharing secrets across plugins.
+FDO now reuses plugin-owned SSH profiles for Git through the existing `requestOperatorTool("git", payload)` path. Configure the profile's Git consumer, exact repository paths and read/push policy in Settings → Credentials & SSH. Reuse is within the same plugin namespace; cross-plugin sharing is not supported. It never copies credentials into plugin code or repository settings.
 
 ### Authorization and profile ownership
 
-| Consumer | Required permissions and policy | Status in this SDK |
+| Consumer | Required permissions and policy | Current integration |
 | --- | --- | --- |
-| List SSH profiles | `ssh.use` + `ssh.profiles.list`; filter to caller-authorized profiles | Implemented facade |
-| Execute a remote shell command | `ssh.use` + `ssh.exec`, `secrets.use` + `secrets.consume`, profile/target/command policy | Implemented facade |
-| Run the existing local Git operator preset | `system.process.exec` + `system.process.scope.git`, with host executable/argument/cwd/env policy | Existing API; no SSH profile binding |
-| Use a profile for Git clone/fetch/push | `ssh.use`, `secrets.use` + `secrets.consume`, and separately authorized Git operation/repository/target policy | Future host integration; no profile-aware Git request in v1 |
+| List SSH command profiles | `ssh.use` + `ssh.profiles.list`; caller-owned, command-authorized profiles only | `this.ssh.listProfiles()` with optional safe metadata |
+| Execute a remote shell command | `ssh.use` + `ssh.exec`, `secrets.use` + `secrets.consume`, profile/target/command policy | `this.ssh.exec(...)` |
+| Local Git operator execution | `system.process.exec` + `system.process.scope.git`, host executable/argument/cwd/env policy | Existing operator preset |
+| Profile-backed Git | Both process grants above, `ssh.use` + `ssh.exec`, `secrets.use` + `secrets.consume`, Git-consumer/repository/operation policy | Existing operator preset with current FDO host wiring |
 
-Git transport use must not require `ssh.exec` just to authenticate: that capability authorizes arbitrary policy-approved shell commands through the SSH helper. Likewise, `ssh.exec` must not grant Git repository access, fetch permission, push permission, or local Git execution. A future Git transport must have its own specific operation authorization paired with its base access permission. This release introduces no `git.*` capability names or Git service actions. When integrating through the existing local Git operator path, retain its two existing process permissions and add explicit host policy for which Git operations may consume which SSH profiles. Merely granting that process scope must not expose secret material or enable profile consumption.
+The current host requires six grants for profile-backed Git, including `ssh.exec` as the child of `ssh.use`. This does not bypass consumer or command policy: a Git-only profile still cannot execute general shell commands. Neither `ssh.exec` nor the process scope alone grants repository access. `secrets.get` and `ssh.profiles.list` are not needed for Git authentication. No `this.git`, `git.*` capability family or Git-specific host service action ships in this SDK. A future typed Git API is a separate proposal, not a prerequisite for current Git reuse.
+
+Declare the current Git permissions without requesting unnecessary profile listing or plaintext reads:
+
+```typescript
+import { createCapabilityBundle, createOperatorToolCapabilityPreset } from "@anikitenko/fdo-sdk";
+
+// Return from declareCapabilities(). The host approves each grant independently.
+const capabilities = createCapabilityBundle([
+  ...createOperatorToolCapabilityPreset("git"),
+  "ssh.use", "ssh.exec", "secrets.use", "secrets.consume",
+]);
+```
+
+The host selects a profile from the effective repository URL and exact repository policy, not a plugin-supplied profile override. Two repositories on the same server and username can use different keys; one profile may authorize multiple repositories. Missing and ambiguous matches reject. Configure those bindings in Settings; `this.ssh.listProfiles()` does not list Git-only bindings and must not be used as a Git repository picker.
 
 Keep profile IDs stable within their owner namespace. Resolve the ID against the authenticated caller and the intended consumer every time; an ID is not an access token. The host may keep authorization policy alongside a profile, but this SDK's `SSHConnectionProfile` type has no consumer-policy fields. Do not silently reinterpret a profile ID from a different plugin. Cross-plugin profile/secret sharing requires a future explicit ownership and grant contract; v1 supports reuse by authorized consumers within one plugin namespace only.
 
@@ -93,13 +107,11 @@ Profile creation, edits, deletion, secret selection and trust enrollment remain 
 
 ### Git transport integration
 
-Git over SSH requires an explicit transport implementation. The ordinary Git CLI does not automatically discover an in-process `ssh2` connection. Git can invoke an SSH command through `GIT_SSH`/`GIT_SSH_COMMAND`; the latter is interpreted by a shell. A host-owned helper executable is one possible integration point. [Git transport environment documentation](https://git-scm.com/docs/git#Documentation/git.txt-GITSSH).
-
-For an installation without an external SSH executable, the host can ship a helper that forwards Git's binary stdin/stdout over an authenticated, operation-scoped host channel backed by `ssh2`. The helper must carry only an opaque short-lived operation handle and connection metadata, never plaintext credentials in command arguments or environment variables. The host owns the remote Git service command and enforces the approved repository and operation. Treat this as a design option requiring implementation and platform tests, not a transport already provided by this SDK. Another Git engine with explicit SSH transport support would need equivalent authorization and trust enforcement.
+The current host supplies a bundled binary-safe streaming helper backed by `ssh2` for profile-backed Git. Git invokes the host-controlled helper through its transport integration. Operation-scoped authenticated handles identify the authorized work; SSH credentials stay in the host and never enter Git arguments, environment variables, configuration or temporary private-key files. Plugin code must not set `GIT_SSH_COMMAND` or implement its own helper. This SDK supplies the existing operator request API; it does not ship the helper or open Git transport streams itself.
 
 Do not implement Git transport using `this.ssh.exec()`: its UTF-8, buffered, output-limited result is intended for command output and cannot carry Git's bidirectional binary protocol. A Git transport needs binary-safe streaming, stdin EOF/half-close handling, backpressure, separate stderr, exit status, cancellation, deadlines and disconnect cleanup. Map read/fetch to the approved read-side Git service and push to the approved write-side service. Never let a transport caller turn that mapping into unrestricted remote command execution.
 
-Bundling `ssh2` removes the external SSH executable requirement for the SSH helper only. It does not bundle Git. If the host chooses the Git CLI, ship and maintain it or explicitly document it as a prerequisite on each platform. A completely builtin Git experience needs a separately selected Git implementation. Do not advertise one based solely on this SDK release.
+The current FDO plugin operator path uses an installed, allowlisted Git executable with the host's pinned SSH helper; an external SSH executable is not required for profile mode. Git itself is a separate prerequisite for plugin CLI operations. FDO GitOps has its own bundled Git runtime and does not automatically consume plugin profiles. Do not infer plugin Git availability from GitOps or SDK installation.
 
 ### Targets, trust and credential compatibility
 
@@ -113,9 +125,14 @@ A server may allow Git service commands while denying a general shell. For examp
 
 Git over HTTPS uses API tokens or other HTTPS credentials from the universal secret store through a separately authorized consumer; an SSH profile does not describe HTTPS authentication. This release adds no HTTPS Git credential helper.
 
-### Host verification for future Git reuse
+### Current host behavior and verification
 
-Before advertising profile-aware Git, verify clone/fetch/push against a controlled SSH Git server on packaged Windows, macOS and Linux hosts. Cover restricted Git-only accounts, encrypted private keys, wrong/missing/changed host keys, mismatched URL/profile endpoints, repository read versus push permissions, malicious repository transport settings, unauthorized submodule destinations, concurrent operations and profile edits, revocation/deletion, binary integrity, backpressure, helper handle replay, timeouts and cleanup. Confirm that private keys and passphrases never appear in process arguments, environment, Git config, temporary files, logs or UI responses. These are host integration checks, not assertions made by the SDK unit tests.
+Profile mode is persistent after enrolling a Git-authorized profile. Removing the last profile must not silently fall back to machine SSH credentials. SSH-capable plugins without enrollment fail closed; only an explicit host Settings opt-out enables legacy authentication. Legacy behavior is separate and must not expose saved profile credentials.
+
+The current host supports authorized URL/named-remote Git operations, including clone/fetch/push, pull, submodules and selected LFS commands under operation-specific policy. Use supported syntax and an allowlisted Git executable/cwd; arbitrary config, custom environment/stdin, force/deletion/mirror pushes and SSH overrides are rejected. Auxiliary repositories require separate profile matching. LFS HTTPS origins are restricted by host policy. The supported forms evolve in FDO, so use the installed host's contract and starter template rather than inferring unrestricted Git support from the SDK preset.
+
+
+For packaged-host acceptance, verify clone/fetch/push against a controlled SSH Git server on packaged Windows, macOS and Linux hosts. Cover restricted Git-only accounts, encrypted private keys, wrong/missing/changed host keys, mismatched URL/profile endpoints, repository read versus push permissions, malicious repository transport settings, unauthorized submodule destinations, concurrent operations and profile edits, revocation/deletion, binary integrity, backpressure, helper handle replay, timeouts and cleanup. Confirm that private keys and passphrases never appear in process arguments, environment, Git config, temporary files, logs or UI responses. These are host integration checks, not assertions made by the SDK unit tests.
 
 ## Minor release scope and migration
 
@@ -125,9 +142,9 @@ Existing plugins need no changes unless adopting the new services. Adopting plug
 
 Older hosts can continue running existing plugins, but cannot execute the new service APIs until their backend transport is installed. New capabilities must be recognized by the host's capability parser and consent UI. The current SDK handshake does not advertise host readiness for these services: a new SDK version or successful SDK handshake alone is insufficient. Before enabling feature UI, the host must provide its own readiness/availability signal or handle unavailable service calls explicitly. Do not silently fall back to plaintext storage or unrestricted system SSH.
 
-Release notes must distinguish the implemented SDK facade and protocol from the required FDO host encryption/network implementation. Profile reuse for Git is a documented host integration design; no profile-aware Git method, transport helper or new Git permission family ships in this release. Interactive SSH, SFTP, agent forwarding, streaming SSH events and caller cancellation also remain outside v1. End-to-end cross-platform claims require packaged host verification.
+Release notes must distinguish the implemented SDK facade and protocol from the required FDO host encryption/network implementation. Current FDO hosts can reuse profiles through the existing Git operator API. No dedicated Git client, transport helper or new Git permission family ships inside this SDK package; these host features require a compatible FDO version. Interactive SSH, SFTP, agent forwarding, streaming SSH events and caller cancellation also remain outside v1. End-to-end cross-platform claims require packaged host verification.
 
-Use the repository's Release Please workflow for the version and changelog update. A conventional `feat` commit describes the additive feature; do not mark it as a breaking change or manually promise Git integration in the release title. The current package is 1.7.1; the next minor is 1.8.0 if no intervening release changes that baseline.
+Use the repository's Release Please workflow for the version and changelog update. A conventional `feat` commit describes the additive feature; do not mark it as a breaking change or manually promise Git integration in the release title. The safe profile metadata fields are an additive extension to the SDK 1.8 service contract; older hosts returning only id/label remain compatible. Let Release Please determine the actual next version from the release baseline and commit history.
 
 ## Backend transport protocol v1
 

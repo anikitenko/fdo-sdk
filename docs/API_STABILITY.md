@@ -75,7 +75,7 @@ This document defines which SDK surfaces are stable contracts versus internal im
   - `HostServiceError` and exported service types
   - `createSecretsCapabilityBundle` and `createSSHCapabilityBundle`
   - base-plus-operation capability requirements and backend protocol v1 in [the service contract](./SECRETS_AND_SSH.md)
-  - host implementation is required; Git profile integration is a documented future extension, not a runtime API guarantee
+  - host implementation is required; profile-backed Git uses the existing operator API on compatible hosts; a dedicated Git client remains a future extension
 
 ## Provisional Surfaces
 

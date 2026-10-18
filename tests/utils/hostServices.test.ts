@@ -201,3 +201,50 @@ test("SSH profile listing needs no secret access when both SSH permissions are g
         .toEqual(["ssh.profiles.list", "ssh.use"]);
     expect(describeCapability("ssh.use").category).toBe("ssh");
 });
+
+describe("SSH profile metadata", () => {
+    const summary = {
+        id: "production", label: "Production", host: "git.example.com", port: 2222,
+        username: "git", authenticationType: "privateKey" as const,
+        trustedHostKey: `SHA256:${"A".repeat(43)}`,
+    };
+
+    test("preserves safe host fields while excluding credentials, references and policies", async () => {
+        const request = configure(vi.fn().mockResolvedValue({ profiles: [{
+            ...summary,
+            password: "SECRET", privateKey: "SECRET", passphrase: "SECRET",
+            authentication: { type: "privateKey", privateKeyRef: { kind: "secret", key: "private-key-name" } },
+            privateKeyRef: { kind: "secret", key: "private-key-name" },
+            policy: { consumers: ["git", "ssh.exec"], commands: ["private-command"] },
+        }] }));
+        PluginRegistry.configureCapabilities({ granted: ["ssh.use", "ssh.profiles.list"] });
+        await expect(ssh.listProfiles()).resolves.toEqual([summary]);
+        expect(request).toHaveBeenCalledWith({ action: "ssh.profiles.list", payload: {} });
+    });
+
+    test.each(Object.entries(summary).filter(([field]) => !["id", "label"].includes(field)))(
+        "accepts independently supplied optional metadata %s", async (field, value) => {
+            const partial = { id: "old", label: "Older host", [field]: value };
+            configure(vi.fn().mockResolvedValue({ profiles: [partial] }));
+            await expect(ssh.listProfiles()).resolves.toEqual([partial]);
+        });
+
+    test("preserves password authentication metadata and supports empty profile lists", async () => {
+        configure(vi.fn().mockResolvedValueOnce({ profiles: [{ ...summary, authenticationType: "password" }] })
+            .mockResolvedValueOnce({ profiles: [] }));
+        await expect(ssh.listProfiles()).resolves.toEqual([{ ...summary, authenticationType: "password" }]);
+        await expect(ssh.listProfiles()).resolves.toEqual([]);
+    });
+
+    test.each([
+        { host: null }, { host: "" }, { host: 123 }, { host: "server\nSECRET" },
+        { username: null }, { username: " " }, { username: {} }, { username: "user\0SECRET" },
+        { port: null }, { port: "22" }, { port: 0 }, { port: 65536 }, { port: 22.5 },
+        { authenticationType: null }, { authenticationType: "agent" }, { authenticationType: {} },
+        { trustedHostKey: null }, { trustedHostKey: "SECRET" }, { trustedHostKey: {} },
+        { trustedHostKey: `SHA256:${"A".repeat(43)}\n` },
+    ])("rejects malformed optional metadata without echoing host values: %j", async invalid => {
+        configure(vi.fn().mockResolvedValue({ profiles: [{ ...summary, ...invalid }] }));
+        await expect(ssh.listProfiles()).rejects.toThrow("Invalid host service response.");
+    });
+});

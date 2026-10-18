@@ -43,19 +43,18 @@ Enforce separate handshake and command deadlines, host maximum ceilings, and a c
 
 ## Reusable profiles and Git over SSH
 
-Implement the profile registry as a reusable host connection service, with authorization per plugin, consumer, target and operation. Follow the detailed [profile reuse and Git transport contract](./SECRETS_AND_SSH.md#reusing-ssh-profiles-for-git). It is part of this handoff and covers ownership, credentials, trust, transport options, endpoint matching, Git-only servers, repository policy and verification.
+The current FDO host implements profile reuse through the existing `requestOperatorTool("git", payload)` operator path. The detailed [profile reuse and Git transport contract](./SECRETS_AND_SSH.md#reusing-ssh-profiles-for-git) documents this integration and its boundaries. The optional dedicated typed Git API proposed in the host repository is separate future work; do not add `this.git` or new `git.*` actions to use the existing path.
 
-Keep the release boundary explicit:
+Current host alignment:
 
-- The current SDK implements secret storage and SSH execution facades. It has no profile-aware Git request, Git transport helper or new `git.*` permission family.
-- Git consumers should reuse an authorized profile without receiving its secrets and without needing general `ssh.exec` permission. Require `ssh.use`, `secrets.use` + `secrets.consume`, and separate explicit Git operation/repository authorization. Existing CLI execution retains `system.process.exec` + `system.process.scope.git`; these grants alone do not authorize profile consumption. Define any future typed Git permissions and SDK request additions separately before exposing them.
-- Profile access must not cross plugin namespaces. A profile ID conveys no grant. Host-owned flows manage profiles and trust. Edits, deletion, credential rotation and revocation must invalidate caches and prevent stale use.
-- The Git CLI needs an explicit SSH transport integration. If choosing a shipped helper backed by host `ssh2`, use a binary-safe streaming channel and short-lived authenticated operation handles. Never pass private keys or passphrases through arguments, environment variables or temporary key files. The buffered `SSHClient.exec` API cannot carry Git transport data.
-- Bundled SSH does not imply bundled Git. Select/package a Git implementation separately, or document a Git prerequisite. Verify Windows/macOS/Linux packaging for the actual choice.
-- Match the effective remote hostname, port, username and repository to the chosen profile and policy. Control URL rewrites, transport overrides, custom helpers and repository settings. Reauthorize submodule and auxiliary destinations. Apply the same host-key verification to Git as to SSH commands. Support Git-only servers without requiring a general shell probe.
-- Git HTTPS authentication is a separate universal-secret consumer; SSH profiles do not supply HTTPS authentication automatically.
+- Git profile use requires `system.process.exec`, `system.process.scope.git`, `ssh.use`, `ssh.exec`, `secrets.use` and `secrets.consume`. The host currently requires the SSH execution child even for Git transport. Profile consumer, target and repository read/push policy remain authoritative; a Git-only profile still does not authorize shell commands. Plaintext `secrets.get` and `ssh.profiles.list` are not needed.
+- Profiles remain within one plugin namespace. Different repositories on the same endpoint can select different profiles/keys via exact host-owned repository policy. One profile may serve multiple authorized repositories. Missing/ambiguous matches reject; profile IDs grant nothing. Cross-plugin sharing is not part of this contract.
+- `ssh.profiles.list` filters to the `ssh.exec` consumer and therefore excludes Git-only profiles. It now returns optional safe `host`, `port`, `username`, `authenticationType` and `trustedHostKey` fields alongside id/label. The SDK validates each independently, preserves only these fields and remains compatible with older id/label-only hosts. Never return authentication objects, reference keys, credentials or command policies. No extra permission or profile CRUD action is added.
+- The host ships a binary-safe SSH helper for Git; it must not use buffered `SSHClient.exec`. Credentials remain in the host, with authenticated short-lived operation handles and lifecycle cleanup. Preserve effective endpoint/repository matching and pinned host-key trust across URL resolution, submodules and auxiliary transfers.
+- Plugin CLI operations use installed, allowlisted Git; FDO's separately bundled GitOps runtime is not a plugin profile transport. Packaged Windows/macOS/Linux behavior needs actual verification. Git over HTTPS credentials remain a separate integration.
+- Enrolled profile mode persists across profile deletion. Missing setup must not silently fall back to machine SSH; explicit host Settings opt-out is required to restore legacy authentication. Keep host-authorized operation syntax, separate auxiliary-target authorization and transport overrides controlled by the host.
 
-If Git integration is deferred, ship reusable profile storage and the documented extension boundary, and explicitly describe Git reuse as planned host work in release notes. Do not claim that existing `requestOperatorTool("git", ...)` requests automatically use these profiles.
+Profile management and host-key enrollment remain host-owned. Profile edits/deletion, credential rotation and permission revocation invalidate affected work. Use the current FDO starter templates and host contract for supported CLI forms; do not claim every Git flag is authorized by the SDK's generic process payload type.
 
 ## Release compatibility
 
