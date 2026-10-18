@@ -35,10 +35,23 @@ export async function openTerminal(options: SSHTerminalOptions, signal: AbortSig
     const localEnd = new Promise<SSHTerminalResult>(resolve => { stop = value => { stopped = true; resolve(value); wakeOutput?.(); }; });
     const closed: SSHTerminalResult = { reason: 'closed', exitCode: null, signal: null, remoteProcessStopped: null };
     const cancelled: SSHTerminalResult = { ...closed, reason: 'cancelled' };
-    const abortPending = () => stop(cancelled);
+    let pendingError: HostServiceError | undefined;
+    let rejectPending!: (error: HostServiceError) => void;
+    const interrupted = new Promise<never>((_resolve, reject) => { rejectPending = reject; });
+    const interruptPending = (code: 'CANCELLED' | 'UNAVAILABLE') => {
+        if (pendingError) return;
+        pendingError = new HostServiceError(code);
+        stopped = true;
+        rejectPending(pendingError);
+    };
+    const abortPending = () => interruptPending('CANCELLED');
+    const invalidatePending = () => interruptPending('UNAVAILABLE');
+    // An adapter may never acknowledge an open. Register before dispatch so host
+    // replacement wakes the caller independently of the adapter or caller signal.
+    resources.add(invalidatePending);
     signal?.addEventListener('abort', abortPending, { once: true });
     let host: Awaited<ReturnType<NonNullable<typeof adapter>>>;
-    const opening = Promise.resolve().then(() => { if (stopped) fail('CANCELLED'); check(); return adapter!(payload); });
+    const opening = Promise.resolve().then(() => { if (pendingError) throw pendingError; check(); return adapter!(payload); });
     // A lost start acknowledgement is never retried. Clean up a late successful open once.
     let lateClosed = false;
     const closeLate = (value: Awaited<typeof opening>) => {
@@ -49,15 +62,16 @@ export async function openTerminal(options: SSHTerminalOptions, signal: AbortSig
     };
     void opening.then(value => { if (stopped) closeLate(value); }, () => {});
     try {
-        host = await Promise.race([opening, localEnd.then(() => fail('CANCELLED'))]);
+        host = await Promise.race([opening, interrupted]);
         check();
     } catch (error) {
         stopped = true;
-        signal?.removeEventListener('abort', abortPending);
         void opening.then(closeLate, () => {});
         throw safe(error);
+    } finally {
+        resources.delete(invalidatePending);
+        signal?.removeEventListener('abort', abortPending);
     }
-    signal?.removeEventListener('abort', abortPending);
     let iterator: AsyncIterator<unknown> | undefined;
     let closePromise: Promise<void> | undefined, cancelPromise: Promise<SSHCancelResult> | undefined;
     const close = (): Promise<void> => {

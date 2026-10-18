@@ -102,6 +102,44 @@ test('abort during pending open closes late session, without retry', async () =>
     await expect(opening).rejects.toMatchObject({code:'CANCELLED'});pending.resolve(h);
     await new Promise(resolve=>setTimeout(resolve,0)); expect(h.close).toHaveBeenCalledOnce();expect(openSSHTerminal).toHaveBeenCalledOnce();
 });
+test.each(['clear', 'replace'] as const)('host service %s wakes an unacknowledged open and closes a late session once', async change => {
+    const pending=deferred<HostSSHTerminalSession>(),late=host(),replacement=host();
+    const openSSHTerminal=vi.fn().mockReturnValue(pending.promise);
+    const replacementOpen=vi.fn().mockResolvedValue(replacement);
+    PluginRegistry.configureHostServices({request:vi.fn(),openSSHTerminal});
+    const opening=ssh.openTerminal({profileId:'vm'});
+    await Promise.resolve();expect(openSSHTerminal).toHaveBeenCalledOnce();
+    const rejected=expect(opening).rejects.toMatchObject({code:'UNAVAILABLE'});
+    PluginRegistry.configureHostServices(change==='clear'?null:{request:vi.fn(),openSSHTerminal:replacementOpen});
+    // Must settle before the old adapter resolves, without an explicit caller abort.
+    await rejected;
+    expect(late.close).not.toHaveBeenCalled();expect(replacementOpen).not.toHaveBeenCalled();
+    const fresh=change==='replace'?await ssh.openTerminal({profileId:'vm'}):undefined;
+    pending.resolve(late);
+    await new Promise(resolve=>setTimeout(resolve,0));
+    expect(late.close).toHaveBeenCalledOnce();expect(openSSHTerminal).toHaveBeenCalledOnce();
+    expect(replacement.close).not.toHaveBeenCalled();
+    await fresh?.close();
+    PluginRegistry.configureHostServices(null);
+    expect(late.close).toHaveBeenCalledOnce();
+});
+test('host invalidation before dispatch prevents the old adapter from starting', async () => {
+    const adapter=setup(host());
+    const opening=ssh.openTerminal({profileId:'vm'});
+    const rejected=expect(opening).rejects.toMatchObject({code:'UNAVAILABLE'});
+    PluginRegistry.configureHostServices(null);
+    await rejected;expect(adapter).not.toHaveBeenCalled();
+});
+test('a late adapter rejection after host invalidation is handled without retry', async () => {
+    const pending=deferred<HostSSHTerminalSession>();
+    const openSSHTerminal=vi.fn().mockReturnValue(pending.promise);
+    PluginRegistry.configureHostServices({request:vi.fn(),openSSHTerminal});
+    const opening=ssh.openTerminal({profileId:'vm'});await Promise.resolve();
+    const rejected=expect(opening).rejects.toMatchObject({code:'UNAVAILABLE'});
+    PluginRegistry.configureHostServices(null);await rejected;
+    pending.reject(new Error('private provider failure'));
+    await new Promise(resolve=>setTimeout(resolve,0));expect(openSSHTerminal).toHaveBeenCalledOnce();
+});
 test('cancel is idempotent, preserves completed exit, and never invents termination evidence', async () => {
     const done=deferred<unknown>(), h=host({result:done.promise});setup(h);
     const s=await ssh.openTerminal({profileId:'vm'});done.resolve(exited);expect(await s.result).toEqual(exited);
