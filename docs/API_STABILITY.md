@@ -72,6 +72,7 @@ This document defines which SDK surfaces are stable contracts versus internal im
 - Backend secret and SSH service surfaces:
   - `FDO_SDK.secrets` / `SecretStore`
   - `FDO_SDK.ssh` / `SSHClient`
+  - `SSHClient.watchStatus`, `SSHClient.start`, `SSHExecution`, and optional host live adapters (host wiring required)
   - `HostServiceError` and exported service types
   - `createSecretsCapabilityBundle` and `createSSHCapabilityBundle`
   - base-plus-operation capability requirements and backend protocol v1 in [the service contract](./SECRETS_AND_SSH.md)

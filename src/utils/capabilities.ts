@@ -74,7 +74,7 @@ function getCapabilityPrerequisites(capability: string): string[] {
     const prerequisites = new Set<string>();
     if (capability.startsWith("secrets.") && capability !== "secrets.use") prerequisites.add("secrets.use");
     if (capability.startsWith("ssh.") && capability !== "ssh.use") prerequisites.add("ssh.use");
-    if (capability === "ssh.exec") {
+    if (capability === "ssh.exec" || capability === "ssh.status.watch") {
         prerequisites.add("secrets.use");
         prerequisites.add("secrets.consume");
     }
@@ -321,13 +321,13 @@ export function describeCapability(capability: PluginCapability | string): Capab
             category: "secrets",
         };
     }
-    if (capability === "ssh.use" || capability === "ssh.exec" || capability === "ssh.profiles.list") {
+    if (capability === "ssh.use" || capability === "ssh.exec" || capability === "ssh.profiles.list" || capability === "ssh.status.watch") {
         return {
             capability,
-            label: capability === "ssh.use" ? "SSH Access" : capability === "ssh.exec" ? "SSH Execution" : "SSH Profiles List",
+            label: capability === "ssh.use" ? "SSH Access" : capability === "ssh.exec" ? "SSH Execution" : capability === "ssh.status.watch" ? "SSH Connection Monitoring" : "SSH Profiles List",
             description: capability === "ssh.use"
                 ? "Base permission to access SSH services; pair with specific SSH operation capabilities."
-                : "Allows this operation on authorized profiles when paired with ssh.use. Execution also requires secrets.use and secrets.consume.",
+                : "Allows this operation on authorized profiles when paired with ssh.use. Execution and monitoring also require secrets.use and secrets.consume.",
             category: "ssh",
         };
     }
@@ -650,6 +650,7 @@ export function createSecretsCapabilityBundle(
 }
 
 /** SSH uses references inside the host, so plaintext secret reads are not required. */
-export function createSSHCapabilityBundle(): PluginCapability[] {
-    return createCapabilityBundle(["ssh.use", "ssh.exec", "ssh.profiles.list", "secrets.use", "secrets.consume"]);
+export function createSSHCapabilityBundle(options: { monitorStatus?: boolean } = {}): PluginCapability[] {
+    return createCapabilityBundle(["ssh.use", "ssh.exec", "ssh.profiles.list", "secrets.use", "secrets.consume",
+        ...(options.monitorStatus ? ["ssh.status.watch" as const] : [])]);
 }

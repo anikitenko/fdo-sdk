@@ -47,6 +47,7 @@ describe('StoreJson', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(atomicWriteFile).mockResolvedValue(undefined);
     store = createJsonStore({ filePath: mockFilePath, logger: new Logger() as any });
     store._store = {};
   });
@@ -145,7 +146,8 @@ describe('StoreJson', () => {
       (atomicWriteFile as vi.Mock).mockRejectedValue(new Error('Write error'));
 
       expect(() => store.set('testKey', 'testValue')).not.toThrow();
-      await store._flush();
+      await expect(store.flush!()).rejects.toThrow("JSON storage write failed");
+      await expect(store.dispose!()).rejects.toThrow("JSON storage write failed");
       expect(atomicWriteFile).toHaveBeenCalled();
 
       // Verify that the logger was called with a warning
@@ -211,6 +213,23 @@ describe('StoreJson', () => {
   });
 
   describe('persistence', () => {
+    it('recovers after a failed write when a later full snapshot is persisted', async () => {
+      vi.mocked(atomicWriteFile).mockRejectedValueOnce(new Error('disk full'));
+      store.set('first', 1);
+      await expect(store.flush!()).rejects.toThrow('JSON storage write failed');
+      store.set('second', 2);
+      await expect(store.flush!()).resolves.toBeUndefined();
+      expect(atomicWriteFile).toHaveBeenLastCalledWith(mockFilePath,
+        JSON.stringify({ first: 1, second: 2 }, null, 2), { encoding: 'utf-8' });
+    });
+
+    it('reports directory creation failures through the flush barrier', async () => {
+      vi.mocked(fs.promises.mkdir).mockRejectedValueOnce(new Error('permission denied'));
+      store.set('key', 'value');
+      await expect(store.flush!()).rejects.toThrow('JSON storage write failed');
+      expect(atomicWriteFile).not.toHaveBeenCalled();
+    });
+
     it('should write to file when setting a value', async () => {
       store.set('testKey', 'testValue');
       await store._flush();

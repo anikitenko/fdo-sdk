@@ -772,7 +772,7 @@ export type DiagnosticFixTemplate = {
 /** Secret operations require secrets.use plus an operation grant; SSH consumes references without secrets.get. */
 export type HostServiceCapability =
     | "secrets.set" | "secrets.get" | "secrets.delete" | "secrets.list" | "secrets.use" | "secrets.consume"
-    | "ssh.use" | "ssh.exec" | "ssh.profiles.list";
+    | "ssh.use" | "ssh.exec" | "ssh.profiles.list" | "ssh.status.watch";
 
 /** References are names in the authenticated plugin namespace, not bearer credentials. */
 export type SecretReference = Readonly<{ kind: "secret"; key: string }>;
@@ -819,6 +819,33 @@ export type SSHExecResult = {
     truncated: boolean;
 };
 
+/** A host observation of an authenticated SSH connection, not a guarantee of VM availability. */
+export type SSHConnectionStatus = {
+    profileId: string;
+    state: "unknown" | "connecting" | "connected" | "disconnected";
+    /** Host observation time (ISO timestamp). Null only when state is unknown. */
+    checkedAt: string | null;
+    /** UI must treat the observation as stale after this interval without an update. */
+    staleAfterMs: number;
+};
+/** Sequence is contiguous from zero in host observation order across both streams. */
+export type SSHOutputEvent = { sequence: number; stream: "stdout" | "stderr"; data: string };
+/** Null means remote termination could not be established. Channel closure alone is insufficient. */
+export type SSHCancelResult = { remoteProcessStopped: boolean | null };
+export type SSHExecution = {
+    /** Single-consumer stream; consume concurrently with result. Break closes the event subscription only. */
+    events: AsyncIterable<SSHOutputEvent>;
+    result: Promise<SSHExecResult>;
+    /** Idempotent request to stop this execution. Never retries the command. */
+    cancel(): Promise<SSHCancelResult>;
+};
+/** Host-owned execution. All fields are untrusted at the SDK boundary. */
+export type HostSSHExecution = {
+    events: AsyncIterable<unknown>;
+    result: Promise<unknown>;
+    cancel(): Promise<unknown>;
+};
+
 /** Backend-only protocol v1. No plugin id, storage path or raw SSH credentials are accepted. */
 export type HostServiceRequest =
     | { action: "secrets.set"; payload: { key: string; value: string } }
@@ -833,8 +860,11 @@ export type HostServiceRequest =
  */
 export type HostServicesConfiguration = {
     request(request: HostServiceRequest): Promise<unknown>;
+    /** Optional live adapters. An absent adapter fails with UNAVAILABLE, without buffered fallback. */
+    watchSSHStatus?(options: { profileId: string }): Promise<AsyncIterable<unknown>>;
+    startSSHExecution?(options: Required<SSHExecOptions>): Promise<HostSSHExecution>;
 };
 
 export type HostServiceErrorCode =
-    | "ACCESS_DENIED" | "UNAVAILABLE" | "LOCKED" | "TIMEOUT"
+    | "ACCESS_DENIED" | "UNAVAILABLE" | "LOCKED" | "TIMEOUT" | "CANCELLED"
     | "HOST_KEY_REJECTED" | "CONNECTION_FAILED" | "INVALID_REQUEST";

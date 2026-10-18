@@ -18,6 +18,7 @@ Declare permissions through the existing `declareCapabilities()` hook. Declarati
 | `secrets.consume` | Allow an authorized host service to consume a referenced secret (requires `secrets.use`) |
 | `ssh.use` | Base permission to access SSH services; grants no operation by itself |
 | `ssh.exec` | Execute a remote command on an authorized host profile |
+| `ssh.status.watch` | Monitor authenticated SSH reachability with freshness; also requires secret consumption grants |
 | `ssh.profiles.list` | List authorized SSH command profile IDs and labels, plus optional host, port, username, authentication type and trusted host-key fingerprint; excludes credentials, secret references and command policies |
 
 Every secret operation requires **`secrets.use` plus the specific operation capability**: for example, reading requires `secrets.use` + `secrets.get`, and listing requires `secrets.use` + `secrets.list`. Neither the base permission alone nor an operation alone is sufficient. Permission to write never implicitly permits reading or deletion.
@@ -71,6 +72,12 @@ Profiles belong to the host. The exported `SSHConnectionProfile` describes an id
 The host should bundle `ssh2`, so users need no installed SSH executable on Windows, macOS or Linux. Remote command syntax still depends on the remote shell. A command string is shell input: do not concatenate untrusted input. The host must apply its own command policy and reject unauthorized targets and commands. Do not automatically retry commands that might have already executed.
 
 This initial API supports buffered execution. Interactive terminals, SFTP, forwarding, agent integration, streaming events and explicit caller cancellation are future extensions. The host must enforce deadlines and dispose channels/connections on worker teardown. Closing a channel does not guarantee the remote process has stopped.
+
+## Live connection status and command execution
+
+Optional host adapters now support `this.ssh.watchStatus(profileId)` (an async status iterable) and `this.ssh.start(options)` (live output events, a buffered result promise and explicit cancellation). Declare `createSSHCapabilityBundle({ monitorStatus: true })` to request monitoring in addition to existing SSH grants. Hosts without these adapters reject with `UNAVAILABLE`; `exec()` remains buffered and has no caller cancellation. Monitoring has the separate `ssh.status.watch` grant plus `ssh.use`, `secrets.use` and `secrets.consume`. These are additive SDK contracts that require host wiring, not features automatically enabled on an existing FDO installation.
+
+See the [Remote Commands host handoff](./FDO_HOST_REMOTE_COMMANDS_HANDOFF.md) for exact adapter contracts, event consumption, freshness, termination evidence, byte budgets, JSON save acknowledgements and acceptance checks. Fresh status is an observation of SSH reachability, not a guarantee of future VM availability. Cancellation/timeout can close a channel without proving remote process termination. Default capture remains 1 MiB combined; callers can request another limit subject to host ceilings. Output sequences reflect host observation order across streams.
 
 ## Reusing SSH profiles for Git
 
@@ -136,19 +143,19 @@ For packaged-host acceptance, verify clone/fetch/push against a controlled SSH G
 
 ## Minor release scope and migration
 
-This is an additive SDK feature suitable for a minor release when included with the associated implementation. Public additions are `this.secrets`, `this.ssh`, `SecretStore`, `SSHClient`, `HostServiceError`, `PluginRegistry.configureHostServices`, capability bundle helpers and their exported types. Existing storage and privileged-action envelopes retain their behavior.
+This is an additive SDK feature suitable for a minor release when included with the associated implementation. Public additions are `this.secrets`, `this.ssh`, `SecretStore`, `SSHClient`, `HostServiceError`, `PluginRegistry.configureHostServices`, capability bundle helpers and their exported types. Existing privileged-action envelopes retain their behavior. The Remote Commands follow-up also strengthens JSON flush failure reporting as documented in the linked handoff.
 
 Existing plugins need no changes unless adopting the new services. Adopting plugins must declare base and operation permissions, obtain host grants, and call services from backend handlers while keeping lifecycle hooks synchronous. Never migrate ordinary JSON store contents wholesale into secret storage or derive new grants from old storage/process grants. Explicitly move only user-selected secrets through an authorized host flow and remove plaintext copies as appropriate.
 
 Older hosts can continue running existing plugins, but cannot execute the new service APIs until their backend transport is installed. New capabilities must be recognized by the host's capability parser and consent UI. The current SDK handshake does not advertise host readiness for these services: a new SDK version or successful SDK handshake alone is insufficient. Before enabling feature UI, the host must provide its own readiness/availability signal or handle unavailable service calls explicitly. Do not silently fall back to plaintext storage or unrestricted system SSH.
 
-Release notes must distinguish the implemented SDK facade and protocol from the required FDO host encryption/network implementation. Current FDO hosts can reuse profiles through the existing Git operator API. No dedicated Git client, transport helper or new Git permission family ships inside this SDK package; these host features require a compatible FDO version. Interactive SSH, SFTP, agent forwarding, streaming SSH events and caller cancellation also remain outside v1. End-to-end cross-platform claims require packaged host verification.
+Release notes must distinguish the implemented SDK facade and protocol from the required FDO host encryption/network implementation. Current FDO hosts can reuse profiles through the existing Git operator API. No dedicated Git client, transport helper or new Git permission family ships inside this SDK package; these host features require a compatible FDO version. Interactive SSH, SFTP and agent forwarding remain outside v1. Streaming events, cancellation and connection monitoring use the optional live adapters documented above; they do not change the buffered v1 request/reply actions. End-to-end cross-platform claims require packaged host verification.
 
 Use the repository's Release Please workflow for the version and changelog update. A conventional `feat` commit describes the additive feature; do not mark it as a breaking change or manually promise Git integration in the release title. The safe profile metadata fields are an additive extension to the SDK 1.8 service contract; older hosts returning only id/label remain compatible. Let Release Please determine the actual next version from the release baseline and commit history.
 
 ## Backend transport protocol v1
 
-Configure one transport per isolated plugin worker/runtime. The host must bind it to a trusted plugin identity from worker bootstrap, never an identity supplied by the plugin or derived from mutable metadata. `PluginRegistry.clearPlugin()` clears the adapter; the host must also revoke its endpoint and close in-flight work. Reconfiguration invalidates in-flight SDK responses. A transport has a single asynchronous `request(HostServiceRequest)` method. It resolves with the result object below, without a privileged-action envelope.
+Configure one transport per isolated plugin worker/runtime. The host must bind it to a trusted plugin identity from worker bootstrap, never an identity supplied by the plugin or derived from mutable metadata. `PluginRegistry.clearPlugin()` clears the adapter; the host must also revoke its endpoint and close in-flight work. Reconfiguration invalidates in-flight SDK responses. The base transport has an asynchronous `request(HostServiceRequest)` method; optional live adapters extend it as described above. It resolves with the result object below, without a privileged-action envelope.
 
 | Action | Payload | Result |
 | --- | --- | --- |
@@ -159,7 +166,7 @@ Configure one transport per isolated plugin worker/runtime. The host must bind i
 | `ssh.profiles.list` | `{}` | `{ profiles: SSHProfileSummary[] }` |
 | `ssh.exec` | `{ profileId, command, timeoutMs, maxOutputBytes }` | `SSHExecResult` |
 
-Failures reject with a safe `code`: `ACCESS_DENIED`, `UNAVAILABLE`, `LOCKED`, `TIMEOUT`, `HOST_KEY_REJECTED`, `CONNECTION_FAILED`, or `INVALID_REQUEST`. The SDK wraps provider failures in `HostServiceError`, preserving only these codes and suppressing arbitrary provider messages. Unknown failures become `UNAVAILABLE`. Validation and local capability failures also reject before dispatch. SDK validation errors never interpolate secret values or host response data.
+Failures reject with a safe `code`: `ACCESS_DENIED`, `UNAVAILABLE`, `LOCKED`, `TIMEOUT`, `CANCELLED`, `HOST_KEY_REJECTED`, `CONNECTION_FAILED`, or `INVALID_REQUEST`. The SDK wraps provider failures in `HostServiceError`, preserving only these codes and suppressing arbitrary provider messages. Unknown failures become `UNAVAILABLE`. Validation and local capability failures also reject before dispatch. SDK validation errors never interpolate secret values or host response data.
 
 No request accepts a plugin ID, filesystem path, encryption key or raw SSH authentication material. The host must validate all requests independently, reject unknown fields, limit secret size and namespace quotas, enforce capabilities using its own policy, and avoid logging secret request/response bodies. This interface is intentionally backend-only; never route it through `window.createBackendReq` or the generic UI privileged-action handler.
 
