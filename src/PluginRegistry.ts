@@ -1,6 +1,6 @@
 import path from "path";
 import { configureHostServices } from "./utils/hostServices";
-import { FDO_SDK, StoreType } from "./index";
+import { FDO_SDK } from "./index";
 import { PluginMetadata } from "./PluginMetadata";
 import {
     PluginDiagnostics,
@@ -109,7 +109,7 @@ export class PluginRegistry {
         this.handlers[name] = handler;
     }
 
-    public static useStore(name: string = "default") : StoreType {
+    public static useStore(name: string = "default") : StoreWithLifecycle {
         const storeName = this.storeFactories[name] ? name : "default";
 
         if (!this.storeFactories[name]) {

@@ -18,6 +18,7 @@ export type JsonStore = StoreWithLifecycle & {
     _filePath: string;
     _logger: Logger;
     _writeQueue: Promise<void>;
+    _writeError: unknown;
 };
 
 export function createJsonStore(options: JsonStoreOptions): JsonStore {
@@ -28,6 +29,7 @@ export function createJsonStore(options: JsonStoreOptions): JsonStore {
         _filePath: options.filePath,
         _logger: logger,
         _writeQueue: Promise.resolve(),
+        _writeError: undefined,
         capabilities: {
             persistent: true,
             supportsAsyncFlush: true,
@@ -73,14 +75,19 @@ export function createJsonStore(options: JsonStoreOptions): JsonStore {
                 .then(async () => {
                     await fs.promises.mkdir(path.dirname(this._filePath), { recursive: true });
                     await atomicWriteFile(this._filePath, snapshot, { encoding: "utf-8" });
+                    this._writeError = undefined;
                 })
                 .catch((error) => {
+                    this._writeError = error ?? new Error("JSON storage write failed.");
                     this._logger.warn(`[StoreJson] Failed to save ${this._fileName}:`, error);
                 });
         },
 
         _flush() {
-            return this._writeQueue;
+            // Capture this barrier: later saves must not change the outcome observed by this flush.
+            return this._writeQueue.then(() => {
+                if (this._writeError !== undefined) throw new Error("JSON storage write failed. Check FDO diagnostics.");
+            });
         },
         flush() {
             return this._flush();

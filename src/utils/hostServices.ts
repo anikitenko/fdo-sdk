@@ -1,6 +1,7 @@
 import type {
     HostServiceRequest, HostServicesConfiguration, SecretMetadata, SecretReference,
     SSHExecOptions, SSHExecResult, SSHProfileSummary, HostServiceErrorCode,
+    SSHExecution, SSHConnectionStatus, SSHOutputEvent, SSHCancelResult, HostServiceCapability,
 } from "../types";
 import { requireCapability } from "./capabilities";
 
@@ -15,13 +16,23 @@ export class HostServiceError extends Error {
 }
 
 let configuration: Readonly<HostServicesConfiguration> | undefined;
+const activeResources = new Set<() => void>();
 
 /** Host bootstrap only. The transport must be bound to a trusted plugin identity. */
 export function configureHostServices(value: HostServicesConfiguration | null): void {
     if (value !== null && (!value || typeof value.request !== "function")) {
         throw new Error("Host services require a request transport.");
     }
-    configuration = value === null ? undefined : Object.freeze({ request: value.request.bind(value) });
+    for (const key of ["watchSSHStatus", "startSSHExecution"] as const) {
+        if (value?.[key] !== undefined && typeof value[key] !== "function") throw new Error("Invalid SSH host adapter.");
+    }
+    for (const cleanup of activeResources) cleanup();
+    activeResources.clear();
+    configuration = value === null ? undefined : Object.freeze({
+        request: value.request.bind(value),
+        watchSSHStatus: value.watchSSHStatus?.bind(value),
+        startSSHExecution: value.startSSHExecution?.bind(value),
+    });
 }
 
 function validKey(key: unknown): asserts key is string {
@@ -40,34 +51,88 @@ function invalidResponse(): never {
     throw new Error("Invalid host service response.");
 }
 
-async function request(request: HostServiceRequest): Promise<unknown> {
+function authorize(action: HostServiceCapability): void {
     if (typeof window !== "undefined") {
         throw new Error("Host services are only available in the plugin backend runtime.");
     }
-    if (request.action.startsWith("ssh.")) requireCapability("ssh.use", "access SSH services");
-    if (request.action.startsWith("secrets.") || request.action === "ssh.exec") {
+    if (action.startsWith("ssh.")) requireCapability("ssh.use", "access SSH services");
+    if (action.startsWith("secrets.") || action === "ssh.exec" || action === "ssh.status.watch") {
         requireCapability("secrets.use", "access the secret store");
     }
-    requireCapability(request.action, "access host services");
-    if (request.action === "ssh.exec") {
-        requireCapability("secrets.consume", "consume secret references for SSH execution");
+    requireCapability(action, "access host services");
+    if (action === "ssh.exec" || action === "ssh.status.watch") {
+        requireCapability("secrets.consume", "consume secret references for SSH");
     }
-    const transport = configuration;
-    if (!transport) {
+}
+
+function safeError(error: unknown): HostServiceError {
+    const codes: HostServiceErrorCode[] = ["ACCESS_DENIED", "UNAVAILABLE", "LOCKED", "TIMEOUT", "CANCELLED", "HOST_KEY_REJECTED", "CONNECTION_FAILED", "INVALID_REQUEST"];
+    return new HostServiceError(record(error) && codes.includes(error.code as HostServiceErrorCode)
+        ? error.code as HostServiceErrorCode : "UNAVAILABLE");
+}
+
+function getTransport(action: HostServiceCapability): Readonly<HostServicesConfiguration> {
+    authorize(action);
+    if (!configuration) {
         throw new Error("Host services are unavailable. The FDO host must configure a backend transport before plugin initialization.");
     }
-    let result: unknown;
-    try {
-        result = await transport.request(request);
-    } catch (error) {
-        const codes: HostServiceErrorCode[] = ["ACCESS_DENIED", "UNAVAILABLE", "LOCKED", "TIMEOUT", "HOST_KEY_REJECTED", "CONNECTION_FAILED", "INVALID_REQUEST"];
-        const code = record(error) && codes.includes(error.code as HostServiceErrorCode)
-            ? error.code as HostServiceErrorCode : "UNAVAILABLE";
-        // Provider errors must not accidentally leak credentials or request payloads.
-        throw new HostServiceError(code);
-    }
+    return configuration;
+}
+
+function assertCurrent(transport: Readonly<HostServicesConfiguration>, action: HostServiceCapability): void {
     if (configuration !== transport) throw new HostServiceError("UNAVAILABLE");
+    authorize(action);
+}
+
+async function request(request: HostServiceRequest): Promise<unknown> {
+    const transport = getTransport(request.action);
+    let result: unknown;
+    try { result = await transport.request(request); }
+    catch (error) { throw safeError(error); }
+    assertCurrent(transport, request.action);
     return result;
+}
+
+function execOptions(options: SSHExecOptions): Required<SSHExecOptions> {
+    if (!record(options) || typeof options.profileId !== "string" || !options.profileId.trim()
+        || typeof options.command !== "string" || !options.command.trim() || options.command.includes("\0")) {
+        throw new Error("SSH execution requires a profileId and a nonempty command without NUL characters.");
+    }
+    for (const value of [options.timeoutMs, options.maxOutputBytes]) {
+        if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0)) {
+            throw new Error("SSH timeout and output limits must be positive safe integers.");
+        }
+    }
+    return { profileId: options.profileId, command: options.command,
+        timeoutMs: options.timeoutMs ?? 30_000, maxOutputBytes: options.maxOutputBytes ?? 1_048_576 };
+}
+
+function execResult(result: unknown, maxBytes: number): SSHExecResult {
+    if (!record(result) || typeof result.stdout !== "string" || typeof result.stderr !== "string"
+        || (result.exitCode !== null && !Number.isSafeInteger(result.exitCode))
+        || (result.signal !== null && typeof result.signal !== "string")
+        || typeof result.durationMs !== "number" || !Number.isFinite(result.durationMs) || result.durationMs < 0
+        || typeof result.truncated !== "boolean"
+        || Buffer.byteLength(result.stdout) + Buffer.byteLength(result.stderr) > maxBytes) invalidResponse();
+    return { stdout: result.stdout, stderr: result.stderr,
+        exitCode: result.exitCode as number | null, signal: result.signal as string | null,
+        durationMs: result.durationMs, truncated: result.truncated };
+}
+
+function iteratorFor(source: unknown): AsyncIterator<unknown> {
+    if (!source || typeof (source as AsyncIterable<unknown>)[Symbol.asyncIterator] !== "function") invalidResponse();
+    const iterator = (source as AsyncIterable<unknown>)[Symbol.asyncIterator]();
+    if (!iterator || typeof iterator.next !== "function") invalidResponse();
+    return iterator;
+}
+
+async function nextHostEvent(iterator: AsyncIterator<unknown>): Promise<IteratorResult<unknown>> {
+    try { return await iterator.next(); }
+    catch (error) { throw safeError(error); }
+}
+
+function closeIterator(iterator: AsyncIterator<unknown>): void {
+    try { void Promise.resolve(iterator.return?.()).catch(() => {}); } catch { /* Best-effort teardown. */ }
 }
 
 /** Universal plugin-scoped secret storage. Persistence and isolation belong to the host. */
@@ -146,31 +211,130 @@ export class SSHClient {
 
     /** Buffered noninteractive execution; remote nonzero exits are returned, transport failures reject. */
     async exec(options: SSHExecOptions): Promise<SSHExecResult> {
-        if (!record(options) || typeof options.profileId !== "string" || !options.profileId.trim()
-            || typeof options.command !== "string" || !options.command.trim() || options.command.includes("\0")) {
-            throw new Error("SSH execution requires a profileId and a nonempty command without NUL characters.");
-        }
-        for (const value of [options.timeoutMs, options.maxOutputBytes]) {
-            if (value !== undefined && (!Number.isSafeInteger(value) || value <= 0)) {
-                throw new Error("SSH timeout and output limits must be positive safe integers.");
+        const payload = execOptions(options);
+        return execResult(await request({ action: "ssh.exec", payload }), payload.maxOutputBytes);
+    }
+
+    /** Requires an optional host monitor adapter and ssh.status.watch; break/return unsubscribes. */
+    async *watchStatus(profileId: string): AsyncIterableIterator<SSHConnectionStatus> {
+        if (typeof profileId !== "string" || !profileId.trim()) throw new Error("SSH monitoring requires a profileId.");
+        const transport = getTransport("ssh.status.watch");
+        if (!transport.watchSSHStatus) throw new HostServiceError("UNAVAILABLE");
+        let source: AsyncIterable<unknown>;
+        try { source = await transport.watchSSHStatus({ profileId }); }
+        catch (error) { throw safeError(error); }
+        const iterator = iteratorFor(source);
+        const cleanup = () => closeIterator(iterator);
+        activeResources.add(cleanup);
+        try {
+            while (true) {
+                assertCurrent(transport, "ssh.status.watch");
+                const next = await nextHostEvent(iterator);
+                assertCurrent(transport, "ssh.status.watch");
+                if (next.done) return;
+                const status = next.value;
+                if (!record(status) || status.profileId !== profileId
+                    || !["unknown", "connecting", "connected", "disconnected"].includes(status.state as string)
+                    || !(status.checkedAt === null && status.state === "unknown"
+                        || typeof status.checkedAt === "string" && Number.isFinite(Date.parse(status.checkedAt)))
+                    || !Number.isSafeInteger(status.staleAfterMs) || (status.staleAfterMs as number) <= 0) invalidResponse();
+                yield { profileId, state: status.state as SSHConnectionStatus["state"],
+                    checkedAt: status.checkedAt as string | null, staleAfterMs: status.staleAfterMs as number };
             }
+        } finally {
+            activeResources.delete(cleanup);
+            cleanup();
         }
-        // Project allowed fields so arbitrary caller properties cannot cross the boundary.
-        const result = await request({ action: "ssh.exec", payload: {
-            profileId: options.profileId,
-            command: options.command,
-            timeoutMs: options.timeoutMs ?? 30_000,
-            maxOutputBytes: options.maxOutputBytes ?? 1_048_576,
-        } });
-        if (!record(result) || typeof result.stdout !== "string" || typeof result.stderr !== "string"
-            || (result.exitCode !== null && !Number.isSafeInteger(result.exitCode))
-            || (result.signal !== null && typeof result.signal !== "string")
-            || typeof result.durationMs !== "number" || !Number.isFinite(result.durationMs) || result.durationMs < 0
-            || typeof result.truncated !== "boolean") invalidResponse();
-        return {
-            stdout: result.stdout as string, stderr: result.stderr as string,
-            exitCode: result.exitCode as number | null, signal: result.signal as string | null,
-            durationMs: result.durationMs as number, truncated: result.truncated as boolean,
+    }
+
+    /** Live output and explicit cancellation; requires the optional host execution adapter. No retries. */
+    async start(options: SSHExecOptions): Promise<SSHExecution> {
+        const payload = execOptions(options);
+        const transport = getTransport("ssh.exec");
+        if (!transport.startSSHExecution) throw new HostServiceError("UNAVAILABLE");
+        let host: Awaited<ReturnType<NonNullable<HostServicesConfiguration["startSSHExecution"]>>>;
+        try { host = await transport.startSSHExecution(payload); }
+        catch (error) { throw safeError(error); }
+        if (!host || typeof host.cancel !== "function" || !host.result || typeof host.result.then !== "function") invalidResponse();
+        let iterator: AsyncIterator<unknown> | undefined;
+        let resultSettled = false;
+        let eventsClosed = false;
+        let closingEvents: Promise<void> | undefined;
+        let cleaned = false;
+        const releaseIfFinished = () => {
+            if (resultSettled && eventsClosed) activeResources.delete(cleanup);
         };
+        const closeEvents = (): Promise<void> => {
+            if (!closingEvents) {
+                let closing: Promise<unknown>;
+                try { closing = Promise.resolve(iterator?.return?.()); }
+                catch { closing = Promise.resolve(); }
+                closingEvents = closing.catch(() => {}).then(() => {
+                    eventsClosed = true;
+                    releaseIfFinished();
+                });
+            }
+            return closingEvents;
+        };
+        const cleanup = () => {
+            if (cleaned) return;
+            cleaned = true;
+            activeResources.delete(cleanup);
+            void closeEvents();
+            // Register cancellation before validating events: start already launched the command.
+            try { void Promise.resolve(host.cancel()).catch(() => {}); } catch { /* Best-effort teardown. */ }
+        };
+        activeResources.add(cleanup);
+        // Attach immediately: a caller may be consuming events before awaiting result.
+        const result = Promise.resolve(host.result).then(value => {
+            assertCurrent(transport, "ssh.exec");
+            return execResult(value, payload.maxOutputBytes);
+        }, error => {
+            assertCurrent(transport, "ssh.exec");
+            throw safeError(error);
+        });
+        const settleResult = () => { resultSettled = true; releaseIfFinished(); };
+        void result.then(settleResult, settleResult);
+        let outputIterator: AsyncIterator<unknown>;
+        try {
+            outputIterator = iterator = iteratorFor(host.events);
+            assertCurrent(transport, "ssh.exec");
+        } catch (error) { cleanup(); throw error; }
+        let cancelPromise: Promise<SSHCancelResult> | undefined;
+        const cancel = async (): Promise<SSHCancelResult> => {
+            assertCurrent(transport, "ssh.exec");
+            return cancelPromise ??= Promise.resolve().then(() => host.cancel()).catch(error => { throw safeError(error); }).then(value => {
+                assertCurrent(transport, "ssh.exec");
+                if (!record(value) || (value.remoteProcessStopped !== null && typeof value.remoteProcessStopped !== "boolean")) invalidResponse();
+                return { remoteProcessStopped: value.remoteProcessStopped as boolean | null };
+            });
+        };
+        let sequence = 0;
+        let bytes = 0;
+        let consumed = false;
+        const events: AsyncIterable<SSHOutputEvent> = {
+            async *[Symbol.asyncIterator]() {
+                if (consumed) throw new Error("SSH output supports one consumer.");
+                consumed = true;
+                try {
+                    while (true) {
+                        assertCurrent(transport, "ssh.exec");
+                        const next = await nextHostEvent(outputIterator);
+                        assertCurrent(transport, "ssh.exec");
+                        if (next.done) return;
+                        const event = next.value;
+                        if (!record(event) || event.sequence !== sequence++
+                            || (event.stream !== "stdout" && event.stream !== "stderr") || typeof event.data !== "string") invalidResponse();
+                        bytes += Buffer.byteLength(event.data);
+                        if (bytes > payload.maxOutputBytes) invalidResponse();
+                        yield { sequence: event.sequence as number, stream: event.stream, data: event.data };
+                    }
+                } catch (error) {
+                    cleanup();
+                    throw error;
+                } finally { await closeEvents(); }
+            },
+        };
+        return { events, result, cancel };
     }
 }

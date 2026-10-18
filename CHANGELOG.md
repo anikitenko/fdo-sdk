@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+* Add optional host adapters for timestamped SSH status monitoring and streaming execution with explicit cancellation; retain buffered `ssh.exec` compatibility.
+* Add opt-in `ssh.status.watch` capability and safe `CANCELLED` service error code.
+* Reject JSON `flush()`/`dispose()` after failed queued writes; allow recovery after a successful full snapshot. Previously these failures were logged and swallowed.
+* Document FDO wiring, output bounds, status freshness, timeout/cancellation evidence and persistent-save acknowledgements.
+
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

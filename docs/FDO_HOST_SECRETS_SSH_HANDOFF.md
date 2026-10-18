@@ -56,13 +56,17 @@ Current host alignment:
 
 Profile management and host-key enrollment remain host-owned. Profile edits/deletion, credential rotation and permission revocation invalidate affected work. Use the current FDO starter templates and host contract for supported CLI forms; do not claim every Git flag is authorized by the SDK's generic process payload type.
 
+## Remote Commands follow-up
+
+Implement the optional status/streaming adapters, cancellation and persistent save acknowledgement described in [Remote Commands host handoff](./FDO_HOST_REMOTE_COMMANDS_HANDOFF.md). This extends the original buffered service without changing its request/reply actions.
+
 ## Release compatibility
 
 Read [minor release scope and migration](./SECRETS_AND_SSH.md#minor-release-scope-and-migration). The SDK additions are additive, but the host must recognize all new capability names, enforce the base-plus-operation model and install the backend transport before enabling the feature. The SDK handshake alone does not establish host readiness. Existing plugins need no new grants unless adopting these services. Never infer secret/SSH grants from existing storage or process permissions, and never fall back to insecure storage or an unrestricted SSH process.
 
 ## Errors, audit and verification
 
-Transport failures expose only a safe code: ACCESS_DENIED, UNAVAILABLE, LOCKED, TIMEOUT, HOST_KEY_REJECTED, CONNECTION_FAILED, or INVALID_REQUEST. Provider messages must not leak credentials. Audit identity, action, outcome and request ID without secret values or request/response bodies. Commands and stdout/stderr may also contain secrets, so do not log them by default.
+Transport failures expose only a safe code: ACCESS_DENIED, UNAVAILABLE, LOCKED, TIMEOUT, CANCELLED, HOST_KEY_REJECTED, CONNECTION_FAILED, or INVALID_REQUEST. Provider messages must not leak credentials. Audit identity, action, outcome and request ID without secret values or request/response bodies. Commands and stdout/stderr may also contain secrets, so do not log them by default.
 
 Add host tests covering cross-plugin access and forged identities, each missing capability, revocation, unavailable/locked secure backends, absence of plaintext persistence/logging, missing and empty values, overwrites/deletion, malformed requests, unauthorized profiles, correct/mismatched/missing host keys, password and encrypted private-key authentication, output caps, UTF-8 chunk boundaries, nonzero/null exits, timeouts, disconnects and cleanup. Test the packaged host on all three platforms without an installed SSH executable. The SDK test suite mocks the bridge and does not verify real encryption or networking.
 

@@ -286,7 +286,7 @@ For a dedicated authoring guide, see [docs/OPERATOR_PLUGIN_PATTERNS.md](./docs/O
 
 ## Universal Secrets and SSH
 
-Plugin backend code can use `this.secrets` for host-managed universal secret storage and `this.ssh` for builtin SSH execution against authorized connection profiles. Declare the required secret operations and SSH capabilities through `declareCapabilities()`. The FDO host must configure the backend service transport; calls fail closed until host support is installed. Secrets are separate from JSON storage.
+Plugin backend code can use `this.secrets` for host-managed universal secret storage and `this.ssh` for builtin SSH execution against authorized connection profiles. Declare the required secret operations and SSH capabilities through `declareCapabilities()`. The FDO host must configure the backend service transport; calls fail closed until host support is installed. Secrets are separate from JSON storage. Optional `ssh.watchStatus()` and `ssh.start()` adapters add fresh connection observations, live output and explicit cancellation when wired by FDO; see the [Remote Commands host handoff](docs/FDO_HOST_REMOTE_COMMANDS_HANDOFF.md). JSON `flush()` now rejects failed queued writes, so acknowledge persistent saves only after awaiting it.
 
 See [secrets and SSH usage and protocol](./docs/SECRETS_AND_SSH.md) and [FDO host implementation handoff](./docs/FDO_HOST_SECRETS_SSH_HANDOFF.md).
 

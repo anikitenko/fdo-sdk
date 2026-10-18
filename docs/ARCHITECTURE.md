@@ -80,6 +80,8 @@ Store lifecycle hooks are supported:
 - `dispose()`
 - optional capability metadata and migration/version hooks
 
+The public `useStore()` result includes optional lifecycle hooks. JSON `flush()`/`dispose()` reject failed queued writes; a later successful full snapshot allows recovery. Await `flush()` before acknowledging a persistent save. See the [Remote Commands host handoff](./FDO_HOST_REMOTE_COMMANDS_HANDOFF.md) for storage setup and shutdown requirements.
+
 Runtime permission model:
 
 - privileged SDK features are capability-gated (`storage`, `storage.<backend>` such as `storage.json`, `system.network`, `system.network.<transport>` such as `system.network.https`, `sudo.prompt`, `system.hosts.write`, `system.fs.scope.<scope-id>`, `system.process.exec`, `system.process.scope.<scope-id>`)
