@@ -120,7 +120,27 @@ export class SSHClient {
         if (!record(result) || !Array.isArray(result.profiles)) invalidResponse();
         return (result.profiles as unknown[]).map(profile => {
             if (!record(profile) || typeof profile.id !== "string" || !profile.id || typeof profile.label !== "string") invalidResponse();
-            return { id: profile.id as string, label: profile.label as string };
+            const summary: SSHProfileSummary = { id: profile.id as string, label: profile.label as string };
+            for (const field of ["host", "username"] as const) {
+                const value = profile[field];
+                if (value !== undefined) {
+                    if (typeof value !== "string" || !value.trim() || /[\0\r\n]/.test(value)) invalidResponse();
+                    summary[field] = value;
+                }
+            }
+            if (profile.port !== undefined) {
+                if (typeof profile.port !== "number" || !Number.isInteger(profile.port) || profile.port < 1 || profile.port > 65535) invalidResponse();
+                summary.port = profile.port;
+            }
+            if (profile.authenticationType !== undefined) {
+                if (profile.authenticationType !== "password" && profile.authenticationType !== "privateKey") invalidResponse();
+                summary.authenticationType = profile.authenticationType;
+            }
+            if (profile.trustedHostKey !== undefined) {
+                if (typeof profile.trustedHostKey !== "string" || profile.trustedHostKey.length !== 50 || !/^SHA256:[A-Za-z0-9+/]{43}$/.test(profile.trustedHostKey)) invalidResponse();
+                summary.trustedHostKey = profile.trustedHostKey;
+            }
+            return summary;
         });
     }
 

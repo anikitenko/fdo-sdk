@@ -777,7 +777,17 @@ export type HostServiceCapability =
 /** References are names in the authenticated plugin namespace, not bearer credentials. */
 export type SecretReference = Readonly<{ kind: "secret"; key: string }>;
 export type SecretMetadata = { key: string; updatedAt: string };
-export type SSHProfileSummary = { id: string; label: string };
+/** Safe host metadata only. Optional fields are absent on older hosts. */
+export type SSHProfileSummary = {
+    id: string;
+    label: string;
+    host?: string;
+    port?: number;
+    username?: string;
+    authenticationType?: "password" | "privateKey";
+    /** Enrolled public host-key fingerprint, never a credential or secret reference. */
+    trustedHostKey?: string;
+};
 export type SSHAuthentication =
     | { type: "password"; passwordRef: SecretReference }
     | { type: "privateKey"; privateKeyRef: SecretReference; passphraseRef?: SecretReference };
