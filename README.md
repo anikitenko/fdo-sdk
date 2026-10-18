@@ -440,3 +440,5 @@ See [authoring contract and style ownership](docs/AUTHORING_AND_LIVE_UI.md), [wo
 [Dialog, Confirmation Dialog, Popover, Progress Bar and Toast](docs/UI_COMPONENTS.md) offer separate HTML composition and scoped frontend controllers. See the [generated API reference](docs/UI_COMPONENT_API.generated.md) and [component example](examples/14-sdk-ui-components.ts).
 
 The [authoring components guide](docs/AUTHORING_COMPONENTS.md) covers persistent alerts, scoped toast queues, async action buttons, tabs, disclosures/accordions and the generated static preview gallery.
+
+Interactive SSH PTY sessions and opt-in X11 forwarding are documented in [SSH terminals](docs/SSH_TERMINALS.md), with an [FDO host wiring handoff](docs/FDO_HOST_TERMINAL_X11_HANDOFF.md). These require a compatible host adapter; existing noninteractive execution is unchanged.

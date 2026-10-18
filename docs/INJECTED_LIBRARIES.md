@@ -467,3 +467,7 @@ export default class SplitPanelPlugin extends FDO_SDK {
 - [FontAwesome Icons](https://fontawesome.com/icons)
 - [Split Grid Documentation](https://github.com/nathancahill/split/tree/master/packages/splitjs)
 - [ACE Editor Documentation](https://ace.c9.io/)
+
+## Terminal emulator availability
+
+No terminal emulator is currently guaranteed by this injection contract. ACE and FDO build-output components cannot emulate a PTY. [Interactive SSH](./SSH_TERMINALS.md) specifies a proposed host renderer wrapper that requires new host wiring; it is not an installed global.

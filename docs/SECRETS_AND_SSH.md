@@ -18,6 +18,8 @@ Declare permissions through the existing `declareCapabilities()` hook. Declarati
 | `secrets.consume` | Allow an authorized host service to consume a referenced secret (requires `secrets.use`) |
 | `ssh.use` | Base permission to access SSH services; grants no operation by itself |
 | `ssh.exec` | Execute a remote command on an authorized host profile |
+| `ssh.terminal.open` | Open a PTY shell with separately approved arbitrary input; requires secret consumption grants and host interactive profile consent |
+| `ssh.x11.forward` | Additionally authorize a selected X11 mode; display and cookies stay host-owned |
 | `ssh.status.watch` | Monitor authenticated SSH reachability with freshness; also requires secret consumption grants |
 | `ssh.profiles.list` | List authorized SSH command profile IDs and labels, plus optional host, port, username, authentication type and trusted host-key fingerprint; excludes credentials, secret references and command policies |
 
@@ -71,7 +73,7 @@ Profiles belong to the host. The exported `SSHConnectionProfile` describes an id
 
 The host should bundle `ssh2`, so users need no installed SSH executable on Windows, macOS or Linux. Remote command syntax still depends on the remote shell. A command string is shell input: do not concatenate untrusted input. The host must apply its own command policy and reject unauthorized targets and commands. Do not automatically retry commands that might have already executed.
 
-This initial API supports buffered execution. Interactive terminals, SFTP, forwarding, agent integration, streaming events and explicit caller cancellation are future extensions. The host must enforce deadlines and dispose channels/connections on worker teardown. Closing a channel does not guarantee the remote process has stopped.
+This initial API supports buffered execution. Interactive PTY terminals and optional X11 forwarding now have separate additive adapters and grants; see [Interactive SSH](./SSH_TERMINALS.md). SFTP and agent integration remain outside this API. The host must enforce deadlines and dispose channels/connections on worker teardown. Closing a channel does not guarantee the remote process has stopped.
 
 ## Live connection status and command execution
 
@@ -149,7 +151,7 @@ Existing plugins need no changes unless adopting the new services. Adopting plug
 
 Older hosts can continue running existing plugins, but cannot execute the new service APIs until their backend transport is installed. New capabilities must be recognized by the host's capability parser and consent UI. The current SDK handshake does not advertise host readiness for these services: a new SDK version or successful SDK handshake alone is insufficient. Before enabling feature UI, the host must provide its own readiness/availability signal or handle unavailable service calls explicitly. Do not silently fall back to plaintext storage or unrestricted system SSH.
 
-Release notes must distinguish the implemented SDK facade and protocol from the required FDO host encryption/network implementation. Current FDO hosts can reuse profiles through the existing Git operator API. No dedicated Git client, transport helper or new Git permission family ships inside this SDK package; these host features require a compatible FDO version. Interactive SSH, SFTP and agent forwarding remain outside v1. Streaming events, cancellation and connection monitoring use the optional live adapters documented above; they do not change the buffered v1 request/reply actions. End-to-end cross-platform claims require packaged host verification.
+Release notes must distinguish the implemented SDK facade and protocol from the required FDO host encryption/network implementation. Current FDO hosts can reuse profiles through the existing Git operator API. No dedicated Git client, transport helper or new Git permission family ships inside this SDK package; these host features require a compatible FDO version. Interactive SSH and optional X11 use the separate adapter documented in [Interactive SSH](./SSH_TERMINALS.md); SFTP and agent forwarding remain outside v1. Streaming events, cancellation and connection monitoring use the optional live adapters documented above; they do not change the buffered v1 request/reply actions. End-to-end cross-platform claims require packaged host verification.
 
 Use the repository's Release Please workflow for the version and changelog update. A conventional `feat` commit describes the additive feature; do not mark it as a breaking change or manually promise Git integration in the release title. The safe profile metadata fields are an additive extension to the SDK 1.8 service contract; older hosts returning only id/label remain compatible. Let Release Please determine the actual next version from the release baseline and commit history.
 

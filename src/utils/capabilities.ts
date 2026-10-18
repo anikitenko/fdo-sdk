@@ -74,10 +74,12 @@ function getCapabilityPrerequisites(capability: string): string[] {
     const prerequisites = new Set<string>();
     if (capability.startsWith("secrets.") && capability !== "secrets.use") prerequisites.add("secrets.use");
     if (capability.startsWith("ssh.") && capability !== "ssh.use") prerequisites.add("ssh.use");
-    if (capability === "ssh.exec" || capability === "ssh.status.watch") {
+    if (capability === "ssh.exec" || capability === "ssh.status.watch" || capability === "ssh.terminal.open" || capability === "ssh.x11.forward") {
         prerequisites.add("secrets.use");
         prerequisites.add("secrets.consume");
     }
+
+    if (capability === "ssh.x11.forward") prerequisites.add("ssh.terminal.open");
 
     if (capability.startsWith(STORAGE_BACKEND_CAPABILITY_PREFIX)) {
         prerequisites.add("storage");
@@ -126,6 +128,12 @@ function buildCapabilityPreflightRemediation(capability: string): string {
     return `Grant "${capability}" with prerequisite capabilities ${prerequisites.map((entry) => `"${entry}"`).join(", ")} before plugin initialization. Configure PluginRegistry.configureCapabilities({ granted: [${snippet}] }) in the host before plugin initialization.`;
 }
 
+const capabilityListeners = new Set<() => void>();
+/** Internal resource lifecycle hook; host authorization remains authoritative. */
+export function onCapabilityChange(listener: () => void): () => void {
+    capabilityListeners.add(listener);
+    return () => { capabilityListeners.delete(listener); };
+}
 export function configureCapabilities(configuration: CapabilityConfiguration): void {
     grantedCapabilities.clear();
     for (const capability of configuration.granted) {
@@ -134,6 +142,7 @@ export function configureCapabilities(configuration: CapabilityConfiguration): v
             grantedCapabilities.add(alias as PluginCapability);
         }
     }
+    for (const listener of capabilityListeners) listener();
 }
 
 export function requireCapability(capability: PluginCapability, action: string): void {
@@ -321,11 +330,15 @@ export function describeCapability(capability: PluginCapability | string): Capab
             category: "secrets",
         };
     }
-    if (capability === "ssh.use" || capability === "ssh.exec" || capability === "ssh.profiles.list" || capability === "ssh.status.watch") {
+    if (capability === "ssh.use" || capability === "ssh.exec" || capability === "ssh.profiles.list" || capability === "ssh.status.watch" || capability === "ssh.terminal.open" || capability === "ssh.x11.forward") {
         return {
             capability,
-            label: capability === "ssh.use" ? "SSH Access" : capability === "ssh.exec" ? "SSH Execution" : capability === "ssh.status.watch" ? "SSH Connection Monitoring" : "SSH Profiles List",
-            description: capability === "ssh.use"
+            label: capability === "ssh.terminal.open" ? "Interactive SSH Terminal" : capability === "ssh.x11.forward" ? "SSH X11 Forwarding" : capability === "ssh.use" ? "SSH Access" : capability === "ssh.exec" ? "SSH Execution" : capability === "ssh.status.watch" ? "SSH Connection Monitoring" : "SSH Profiles List",
+            description: capability === "ssh.terminal.open"
+                ? "Allows arbitrary interactive shell input on separately authorized host profiles; command allowlists do not constrain this session."
+                : capability === "ssh.x11.forward"
+                ? "Allows separately approved X11 forwarding. Trusted forwarding can expose local display input and other clients; never enabled automatically."
+                : capability === "ssh.use"
                 ? "Base permission to access SSH services; pair with specific SSH operation capabilities."
                 : "Allows this operation on authorized profiles when paired with ssh.use. Execution and monitoring also require secrets.use and secrets.consume.",
             category: "ssh",
@@ -650,7 +663,9 @@ export function createSecretsCapabilityBundle(
 }
 
 /** SSH uses references inside the host, so plaintext secret reads are not required. */
-export function createSSHCapabilityBundle(options: { monitorStatus?: boolean } = {}): PluginCapability[] {
+export function createSSHCapabilityBundle(options: { monitorStatus?: boolean; terminal?: boolean; x11?: boolean } = {}): PluginCapability[] {
     return createCapabilityBundle(["ssh.use", "ssh.exec", "ssh.profiles.list", "secrets.use", "secrets.consume",
+        ...(options.terminal ? ["ssh.terminal.open" as const] : []),
+        ...(options.x11 ? ["ssh.terminal.open" as const, "ssh.x11.forward" as const] : []),
         ...(options.monitorStatus ? ["ssh.status.watch" as const] : [])]);
 }
