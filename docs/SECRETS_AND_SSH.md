@@ -18,7 +18,7 @@ Declare permissions through the existing `declareCapabilities()` hook. Declarati
 | `secrets.consume` | Allow an authorized host service to consume a referenced secret (requires `secrets.use`) |
 | `ssh.use` | Base permission to access SSH services; grants no operation by itself |
 | `ssh.exec` | Execute a remote command on an authorized host profile |
-| `ssh.profiles.list` | List authorized profile IDs and labels |
+| `ssh.profiles.list` | List authorized SSH command profile IDs and labels, plus optional host, port, username, authentication type and trusted host-key fingerprint; excludes credentials, secret references and command policies |
 
 Every secret operation requires **`secrets.use` plus the specific operation capability**: for example, reading requires `secrets.use` + `secrets.get`, and listing requires `secrets.use` + `secrets.list`. Neither the base permission alone nor an operation alone is sufficient. Permission to write never implicitly permits reading or deletion.
 
