@@ -565,6 +565,8 @@ export type SdkFeatureFlags = {
     renderOnLoadModuleAuthoring: boolean;
     renderOnLoadDeclarativeActions: boolean;
     editorSupportBundle: boolean;
+    sharedPluginLogicRequests?: boolean;
+    sharedPluginLogicContracts?: boolean;
 };
 
 export type SdkHandshake = {

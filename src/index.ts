@@ -163,6 +163,8 @@ export * from "./DOMTable";
 export * from "./DOMMedia";
 export * from "./DOMSemantic";
 export * from "./decorators/ErrorHandler";
+export {handler, sharedFunction} from "./decorators/Registration";
+export type {SharedFunctionOptions} from "./decorators/Registration";
 
 export class FDO_SDK {
     public static readonly API_VERSION: string = SDK_API_VERSION

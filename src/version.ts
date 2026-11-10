@@ -1,6 +1,6 @@
 declare const __FDO_SDK_PACKAGE_VERSION__: string | undefined;
 
-export const SDK_API_VERSION = "1.0.0";
+export const SDK_API_VERSION = "1.1.0";
 
 function resolveDefinedPackageVersion(): string | undefined {
     if (typeof __FDO_SDK_PACKAGE_VERSION__ === "string" && __FDO_SDK_PACKAGE_VERSION__.trim().length > 0) {

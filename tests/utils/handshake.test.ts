@@ -27,6 +27,8 @@ describe("sdk handshake helpers", () => {
             renderOnLoadModuleAuthoring: true,
             renderOnLoadDeclarativeActions: true,
             editorSupportBundle: true,
+            sharedPluginLogicRequests: true,
+            sharedPluginLogicContracts: true,
         });
 
         flags.pluginDoctorReport = false;

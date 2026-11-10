@@ -19,6 +19,8 @@ const SDK_FEATURE_FLAGS: SdkFeatureFlags = Object.freeze({
     renderOnLoadModuleAuthoring: true,
     renderOnLoadDeclarativeActions: true,
     editorSupportBundle: true,
+    sharedPluginLogicRequests: true,
+    sharedPluginLogicContracts: true,
 });
 
 export function getSdkFeatureFlags(): SdkFeatureFlags {
