@@ -13,6 +13,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.8.3...fdo-sdk-v1.9.0) (2026-11-10)
+
+
+### Features
+
+* add capability-approved shared plugin services ([#82](https://github.com/anikitenko/fdo-sdk/issues/82)) ([890a7bf](https://github.com/anikitenko/fdo-sdk/commit/890a7bf529c82956b99eefbc95d791c9dc18e1ac))
+
 ## [1.8.3](https://github.com/anikitenko/fdo-sdk/compare/fdo-sdk-v1.8.2...fdo-sdk-v1.8.3) (2026-10-18)
 
 
