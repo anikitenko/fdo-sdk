@@ -482,7 +482,7 @@ describe("PluginRegistry", () => {
 
     test("should reject incompatible host API major versions", () => {
         expect(() => PluginRegistry.assertHostApiCompatibility("2.0.0")).toThrow(
-            'Incompatible plugin API major version. Host requested "2.0.0", plugin SDK provides "1.0.0".'
+            'Incompatible plugin API major version. Host requested "2.0.0", plugin SDK provides "1.1.0".'
         );
     });
 

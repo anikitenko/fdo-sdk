@@ -106,7 +106,7 @@ describe("FDO_SDK", () => {
     });
 
     test("should have correct static properties", () => {
-        expect(FDO_SDK.API_VERSION).toBe("1.0.0");
+        expect(FDO_SDK.API_VERSION).toBe("1.1.0");
         expect(FDO_SDK.TYPE_TAG).toBeDefined();
     });
 

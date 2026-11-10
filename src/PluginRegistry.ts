@@ -1,3 +1,4 @@
+import {applyDecoratedRegistrations} from "./decorators/Registration";
 import {configureSharedLogic, dispatchSharedLogic, cancelSharedLogicInvocation, SharedLogicConfiguration, SharedLogicInvocation} from "./SharedLogic";
 import path from "path";
 import { configureHostServices } from "./utils/hostServices";
@@ -178,6 +179,9 @@ export class PluginRegistry {
         this._logger.event("plugin.init.start");
         try {
             this.logDeclaredCapabilityPreflight();
+            if (this.pluginInstance) {
+                applyDecoratedRegistrations(this.pluginInstance, (name, method) => this.registerHandler(name, method));
+            }
             const result: unknown = this.pluginInstance?.init();
             this.assertSynchronousInit(result);
             this.refreshLoggerContext();
