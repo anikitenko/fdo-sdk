@@ -143,7 +143,18 @@ describe("renderOnLoad helpers", () => {
             bindings: [{ selector: "#missing", event: "click", handler: "save", required: true }],
         });
 
-        expect(() => new Function(source)()).toThrow('No elements matched selector "#missing"');
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+        try {
+            expect(() => new Function(source)()).toThrow('No elements matched selector "#missing"');
+            expect(consoleError).toHaveBeenCalledTimes(2);
+            expect(consoleError).toHaveBeenNthCalledWith(1,
+                '[FDO:onLoad] No elements matched selector "#missing" for event "click".',
+                expect.objectContaining({code: "ONLOAD_SELECTOR_MISSING", phase: "binding"}));
+            expect(consoleError).toHaveBeenNthCalledWith(2,
+                "[FDO:onLoad] Initialization failed.", expect.any(Error));
+        } finally {
+            consoleError.mockRestore();
+        }
     });
 
     test("rejects unsupported output values", () => {
