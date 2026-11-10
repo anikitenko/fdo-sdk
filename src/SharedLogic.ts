@@ -4,8 +4,14 @@ import {PluginScope} from './PluginScope';
 
 export type SharedLogicCapability = `plugins.shared.call.${string}.${string}.v${number}`;
 export type SharedLogicTarget = {providerId: string; name: string; version: number};
-export type SharedLogicDefinition = {name: string; version: number; description: string};
-export type SharedLogicService = SharedLogicTarget & {description: string; methods: string[]; capability: SharedLogicCapability};
+/** Data-only schemas used for generated editor contracts, not runtime validation. */
+export type SharedLogicSchema = {type:'string'|'number'|'integer'|'boolean'|'null'|'unknown'}
+    | {type:'array';items:SharedLogicSchema}
+    | {type:'object';properties:Record<string,SharedLogicSchema>;required?:string[]};
+export type SharedLogicMethodContract = {input:SharedLogicSchema;output:SharedLogicSchema};
+export type SharedLogicDefinition = {name: string; version: number; description: string; contract?:Record<string,SharedLogicMethodContract>};
+export type SharedLogicAccessRequest = {state:'pending'|'approved';capability?:string;request?:SharedLogicTarget & {id:string;capability:string;createdAt:string}};
+export type SharedLogicService = SharedLogicTarget & {description: string; methods: string[]; capability: SharedLogicCapability; contract?:Record<string,SharedLogicMethodContract>};
 export type SharedLogicContext = {callerId: string; signal: AbortSignal};
 export type SharedLogicHandler = (input: any, context: SharedLogicContext) => unknown | Promise<unknown>;
 export type SharedLogicOptions = {signal?: AbortSignal; timeoutMs?: number};
@@ -15,6 +21,7 @@ export class SharedLogicError extends Error {
 }
 export type SharedLogicRequest =
     | {op: 'list'}
+    | {op:'requestAccess';target:SharedLogicTarget}
     | {op: 'register'; definition: SharedLogicDefinition; methods: string[]}
     | {op: 'unregister'; registrationId: string}
     | {op: 'call'; callId: string; target: SharedLogicTarget; method: string; input: unknown; timeoutMs: number}
@@ -134,6 +141,8 @@ export class SharedLogic {
     public register(definition: SharedLogicDefinition, methods: Record<string, SharedLogicHandler>): SharedLogicRegistration {
         requireCapability('plugins.shared.provide', 'provide shared plugin logic');
         definition = {...definition};
+        if (definition.contract === undefined) delete definition.contract;
+        definition = cloneSharedLogicValue(definition) as SharedLogicDefinition;
         const adapter = transport();
         validateTarget({...definition, providerId: 'local'});
         if (typeof definition.description !== 'string' || !definition.description.trim() || definition.description.length > 1000
@@ -183,7 +192,7 @@ export class SharedLogic {
             if (typeof value.description !== 'string' || value.description.length > 1000 || !Array.isArray(value.methods) || value.methods.length > 32
                 || value.methods.some((name: unknown) => typeof name !== 'string' || !methodPattern.test(name) || blockedNames.has(name))) invalid();
             return {providerId: value.providerId, name: value.name, version: value.version, description: value.description,
-                methods: [...value.methods], capability: sharedLogicCapability(value)};
+                methods: [...value.methods], capability: sharedLogicCapability(value),...(value.contract?{contract:cloneSharedLogicValue(value.contract) as Record<string,SharedLogicMethodContract>}:{})};
         });
     }
 
@@ -241,6 +250,13 @@ export class SharedLogic {
             this.scope.signal.removeEventListener('abort', cancel);
             options.signal?.removeEventListener('abort', cancel);
         }
+    }
+
+    /** Create a pending host review; never grants access or starts a provider. */
+    public async requestAccess(target: SharedLogicTarget): Promise<SharedLogicAccessRequest> {
+        validateTarget(target);
+        if (this.scope.signal.aborted) throw new SharedLogicError('CANCELLED');
+        return await transport().request({op:'requestAccess',target:{providerId:target.providerId,name:target.name,version:target.version}}) as SharedLogicAccessRequest;
     }
 
     public client<T extends Record<string, (input: any) => any>>(target: SharedLogicTarget) {

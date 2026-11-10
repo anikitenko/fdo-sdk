@@ -59,6 +59,19 @@ describe('shared logic example startup', () => {
         expect(onLoad).toMatch(/window\.createBackendReq\(['"]UI_MESSAGE['"]/);
         expect(onLoad).not.toMatch(/fetch\s*\(|XMLHttpRequest|WebSocket/);
         expect(onLoad).toContain('shared-website-check');
+        const target = {providerId:'website-availability-provider',name:'website-availability',version:1};
+        const requestAccess = vi.spyOn(SharedLogic.prototype, 'requestAccess').mockResolvedValue({state:'pending'});
+        const call = vi.fn().mockResolvedValue({available:true,status:200});
+        vi.spyOn(SharedLogic.prototype, 'client').mockReturnValue({call});
+        PluginRegistry.callInit();
+        await expect(PluginRegistry.callHandler('requestSharedWebsiteAccess', null)).resolves.toEqual({state:'pending'});
+        expect(requestAccess).toHaveBeenCalledWith(target);
+        for (const input of [null, {}, {url:42}, {url:'invalid URL'}, {url:'http://example.com'}, {url:'https://user:password@example.com'}]) {
+            await expect(PluginRegistry.callHandler('checkWebsite', input)).resolves.toEqual({ok:false,code:'INVALID_REQUEST'});
+        }
+        expect(call).not.toHaveBeenCalled();
+        await expect(PluginRegistry.callHandler('checkWebsite', {url:' https://example.com '})).resolves.toEqual({ok:true,available:true,status:200});
+        expect(call).toHaveBeenCalledWith('check', {url:'https://example.com/'}, {timeoutMs:10000});
         expect(port.listenerCount('message')).toBe(1);
     });
 });

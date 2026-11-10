@@ -135,3 +135,26 @@ test.each(['clear', 'replace'] as const)('transport %s before the dispatch micro
     expect(oldRequest).not.toHaveBeenCalled();
     expect(replacementRequest).not.toHaveBeenCalled();
 });
+
+
+test('access requests need no grant and never enable permissions or execute a provider', async () => {
+    configureCapabilities({granted:[]});
+    const response={state:'pending',request:{id:'review-1',...target,capability,createdAt:'now'}};
+    const request=vi.fn(async()=>response);configureSharedLogic({request});
+    const shared=new SharedLogic(scope);
+    expect(await shared.requestAccess(target)).toEqual(response);
+    expect(request).toHaveBeenCalledWith({op:'requestAccess',target});
+    await expect(shared.call(target,'check',null)).rejects.toThrow('plugins.shared.use');
+    expect(request).toHaveBeenCalledTimes(1);
+    await scope.dispose();
+    await expect(shared.requestAccess(target)).rejects.toMatchObject({code:'CANCELLED'});
+});
+
+test('registration sends a copy of the public method contract', async () => {
+    const request=vi.fn(async()=>({registrationId:'typed-1'}));configureSharedLogic({request});
+    const contract={check:{input:{type:'string' as const},output:{type:'boolean' as const}}};
+    const registration=new SharedLogic(scope).register({name:'typed',version:1,description:'Typed checks',contract},{check:()=>true});
+    await registration.ready;
+    expect(request).toHaveBeenCalledWith({op:'register',definition:{name:'typed',version:1,description:'Typed checks',contract},methods:['check']});
+    await registration.dispose();
+});
