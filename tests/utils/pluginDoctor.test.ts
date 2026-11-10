@@ -52,6 +52,22 @@ function createBaseDiagnostics(): PluginDiagnostics {
 }
 
 describe("plugin doctor", () => {
+    test("surfaces logging fallback, failed writes and descriptor growth", () => {
+        const diagnostics = createBaseDiagnostics();
+        diagnostics.resources = {
+            sampledAt: new Date().toISOString(),
+            process: {pid: 1, uptimeSeconds: 2, rssBytes: 100, heapUsedBytes: 50},
+            logging: {activeFamilies: 4, stderrFallbacks: 1, fileFailures: 1},
+            storage: {activeStores: 1, pendingWrites: 2, writeFailures: 1},
+            fileDescriptors: {count: 300, deltaSinceStart: 200, status: "growing"},
+        };
+        const report = createPluginDoctorReport(diagnostics, {includeInfo: false});
+        expect(report.counts.warning).toBe(3);
+        expect(report.findings.map(finding => finding.code)).toEqual(expect.arrayContaining([
+            "LOGGING_STDERR_FALLBACK", "STORAGE_WRITE_FAILURES", "RESOURCES_DESCRIPTOR_GROWTH",
+        ]));
+    });
+
     test("returns healthy report when no errors or warnings exist", () => {
         const report = createPluginDoctorReport(createBaseDiagnostics(), {
             includeInfo: false,

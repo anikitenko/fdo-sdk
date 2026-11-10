@@ -1,3 +1,4 @@
+import {configureSharedLogic, dispatchSharedLogic, cancelSharedLogicInvocation, SharedLogicConfiguration, SharedLogicInvocation} from "./SharedLogic";
 import path from "path";
 import { configureHostServices } from "./utils/hostServices";
 import { FDO_SDK } from "./index";
@@ -20,7 +21,7 @@ import {
 } from "./types";
 import { Logger } from "./Logger";
 import { createDefaultStore } from "./StoreDefault";
-import { createJsonStore } from "./StoreJson";
+import { createJsonStore, getJsonStorageDiagnostics } from "./StoreJson";
 import { validatePluginMetadata, validateSerializedRenderPayload } from "./utils/contracts";
 import { NotificationManager } from "./utils/NotificationManager";
 import {
@@ -44,6 +45,7 @@ export class PluginRegistry {
     private static pluginInstance: FDO_SDK | null = null;
     private static pluginMetadata: PluginMetadata | null = null;
     private static storageConfiguration: StorageConfiguration = {};
+    private static shutdownPromise?: Promise<void>;
     private static diagnosticsState = this.createDiagnosticsState();
     private static readonly handlers: Record<string, PluginHandler> = {};
     private static readonly storeFactories: Record<string, StoreFactory> = {
@@ -63,6 +65,11 @@ export class PluginRegistry {
     private static readonly storeInstances: Record<string, Record<string, StoreWithLifecycle>> = {};
 
     /** Host bootstrap only; bind this transport to the worker's authenticated plugin identity. */
+    /** Host-only, authenticated shared-service transport and private dispatch hooks. */
+    public static configureSharedLogic(configuration: SharedLogicConfiguration | null): void { configureSharedLogic(configuration); }
+    public static dispatchSharedLogic(invocation: SharedLogicInvocation) { return dispatchSharedLogic(invocation); }
+    public static cancelSharedLogicInvocation(callId: string): void { cancelSharedLogicInvocation(callId); }
+
     public static configureHostServices(configuration: HostServicesConfiguration | null): void {
         configureHostServices(configuration);
     }
@@ -95,6 +102,7 @@ export class PluginRegistry {
         const metadata = this.tryResolvePluginMetadata(plugin, { allowDeferred: true });
         this.pluginMetadata = metadata;
         this.pluginInstance = plugin;
+        this.shutdownPromise = undefined;
         this.diagnosticsState = this.createDiagnosticsState();
         const pluginScope = this.getPluginStorageScope(metadata);
         this._logger = this._logger.withContext({ component: "PluginRegistry", pluginId: pluginScope });
@@ -167,7 +175,8 @@ export class PluginRegistry {
         this._logger.event("plugin.init.start");
         try {
             this.logDeclaredCapabilityPreflight();
-            this.pluginInstance?.init(); // Safe call without `!`
+            const result: unknown = this.pluginInstance?.init();
+            this.assertSynchronousInit(result);
             this.refreshLoggerContext();
             this.diagnosticsState.initCount += 1;
             this.diagnosticsState.lastInitAt = new Date().toISOString();
@@ -176,6 +185,14 @@ export class PluginRegistry {
             this.recordError(error, "plugin.init.error");
             throw error;
         }
+    }
+
+    private static assertSynchronousInit(result: unknown): void {
+        if (!result || typeof (result as PromiseLike<unknown>).then !== 'function') return;
+        void Promise.resolve(result).catch(error => {
+            try { this.recordError(error, "plugin.init.async-rejected"); } catch {}
+        });
+        throw new Error("Plugin init() must be synchronous; asynchronous initialization is not supported.");
     }
 
     public static assertHostApiCompatibility(hostApiVersion?: string): void {
@@ -270,6 +287,17 @@ export class PluginRegistry {
             pluginId,
             metadata,
             handshake: getSdkHandshake(),
+            resources: {
+                sampledAt: new Date().toISOString(),
+                process: {
+                    pid: process.pid,
+                    uptimeSeconds: process.uptime(),
+                    rssBytes: process.memoryUsage().rss,
+                    heapUsedBytes: process.memoryUsage().heapUsed,
+                },
+                logging: Logger.getDiagnostics(),
+                storage: getJsonStorageDiagnostics(),
+            },
             health: {
                 status: this.diagnosticsState.errorCount > 0 ? "degraded" : "healthy",
                 startedAt: this.diagnosticsState.startedAt,
@@ -309,12 +337,51 @@ export class PluginRegistry {
         };
     }
 
-    public static clearPlugin(): void {
+    /** Host lifecycle hook. Stops new work, releases plugin resources and drains stores. */
+    public static shutdown(timeoutMs = 4500): Promise<void> {
+        if (this.shutdownPromise) return this.shutdownPromise;
+        const plugin = this.pluginInstance;
+        const scope = this.getPluginScopeForLogging(plugin);
+        const stores = this.storeInstances[scope] ?? {};
+        let resolve!: () => void;
+        let reject!: (error: Error) => void;
+        this.shutdownPromise = new Promise<void>((done, fail) => { resolve = done; reject = fail; });
+        const operations: Promise<unknown>[] = [];
+        for (const store of Object.values(stores)) {
+            try { store.beginShutdown?.(); } catch (error) { operations.push(Promise.reject(error)); }
+        }
+        this.clearAllHandlers();
+        // Stop accepting IPC and abort cooperative work before the first await.
+        try { operations.push(Promise.resolve(plugin?.dispose())); }
+        catch (error) { operations.push(Promise.reject(error)); }
+        operations.push(...Object.values(stores).map(async store => {
+            try { await store.flush?.(); } finally { await store.dispose?.(); }
+        }));
+        const budget = Number.isFinite(timeoutMs) ? Math.max(1, Math.min(timeoutMs, 30000)) : 4500;
+        const timer = setTimeout(() => reject(new Error("Plugin shutdown deadline exceeded.")), budget);
+        void Promise.allSettled(operations).then(results => {
+            clearTimeout(timer);
+            if (this.storeInstances[scope] === stores) delete this.storeInstances[scope];
+            if (this.pluginInstance === plugin) {
+                this.pluginInstance = null;
+                this.pluginMetadata = null;
+                configureHostServices(null);
+                configureSharedLogic(null);
+            }
+            if (results.some(result => result.status === 'rejected')) reject(new Error("Plugin shutdown failed."));
+            else resolve();
+        });
+        return this.shutdownPromise;
+    }
+
+    public static clearPlugin(): Promise<void> {
+        const disposal = this.shutdown();
         configureHostServices(null);
-        void this.disposeStoreScope(this.getPluginScopeForLogging(this.pluginInstance));
         this.pluginInstance = null;
         this.pluginMetadata = null;
         this.diagnosticsState = this.createDiagnosticsState();
+        // shutdown retains the scoped stores until its drain finishes.
+        return disposal;
     }
 
     public static clearHandler(name: string): void {
@@ -329,11 +396,8 @@ export class PluginRegistry {
         }
     }
 
-    public static clearAllStoreInstances(): void {
-        const scopeNames = Object.keys(this.storeInstances);
-        for (const scopeName of scopeNames) {
-            void this.disposeStoreScope(scopeName);
-        }
+    public static async clearAllStoreInstances(): Promise<void> {
+        await Promise.all(Object.keys(this.storeInstances).map(scope => this.disposeStoreScope(scope)));
     }
 
     private static async disposeStoreScope(scopeName: string): Promise<void> {
@@ -345,8 +409,9 @@ export class PluginRegistry {
 
         const disposePromises = Object.entries(scopedStores).map(async ([storeName, store]) => {
             try {
-                await store.flush?.();
-                await store.dispose?.();
+                store.beginShutdown?.();
+                try { await store.flush?.(); }
+                finally { await store.dispose?.(); }
             } catch (error) {
                 this._logger.warn(`Store '${storeName}' dispose failed for scope '${scopeName}'.`, error);
             }

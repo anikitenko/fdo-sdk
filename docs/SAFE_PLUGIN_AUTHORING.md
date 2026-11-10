@@ -91,6 +91,19 @@ class ExamplePlugin extends FDO_SDK {
 }
 ```
 
+Logger contexts share their existing file transports; changing context does not open
+additional log files. If directory creation, file opening, or rotation fails (for
+example, `EMFILE` or `ENOSPC`), the SDK closes its file transports and sends subsequent
+logs to stderr until the plugin restarts. FDO captures stderr in runtime output.
+Logging failures do not terminate the plugin, but file logs stop for that session.
+
+For directly constructed SDK `Logger` instances, call `close()` when their owning
+service is disposed. A logger and all its `withContext(...)` views share one
+lifecycle: closing any view closes that family, and subsequent logging is ignored.
+JSON stores close loggers they create when `dispose()` finishes, including on flush
+failure; injected loggers remain the caller's responsibility. Prefer the built-in
+plugin logging methods for ordinary plugin code.
+
 Log destination:
 
 - `FDO_SDK_LOG_ROOT` configures log root directory
@@ -98,6 +111,127 @@ Log destination:
 - log files are written directly into the configured log directory
 - in FDO host runtime this is typically `PLUGIN_HOME/logs/`
 - plugin identity is preserved in structured log metadata rather than an extra nested log folder
+
+## Persistent Storage Lifecycle
+
+JSON stores retain at most one active write and one pending snapshot. Repeated
+mutations replace the pending snapshot, reducing disk traffic and queued memory.
+`set()` still serializes synchronously so later changes to caller-owned objects
+cannot change an already queued snapshot. Use JSON storage for modest settings,
+not large append-only datasets.
+
+`flush()` waits for a snapshot covering the mutations made before the call. That
+snapshot may include newer coalesced changes. The barrier's result is settled when
+its covering write finishes; later writes cannot change that result. Failed writes
+are reported by `flush()` and `dispose()`, and a later successful full snapshot can
+recover the store.
+
+`beginShutdown()` stops new mutations synchronously while allowing reads and a
+final flush. `dispose()` also stops mutations immediately, drains writes and
+corruption-backup work, and releases file ownership and its owned logger, even
+when persistence fails. Repeated disposal returns the same promise. Await disposal
+before reopening a storage path. `PluginRegistry.clearPlugin()` and
+`clearAllStoreInstances()` now return promises that can be awaited for teardown.
+FDO invokes the shutdown gate before flushing and always disposes after a failed
+flush; custom backends may implement the optional gate as well.
+
+Only one live JSON store may own a resolved path in one SDK runtime. Existing
+symlink ancestors and relative path aliases are resolved before ownership checks.
+Duplicate construction throws; reuse the existing store instead. Ownership is
+released after disposal completes. This is an in-process guard, not an
+inter-process lock: do not point separate workers or external writers at the same
+file. Atomic writes protect against partial replacement, not competing writers.
+
+## Plugin Resource Cleanup and Messaging
+
+Every `FDO_SDK` instance owns a `lifecycle` scope and exposes a cooperative `signal`.
+Register cleanup with `onDispose(callback)`, or use
+`trackResource(resource, resource => resource.close())` for watchers, streams,
+sessions and other resources. For subprocesses, register an appropriate process
+termination callback; the scope does not discover resources created independently.
+Use `lifecycle.listen(emitter, event, callback)` for Node event subscriptions,
+`lifecycle.timeout(callback, milliseconds)` for one-shot work, and
+`lifecycle.interval(callback, milliseconds)` for repeated work. Async interval
+callbacks do not overlap. Callback rejections are observed and logged.
+
+The signal aborts at shutdown. Timers and subscriptions are removed, and all
+registered cleanup callbacks are invoked in reverse registration order without
+waiting for an earlier callback to finish. Cleanup is idempotent, and one failure
+does not prevent the other callbacks from running. A resource registered after
+shutdown is immediately released and registration throws. Running async work must
+observe `signal` itself; a JavaScript promise cannot be forcibly cancelled.
+
+Register cleanup rather than overriding `dispose()`. FDO invokes
+`PluginRegistry.shutdown()` on normal unload; initialization failures and parent
+bridge disconnects use the same lifecycle. SDK cleanup has a four-second deadline,
+registry shutdown has a 4.5-second deadline, and FDO allows five seconds for the
+worker acknowledgement before terminating it. A blocked JavaScript thread cannot
+run cleanup; host-side termination is the final bound. `clearPlugin()` also begins
+cleanup and revokes the host-service transport immediately; prefer `shutdown()`
+when cleanup callbacks need the host-service transport while draining.
+
+Initialization remains synchronous. Returning a promise from `init()` now produces
+a clear initialization error, observes any later rejection, and starts teardown.
+Use lifecycle-managed background work with the abort signal instead.
+
+SDK replies tolerate a disconnected parent port, and async event-handler
+rejections are observed. Once disposal starts, in-flight replies are dropped and
+parent-port subscriptions are removed.
+
+FDO serializes UI requests per worker session with at most 32 active/queued calls.
+Deadlines include queue waiting time. Queue overflow returns
+`PLUGIN_BACKEND_BUSY`; an undispatched request can expire without affecting the
+other requests. Once a dispatched request times out, the legacy uncorrelated reply
+protocol requires that session to stop accepting calls: restart the plugin before
+retrying. This prevents a delayed reply from being used as another call's result.
+Unload cancels active and queued requests and removes their listeners and timers.
+Cancellation does not roll back work the plugin has already performed.
+
+FDO sends a private heartbeat every ten seconds, waits up to five seconds for each
+reply, and warns after three consecutive misses. The bootstrap responds outside
+the UI queue, so slow async handlers do not by themselves indicate a hung event
+loop. The warning offers a restart tied to that worker session and disappears on
+recovery or unload. Restart attempts are coalesced and limited to three per plugin
+per ten minutes. There is no automatic restart; the user decides when to interrupt
+unfinished work.
+
+## Reusing Logic from Other Plugins
+
+Use host-mediated, versioned shared services instead of importing another plugin's
+private code. Providers explicitly register exported methods; consumers need the
+base use grant and the exact provider/service/version capability approved in Manage
+Plugins. See [Shared plugin logic](SHARED_PLUGIN_LOGIC.md) and the provider/consumer
+examples for registration, typed calls, permission approval and lifecycle limits.
+
+## Resource Diagnostics and Stability Tests
+
+`PluginRegistry.getDiagnostics().resources` includes process memory and uptime,
+active logger families, active stderr fallbacks, file-logging failure counts,
+active JSON stores, pending writes, and storage failure counts. Counts cover the
+worker's SDK runtime; cumulative failure counts remain visible after a store is
+disposed. Diagnostic error codes do not include file contents or paths.
+
+FDO adds host-measured descriptor counts on Linux (`/proc/<pid>/fd`) and macOS
+(`lsof` with a timeout and output limit). Unsupported platforms, inspection errors,
+and exited workers report an unavailable count. Measurements happen when
+refreshing diagnostics and are tied to the current worker session. Growth is
+flagged when the count increases by at least 128 and doubles from the first
+sample; this is a heuristic, not the operating system's descriptor limit.
+Plugin Doctor displays the resource counters and warns about file logging
+fallback, storage write failures, and substantial descriptor growth.
+
+Run `npm run test:stability` to build and exercise rendering, handlers, writes,
+rotation, teardown and worker restart under a POSIX descriptor limit of 128. CI
+runs the short version. For a longer soak after building, run:
+
+```sh
+FDO_STRESS_DURATION_MS=172800000 node scripts/stress-plugin-resources.cjs
+```
+
+The duration is divided across three isolated worker sessions. The test checks
+persisted final state, rejection of writes after disposal, pending write bounds,
+logger counts, descriptor growth, and retained heap after garbage collection.
+Windows runs the lifecycle checks without the POSIX descriptor limit.
 
 ## Privileged Error Formatting Rule
 

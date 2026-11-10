@@ -145,6 +145,7 @@ export type PluginCapability =
     | StorageBackendCapability
     | AICapability
     | HostServiceCapability
+    | "plugins.shared.provide" | "plugins.shared.use" | import("./SharedLogic").SharedLogicCapability
     | "system.network"
     | NetworkTransportCapability
     | NetworkScopeCapability
@@ -413,6 +414,7 @@ export type AICapabilityPresetDefinition = {
 };
 
 export type CapabilityCategory =
+    | "shared-logic"
     | "ai"
     | "storage"
     | "secrets"
@@ -524,6 +526,8 @@ export type StoreCapabilities = {
 };
 
 export interface StoreLifecycle {
+    /** Stop accepting mutations synchronously before shutdown begins draining I/O. */
+    beginShutdown?: () => void;
     init?: (context: StoreFactoryContext) => void | Promise<void>;
     flush?: () => Promise<void>;
     dispose?: () => void | Promise<void>;
@@ -611,7 +615,17 @@ export type SdkHandshakeCompatibilityReport = {
     summary: string;
 };
 
+export type PluginResourceDiagnostics = {
+    sampledAt: string;
+    process: { pid: number; uptimeSeconds: number; rssBytes: number; heapUsedBytes: number };
+    logging: { activeFamilies: number; stderrFallbacks: number; fileFailures: number; lastFailureCode?: string };
+    storage: { activeStores: number; pendingWrites: number; writeFailures: number; lastFailureCode?: string };
+    /** Host measurement; absent when the platform cannot inspect descriptors. */
+    fileDescriptors?: { count: number | null; deltaSinceStart: number | null; status: "ok" | "growing" | "unavailable" };
+};
+
 export type PluginDiagnostics = {
+    resources?: PluginResourceDiagnostics;
     apiVersion: string;
     pluginId: string;
     metadata: PluginMetadata | null;

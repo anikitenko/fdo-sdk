@@ -1,3 +1,4 @@
+import {isSharedLogicCapability} from "../SharedLogic";
 import { PluginMetadata } from "../PluginMetadata";
 import { MESSAGE_TYPE } from "../enums";
 import { BLUEPRINT_V6_ICON_NAMES, isBlueprintV6IconName } from "./blueprintIcons";
@@ -25,6 +26,7 @@ export interface PluginInitPayload {
 }
 
 const KNOWN_PLUGIN_CAPABILITIES = new Set<PluginCapability>([
+    "plugins.shared.use", "plugins.shared.provide",
     "secrets.set", "secrets.get", "secrets.delete", "secrets.list", "secrets.use", "secrets.consume",
     "ssh.use", "ssh.exec", "ssh.profiles.list", "ssh.status.watch", "ssh.terminal.open", "ssh.x11.forward",
     "system.ai",
@@ -239,6 +241,7 @@ export function validatePluginInitPayload(payload: unknown): PluginInitPayload {
         for (const capability of payload.capabilities) {
             if (
                 !KNOWN_PLUGIN_CAPABILITIES.has(capability as PluginCapability)
+                && !isSharedLogicCapability(capability)
                 && !(
                     capability.startsWith(STORAGE_BACKEND_CAPABILITY_PREFIX)
                     && isValidScopeId(capability.slice(STORAGE_BACKEND_CAPABILITY_PREFIX.length))

@@ -1,3 +1,5 @@
+import {SharedLogic} from "./SharedLogic";
+import {PluginScope, PluginCleanup} from "./PluginScope";
 import {Logger} from "./Logger";
 import "./ambient/fdo-host";
 import {Communicator} from "./Communicator";
@@ -142,6 +144,8 @@ export {
     SDK_EDITOR_PACKAGE_JSON_VIRTUAL_PATH,
 } from "./utils/editorSupport";
 
+export * from "./SharedLogic";
+export * from "./PluginScope";
 export * from "./FDOInterface";
 export * from "./PluginMetadata";
 export * from "./QuickActionMixin";
@@ -168,6 +172,32 @@ export class FDO_SDK {
     public readonly secrets: SecretStore = new SecretStore();
     /** Backend-only SSH execution using host-managed profiles. */
     public readonly ssh: SSHClient = new SSHClient();
+    public readonly lifecycle = new PluginScope(error => {
+        this._logger.error(error instanceof Error ? error : new Error(String(error)));
+    });
+    public readonly shared = new SharedLogic(this.lifecycle, error => this._logger.error(error));
+    public get signal(): AbortSignal { return this.lifecycle.signal; }
+    private disposal?: Promise<void>;
+    public onDispose(cleanup: PluginCleanup): () => void { return this.lifecycle.add(cleanup); }
+
+    /** Register resources explicitly; cleanup should be idempotent. */
+    public trackResource<T>(resource: T, cleanup: (resource: T) => void | Promise<unknown>): T {
+        return this.lifecycle.use(resource, cleanup);
+    }
+
+    public dispose(): Promise<void> {
+        if (this.disposal) return this.disposal;
+        let resolve!: () => void;
+        let reject!: (error: Error) => void;
+        this.disposal = new Promise<void>((done, fail) => { resolve = done; reject = fail; });
+        this.communicator.dispose();
+        void this.lifecycle.dispose().then(report => {
+            this._logger.close();
+            if (!report.success) reject(new Error(report.timedOut ? "Plugin cleanup deadline exceeded." : "Plugin cleanup failed."));
+            else resolve();
+        }).catch(() => { this._logger.close(); reject(new Error("Plugin cleanup failed.")); });
+        return this.disposal;
+    }
     private loggerScope: string = "global";
     private readonly communicator: Communicator = new Communicator()
 

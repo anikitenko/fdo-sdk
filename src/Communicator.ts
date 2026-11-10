@@ -15,22 +15,57 @@ type ParentPortMessage = { data?: unknown } | unknown;
 
 interface ParentPortBridge {
     postMessage: (message: HostResponseEnvelope) => void;
-    on: (event: "message", listener: (message: ParentPortMessage) => void) => void;
+    on: (event: string, listener: (...args: any[]) => void) => void;
+    off?: (event: string, listener: (...args: any[]) => void) => void;
+    removeListener?: (event: string, listener: (...args: any[]) => void) => void;
 }
 
 export class Communicator extends EventEmitter {
     private _logger: Logger = new Logger({ context: { component: "Communicator" } })
     private loggerScope: string = "global";
     private readonly parentPort: ParentPortBridge;
+    private closed = false;
+    private messageListener?: (message: ParentPortMessage) => void;
+    private readonly disconnected = () => {
+        this.dispose();
+        void PluginRegistry.shutdown?.().catch(() => {});
+    };
 
     constructor() {
-        super();
-        this.parentPort = this.getParentPortBridge();
-        this.init();
+        super({ captureRejections: true });
+        this.on("error", error => this.reportError(error));
+        try {
+            this.parentPort = this.getParentPortBridge();
+            this.init();
+        } catch (error) {
+            this._logger.close?.();
+            throw error;
+        }
     }
 
     private sendMessage(message: HostResponseEnvelope) {
-        this.parentPort.postMessage(message)
+        if (this.closed) return false;
+        try { this.parentPort.postMessage(message); return true; }
+        catch (error) { this.reportError(error); this.disconnected(); return false; }
+    }
+
+    private reportError(error: unknown): void {
+        try { this.getLogger().error(error instanceof Error ? error : new Error(String(error))); } catch {}
+    }
+
+    public dispose(): void {
+        if (this.closed) return;
+        this.closed = true;
+        const remove = this.parentPort.off ?? this.parentPort.removeListener;
+        if (remove) {
+            if (this.messageListener) remove.call(this.parentPort, 'message', this.messageListener);
+            remove.call(this.parentPort, 'close', this.disconnected);
+            remove.call(this.parentPort, 'disconnect', this.disconnected);
+        }
+        this.removeAllListeners();
+        // Keep a rejection sink for event callbacks already in flight.
+        this.on('error', () => {});
+        this._logger.close?.();
     }
 
     private getParentPortBridge(): ParentPortBridge {
@@ -65,7 +100,8 @@ export class Communicator extends EventEmitter {
     }
 
     private init() {
-        this.parentPort.on("message", (message: ParentPortMessage) => {
+        this.messageListener = (message: ParentPortMessage) => {
+            if (this.closed) return;
             const data = message && typeof message === "object" && "data" in message
                 ? (message as { data?: unknown }).data
                 : message;
@@ -78,7 +114,10 @@ export class Communicator extends EventEmitter {
             } catch (error) {
                 this.getLogger().error(new Error(`Ignoring invalid host message: ${error}`));
             }
-        });
+        };
+        this.parentPort.on("message", this.messageListener);
+        this.parentPort.on('close', this.disconnected);
+        this.parentPort.on('disconnect', this.disconnected);
 
         // 🔹 Register event handlers dynamically
         this.registerEventHandlers();
@@ -130,6 +169,7 @@ export class Communicator extends EventEmitter {
                     response: this.buildInitFailureResponse(error),
                 });
                 this.getLogger().event("plugin.init.response.error", {}, { correlationId });
+                void PluginRegistry.shutdown?.().catch(error => this.reportError(error));
             }
         });
 

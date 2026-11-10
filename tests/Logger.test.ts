@@ -5,6 +5,9 @@ import fs from "fs";
 
 vi.mock("winston", () => {
     const logMethods = {
+        on: vi.fn(),
+        close: vi.fn(),
+        child: vi.fn(function (this: unknown) { return this; }),
         log: vi.fn(),
         info: vi.fn(),
         error: vi.fn(),
@@ -16,6 +19,7 @@ vi.mock("winston", () => {
 
     const winstonMock = {
         createLogger: vi.fn(() => logMethods),
+        config: { npm: { levels: { error: 0, warn: 1, info: 2 } } },
         format: {
             combine: vi.fn(),
             timestamp: vi.fn(),
@@ -24,7 +28,7 @@ vi.mock("winston", () => {
             errors: vi.fn(),
         },
         transports: {
-            DailyRotateFile: vi.fn(),
+            Console: vi.fn().mockImplementation(function (options: unknown) { return options; }),
         },
     };
     return {
@@ -35,7 +39,7 @@ vi.mock("winston", () => {
 
 vi.mock("winston-daily-rotate-file", () => {
     const mocked = vi.fn().mockImplementation(function (this: unknown, options: unknown) {
-        return options;
+        return { ...options as object, on: vi.fn(), logStream: { on: vi.fn() }, close: vi.fn() };
     });
     return {
         default: mocked,
@@ -156,7 +160,14 @@ describe("Logger", () => {
             context: { pluginId: "parent-plugin", component: "parent-component", sessionId: "parent-session" },
         });
 
-        parent.withContext({ component: "child-component" });
+        const transportCount = vi.mocked(DailyRotateFile).mock.calls.length;
+        for (let i = 0; i < 10000; i++) {
+            parent.withContext({ component: "child-component" });
+        }
+        expect(DailyRotateFile).toHaveBeenCalledTimes(transportCount);
+        expect(winstonLoggerMock.child).toHaveBeenLastCalledWith({
+            pluginId: "parent-plugin", component: "child-component", sessionId: "parent-session",
+        });
 
         expect(DailyRotateFile).toHaveBeenCalledWith(
             expect.objectContaining({

@@ -13,7 +13,7 @@ vi.mock('fs', () => {
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
   };
-  const fsMock = { existsSync, readFileSync, mkdirSync, promises };
+  const fsMock = { existsSync, readFileSync, mkdirSync, promises, realpathSync: (filePath: string) => filePath };
   return {
     ...fsMock,
     default: fsMock,
@@ -29,6 +29,7 @@ vi.mock('../src/Logger', () => {
   return {
     Logger: vi.fn().mockImplementation(function () {
       return {
+        close: vi.fn(),
         warn: vi.fn(),
         info: vi.fn(),
         error: vi.fn(),
@@ -42,7 +43,7 @@ vi.mock('../src/Logger', () => {
 });
 
 describe('StoreJson', () => {
-  const mockFilePath = path.resolve(process.cwd(), '.store.json');
+  const mockFilePath = path.resolve(process.cwd(), '.test-store.json');
   let store: ReturnType<typeof createJsonStore>;
 
   beforeEach(() => {
@@ -50,6 +51,28 @@ describe('StoreJson', () => {
     vi.mocked(atomicWriteFile).mockResolvedValue(undefined);
     store = createJsonStore({ filePath: mockFilePath, logger: new Logger() as any });
     store._store = {};
+  });
+
+  afterEach(async () => { await store.dispose!().catch(() => {}); });
+
+  it('releases an owned logger after disposing its pending writes', async () => {
+    const owned = createJsonStore({ filePath: mockFilePath + ".owned" });
+    owned.set('value', 1);
+    await owned.dispose!();
+    expect(owned._logger.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases an owned logger even when flushing fails', async () => {
+    const owned = createJsonStore({ filePath: mockFilePath + ".owned" });
+    vi.mocked(atomicWriteFile).mockRejectedValueOnce(new Error('write failed'));
+    owned.set('value', 1);
+    await expect(owned.dispose!()).rejects.toThrow('JSON storage write failed');
+    expect(owned._logger.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves an injected logger open when disposed', async () => {
+    await store.dispose!();
+    expect(store._logger.close).not.toHaveBeenCalled();
   });
 
   describe('initialization', () => {
@@ -289,7 +312,7 @@ describe('StoreJson', () => {
     await Promise.resolve();
 
     expect(fs.promises.writeFile).toHaveBeenCalledWith(
-      expect.stringContaining('.store.json.corrupt-'),
+      expect.stringContaining('.test-store.json.corrupt-'),
       '{bad json',
       'utf-8'
     );

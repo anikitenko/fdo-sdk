@@ -46,7 +46,7 @@ describe("Communicator", () => {
     });
 
     test("should initialize and call init()", () => {
-        expect(mockOnMessage).toHaveBeenCalledTimes(1);
+        expect(mockOnMessage).toHaveBeenCalledTimes(3);
     });
 
     test("should send a message correctly", () => {
@@ -328,5 +328,31 @@ describe("Communicator", () => {
             expect((communicator as any)._logger.error).toHaveBeenCalled();
             expect(emitSpy).not.toHaveBeenCalled();
         });
+    });
+});
+
+describe('communicator disconnect safety', () => {
+    afterEach(() => { mockPostMessage.mockReset(); });
+    test('contains a postMessage failure even after an asynchronous UI handler', async () => {
+        vi.mocked(PluginRegistry.callHandler).mockResolvedValueOnce('done');
+        const communicator = new Communicator();
+        mockPostMessage.mockImplementation(() => { throw new Error('port closed'); });
+        communicator.emit(MESSAGE_TYPE.UI_MESSAGE, {handler: 'run'});
+        await new Promise(resolve => setImmediate(resolve));
+        expect(communicator.listenerCount(MESSAGE_TYPE.UI_MESSAGE)).toBe(0);
+    });
+    test('removes parent listeners and contains rejected event callbacks', async () => {
+        const off = vi.fn();
+        (process.parentPort as any).off = off;
+        const communicator = new Communicator();
+        communicator.on('custom', async () => { throw new Error('event rejected'); });
+        communicator.emit('custom');
+        await new Promise(resolve => setImmediate(resolve));
+        expect((communicator as any)._logger.error).toHaveBeenCalled();
+        communicator.dispose();
+        expect(off).toHaveBeenCalledWith('message', expect.any(Function));
+        expect(off).toHaveBeenCalledWith('close', expect.any(Function));
+        expect(off).toHaveBeenCalledWith('disconnect', expect.any(Function));
+        delete (process.parentPort as any).off;
     });
 });
