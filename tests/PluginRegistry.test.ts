@@ -557,6 +557,7 @@ describe("PluginRegistry", () => {
 
         test("should not register a store with existing name and log warning", () => {
             const mockStore = {} as any;
+            registerScopedPlugin();
             PluginRegistry.registerStore("default", mockStore);
 
             expect(mockLogger).toHaveBeenCalledWith("Store 'default' is already registered. Skipping...");

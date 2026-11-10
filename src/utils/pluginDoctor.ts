@@ -122,6 +122,23 @@ export function createPluginDoctorReport(
         findings.push(finding);
     };
 
+    const resources = diagnostics.resources;
+    if (resources?.logging?.stderrFallbacks) {
+        addFinding({ code: "LOGGING_STDERR_FALLBACK", severity: "warning", category: "health",
+            message: "File logging failed; plugin logs are being sent to stderr.",
+            remediation: "Review runtime output and filesystem limits, then restart the plugin after resolving the cause." });
+    }
+    if (resources?.storage?.writeFailures) {
+        addFinding({ code: "STORAGE_WRITE_FAILURES", severity: "warning", category: "stores",
+            message: `Storage recorded ${resources.storage.writeFailures} failed writes in this session.`,
+            remediation: "Check disk space and permissions, and flush settings again before stopping the plugin." });
+    }
+    if (resources?.fileDescriptors?.status === "growing") {
+        addFinding({ code: "RESOURCES_DESCRIPTOR_GROWTH", severity: "warning", category: "health",
+            message: "Open file descriptors have grown substantially since the first sample.",
+            remediation: "Inspect plugin files, sockets and watchers; ensure their owners close them on disposal." });
+    }
+
     if (diagnostics.health.status === "degraded" || diagnostics.health.errorCount > 0) {
         addFinding({
             code: "HEALTH_DEGRADED",

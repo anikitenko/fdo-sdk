@@ -72,6 +72,7 @@ function buildMissingCapabilityErrorMessage(capability: PluginCapability, action
 
 function getCapabilityPrerequisites(capability: string): string[] {
     const prerequisites = new Set<string>();
+    if (capability.startsWith("plugins.shared.call.")) prerequisites.add("plugins.shared.use");
     if (capability.startsWith("secrets.") && capability !== "secrets.use") prerequisites.add("secrets.use");
     if (capability.startsWith("ssh.") && capability !== "ssh.use") prerequisites.add("ssh.use");
     if (capability === "ssh.exec" || capability === "ssh.status.watch" || capability === "ssh.terminal.open" || capability === "ssh.x11.forward") {
@@ -320,6 +321,10 @@ export function createNetworkCapabilityBundle(
 }
 
 export function describeCapability(capability: PluginCapability | string): CapabilityDescriptor {
+    if (capability === 'plugins.shared.provide' || capability === 'plugins.shared.use' || capability.startsWith('plugins.shared.call.')) {
+        return {capability, category: 'shared-logic', label: capability === 'plugins.shared.provide' ? 'Export shared plugin logic' : capability === 'plugins.shared.use' ? 'Use shared plugin logic' : `Shared service: ${capability.slice('plugins.shared.call.'.length)}`,
+            description: capability === 'plugins.shared.provide' ? 'Export named methods for other explicitly approved plugins.' : 'Calls exported methods in the provider plugin under its permissions. Requires approval for the exact provider, service and major version.'};
+    }
     if (["secrets.set", "secrets.get", "secrets.delete", "secrets.list", "secrets.use", "secrets.consume"].includes(capability)) {
         return {
             capability,

@@ -18,11 +18,11 @@ jobs:
   commitlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -50,9 +50,9 @@ jobs:
     needs: commitlint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -84,7 +84,7 @@ jobs:
             fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out + "\n");
           '
       - name: Upload Coverage Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: |
@@ -150,4 +150,6 @@ jobs:
             }
       - run: npm run test:examples
       - run: npm run build
+      - name: Plugin resource stability under low file-descriptor limit
+        run: node scripts/stress-plugin-resources.cjs
       - run: npm run verify:pack
