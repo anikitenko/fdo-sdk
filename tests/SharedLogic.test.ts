@@ -121,3 +121,17 @@ test('cancellation before registration is ready prevents the exported method fro
     expect(handler).not.toHaveBeenCalled();
     await registration.dispose();
 });
+
+
+test.each(['clear', 'replace'] as const)('transport %s before the dispatch microtask never sends the cancelled call', async change => {
+    const oldRequest = vi.fn(async () => ({mutated: true}));
+    const replacementRequest = vi.fn(async () => ({mutated: true}));
+    configureSharedLogic({request: oldRequest});
+    const pending = new SharedLogic(scope).call(target, 'check', null);
+    const cancelled = expect(pending).rejects.toMatchObject({code: 'CANCELLED'});
+    // No await here: revocation must beat the already queued request microtask.
+    configureSharedLogic(change === 'clear' ? null : {request: replacementRequest});
+    await cancelled;
+    expect(oldRequest).not.toHaveBeenCalled();
+    expect(replacementRequest).not.toHaveBeenCalled();
+});

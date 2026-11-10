@@ -118,6 +118,9 @@ export class PluginRegistry {
     }
 
     public static useStore(name: string = "default") : StoreWithLifecycle {
+        if (this.shutdownPromise) {
+            throw new Error("Cannot acquire stores while the plugin is shutting down or shut down.");
+        }
         const storeName = this.storeFactories[name] ? name : "default";
 
         if (!this.storeFactories[name]) {
@@ -377,6 +380,7 @@ export class PluginRegistry {
     public static clearPlugin(): Promise<void> {
         const disposal = this.shutdown();
         configureHostServices(null);
+        configureSharedLogic(null);
         this.pluginInstance = null;
         this.pluginMetadata = null;
         this.diagnosticsState = this.createDiagnosticsState();

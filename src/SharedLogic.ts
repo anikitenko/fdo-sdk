@@ -222,7 +222,9 @@ export class SharedLogic {
         options.signal?.addEventListener('abort', cancel, {once: true});
         try {
             const request = Promise.resolve().then(() => {
-                if (this.scope.signal.aborted || options.signal?.aborted) throw new SharedLogicError('CANCELLED');
+                if (stopped || adapterSignal.aborted || this.scope.signal.aborted || options.signal?.aborted) {
+                    throw new SharedLogicError('CANCELLED');
+                }
                 sent = true;
                 return adapter.request({op: 'call', callId, target: {...target}, method, input: payload, timeoutMs});
             });

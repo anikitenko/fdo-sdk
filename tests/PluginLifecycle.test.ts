@@ -1,3 +1,6 @@
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import {EventEmitter} from 'events';
 import {FDO_SDK, PluginRegistry} from '../src';
 import {Logger} from '../src/Logger';
@@ -14,6 +17,8 @@ beforeEach(() => {
 });
 afterEach(async () => {
     await PluginRegistry.shutdown().catch(() => {});
+    PluginRegistry.configureSharedLogic(null);
+    PluginRegistry.configureCapabilities({granted: []});
     vi.restoreAllMocks();
     delete (process as any).parentPort;
 });
@@ -77,4 +82,54 @@ test('observes a rejected async init, returns a clear error, and tears down its 
     await PluginRegistry.shutdown();
     expect(plugin.signal.aborted).toBe(true);
     expect(port.postMessage).toHaveBeenCalledWith(expect.objectContaining({response: expect.objectContaining({error: expect.stringContaining('must be synchronous')})}));
+});
+
+
+test('clearPlugin revokes shared transport immediately and after the shutdown drain', async () => {
+    const plugin = new Fixture();
+    const request = vi.fn(async () => []);
+    PluginRegistry.configureCapabilities({granted: ['plugins.shared.use']});
+    PluginRegistry.configureSharedLogic({request});
+    await expect(plugin.shared.list()).resolves.toEqual([]);
+    request.mockClear();
+
+    const cleared = PluginRegistry.clearPlugin();
+    await expect(plugin.shared.list()).rejects.toMatchObject({code: 'UNAVAILABLE'});
+    await cleared;
+    await expect(plugin.shared.list()).rejects.toMatchObject({code: 'UNAVAILABLE'});
+    expect(request).not.toHaveBeenCalled();
+});
+
+test('shutdown blocks late store acquisition and releases JSON file ownership for the next plugin', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fdo-shutdown-store-'));
+    const baseline = Logger.getDiagnostics().activeFamilies;
+    try {
+        const plugin = new Fixture();
+        PluginRegistry.configureStorage({rootDir: root});
+        PluginRegistry.configureCapabilities({granted: ['storage', 'storage.json']});
+        let acquisitionError: unknown;
+        plugin.onDispose(async () => {
+            await Promise.resolve();
+            try { PluginRegistry.useStore('json'); }
+            catch (error) { acquisitionError = error; }
+        });
+        const shuttingDown = PluginRegistry.shutdown();
+        expect(() => PluginRegistry.useStore()).toThrow('shutting down');
+        await shuttingDown;
+        expect(acquisitionError).toBeInstanceOf(Error);
+        expect((acquisitionError as Error).message).toContain('shutting down');
+        expect(() => PluginRegistry.useStore('json')).toThrow('shutting down');
+        expect(Logger.getDiagnostics().activeFamilies).toBe(baseline);
+
+        new Fixture();
+        const reopened = PluginRegistry.useStore('json');
+        reopened.set('reopened', true);
+        await PluginRegistry.shutdown();
+        expect(JSON.parse(fs.readFileSync(path.join(root, 'lifecycle-fixture', 'store.json'), 'utf8'))).toEqual({reopened: true});
+        expect(Logger.getDiagnostics().activeFamilies).toBe(baseline);
+    } finally {
+        await PluginRegistry.clearAllStoreInstances();
+        PluginRegistry.configureStorage({rootDir: undefined});
+        fs.rmSync(root, {recursive: true, force: true});
+    }
 });
