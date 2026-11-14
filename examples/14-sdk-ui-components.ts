@@ -1,5 +1,5 @@
-import { DOM, createDialog, createConfirmationDialog, createPopover } from '@anikitenko/fdo-sdk/ui';
 import type * as UI from '@anikitenko/fdo-sdk/ui';
+import { DOM, createConfirmationDialog, createDialog, createPopover } from '@anikitenko/fdo-sdk/ui';
 
 /** Serializable markup only; mount after the host inserts it into the frontend. */
 export function sdkComponentMarkup(): string {

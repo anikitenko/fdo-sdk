@@ -23,15 +23,15 @@
  * 5. Log all UI extension interactions
  */
 
-import { 
-  FDO_SDK, 
-  FDOInterface, 
-  PluginMetadata, 
-  PluginRegistry,
-  QuickActionMixin,
-  SidePanelMixin,
-  QuickAction,
-  SidePanelConfig
+import {
+    FDO_SDK,
+    handler,
+    QuickActionMixin,
+    SidePanelMixin,
+    type FDOInterface,
+    type PluginMetadata,
+    type QuickAction,
+    type SidePanelConfig
 } from "@anikitenko/fdo-sdk";
 
 /**
@@ -80,37 +80,7 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * If a handler is missing, clicking the UI extension will result in an error.
    */
   init(): void {
-    try {
       this.log("UIExtensionsPlugin initialized!");
-
-      PluginRegistry.registerHandler("quickSearch", (_data: unknown) => {
-        return this.handleQuickSearch();
-      });
-
-      PluginRegistry.registerHandler("quickCreate", (_data: unknown) => {
-        return this.handleQuickCreate();
-      });
-
-      PluginRegistry.registerHandler("quickSettings", (_data: unknown) => {
-        return this.handleQuickSettings();
-      });
-
-      PluginRegistry.registerHandler("showDashboard", (_data: unknown) => {
-        return this.handleShowDashboard();
-      });
-
-      PluginRegistry.registerHandler("showReports", (_data: unknown) => {
-        return this.handleShowReports();
-      });
-
-      PluginRegistry.registerHandler("showSettings", (_data: unknown) => {
-        return this.handleShowSettings();
-      });
-
-      
-    } catch (error) {
-      this.error(error as Error);
-    }
   }
 
   /**
@@ -198,7 +168,8 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * 
    * @returns Result object
    */
-  private handleQuickSearch(): any {
+  @handler("quickSearch")
+    private handleQuickSearch(): any {
     try {
       this.currentView = "search";
       this.log("Quick search triggered");
@@ -222,7 +193,8 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * 
    * @returns Result object
    */
-  private handleQuickCreate(): any {
+  @handler("quickCreate")
+    private handleQuickCreate(): any {
     try {
       this.currentView = "create";
       this.log("Quick create triggered");
@@ -246,7 +218,8 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * 
    * @returns Result object
    */
-  private handleQuickSettings(): any {
+  @handler("quickSettings")
+    private handleQuickSettings(): any {
     try {
       this.currentView = "settings";
       this.log("Quick settings triggered");
@@ -270,7 +243,8 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * 
    * @returns Result object
    */
-  private handleShowDashboard(): any {
+  @handler("showDashboard")
+    private handleShowDashboard(): any {
     try {
       this.currentView = "dashboard";
       this.log("Dashboard view triggered from side panel");
@@ -294,7 +268,8 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * 
    * @returns Result object
    */
-  private handleShowReports(): any {
+  @handler("showReports")
+    private handleShowReports(): any {
     try {
       this.currentView = "reports";
       this.log("Reports view triggered from side panel");
@@ -318,7 +293,8 @@ export default class UIExtensionsPlugin extends UIExtensionsPluginBase implement
    * 
    * @returns Result object
    */
-  private handleShowSettings(): any {
+  @handler("showSettings")
+    private handleShowSettings(): any {
     try {
       this.currentView = "settings";
       this.log("Settings view triggered from side panel");

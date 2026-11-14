@@ -36,7 +36,9 @@ function canonicalPath(filePath: string): string {
         try {
             return path.join(fs.realpathSync(current), ...suffix);
         } catch (error) {
-            if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+            // ENOTDIR: an ancestor is a file. Defer to the write so the failure is reported by flush().
+            const code = (error as NodeJS.ErrnoException).code;
+            if (code !== "ENOENT" && code !== "ENOTDIR") throw error;
             const parent = path.dirname(current);
             if (parent === current) throw error;
             suffix.unshift(path.basename(current));

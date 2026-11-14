@@ -1,15 +1,15 @@
 import {
-  FDOInterface,
-  FDO_SDK,
-  getInlinePrivilegedActionErrorFormatterSource,
-  PluginCapability,
-  PluginMetadata,
-  PluginRegistry,
-  createProcessCapabilityBundle,
-  createPrivilegedActionBackendRequest,
-  createScopedProcessExecActionRequest,
-
+    type FDOInterface,
+    FDO_SDK,
+    type PluginCapability,
+    type PluginMetadata,
+    createPrivilegedActionBackendRequest,
+    createProcessCapabilityBundle,
+    createScopedProcessExecActionRequest,
+    getInlinePrivilegedActionErrorFormatterSource,
+    handler
 } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "../shared/frontend-lifecycle";
 
 /**
  * Scenario fixture: Custom internal operator tool.
@@ -51,11 +51,6 @@ export default class OperatorCustomToolFixturePlugin extends FDO_SDK implements 
       requestedCapabilities: createProcessCapabilityBundle(this.scopeId),
       handlers: OperatorCustomToolFixturePlugin.HANDLERS,
     });
-
-    PluginRegistry.registerHandler(
-      OperatorCustomToolFixturePlugin.HANDLERS.PREVIEW_STATUS,
-      async () => this.buildPreviewRunnerStatusEnvelope()
-    );
   }
 
   render(): string {
@@ -74,10 +69,10 @@ export default class OperatorCustomToolFixturePlugin extends FDO_SDK implements 
     `;
   }
 
-  renderOnLoad(): string {
-    const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
-    return `
-      (() => {
+  renderOnLoad() {
+        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+        return defineExampleSetup(`
+      ({listen, timeout, interval, onDispose, isDisposed}) => {
         const previewStatusButton = document.getElementById("custom-tool-preview-status");
         const output = document.getElementById("custom-tool-result");
         /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
@@ -123,14 +118,15 @@ export default class OperatorCustomToolFixturePlugin extends FDO_SDK implements 
           }
         };
 
-        previewStatusButton.addEventListener("click", () => {
+        listen(previewStatusButton, "click", () => {
           void runEnvelopeHandler("${OperatorCustomToolFixturePlugin.HANDLERS.PREVIEW_STATUS}");
         });
-      })();
-    `;
-  }
+      }
+        `, "operator-custom-tool-plugin.fixture");
+      }
 
-  private buildPreviewRunnerStatusEnvelope() {
+  @handler(OperatorCustomToolFixturePlugin.HANDLERS.PREVIEW_STATUS)
+    private buildPreviewRunnerStatusEnvelope() {
     const request = createScopedProcessExecActionRequest(this.scopeId, {
       command: "/usr/local/bin/internal-runner",
       args: ["status"],

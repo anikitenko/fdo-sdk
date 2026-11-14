@@ -1,3 +1,4 @@
+import {resolveRenderOnLoadSource} from "../src";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import vm from "node:vm";
 
@@ -15,7 +16,7 @@ beforeAll(async () => {
 describe("System file example", () => {
     test("renderOnLoad extracts request payload from privileged envelope", () => {
         const plugin = new SystemFilePlugin();
-        const onLoad = plugin.renderOnLoad();
+        const onLoad = resolveRenderOnLoadSource(plugin.renderOnLoad());
 
         expect(onLoad).toContain("envelopeResponse?.result?.request ?? envelopeResponse?.request ?? envelopeResponse");
         expect(onLoad).not.toContain('createBackendReq("requestPrivilegedAction", envelope)');
@@ -35,7 +36,7 @@ describe("System file example", () => {
             document: { getElementById: (id: string) => id === "run-system-file-action" ? button : output },
             window: { createBackendReq: backend },
         });
-        vm.runInContext(new SystemFilePlugin().renderOnLoad(), context);
+        vm.runInContext(resolveRenderOnLoadSource(new SystemFilePlugin().renderOnLoad()), context);
         expect(click).toBeTypeOf("function");
         await click!();
         expect(backend).toHaveBeenNthCalledWith(2, "requestPrivilegedAction", request);

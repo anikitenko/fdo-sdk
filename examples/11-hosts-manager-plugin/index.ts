@@ -1,17 +1,17 @@
 import {
     DOM,
+    FDO_SDK,
     createHostsWriteActionRequest,
     createPrivilegedActionBackendRequest,
-
-    FDOInterface,
-    FDO_SDK,
     getInlinePrivilegedActionErrorFormatterSource,
-    PluginCapability,
-    PluginMetadata,
-    PluginRegistry,
+    handler,
+    type FDOInterface,
+    type PluginCapability,
+    type PluginMetadata
 } from "@anikitenko/fdo-sdk";
 import { HostsLogic } from "./HostsLogic";
 // @ts-ignore
+import { defineExampleSetup } from "../shared/frontend-lifecycle";
 import css from "./styles/style.css";
 
 /**
@@ -30,7 +30,7 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
     private static readonly SELECT_HANDLER = "hostsManager.v1.select";
 
     private readonly logic = new HostsLogic();
-    private readonly dom = new DOM();
+    private readonly dom = new DOM().collectStylesFrom();
     private readonly classes = this.buildClassNames(css as Record<string, unknown>);
     private selectedEnvironmentId = this.logic.getEnvironments()[0]?.id ?? "";
 
@@ -72,63 +72,6 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
 
     init(): void {
         this.info("Hosts Manager Plugin Initialized");
-
-        PluginRegistry.registerHandler(HostsManagerPlugin.SELECT_HANDLER, (data: unknown) => {
-            const id = data && typeof data === "object" && "id" in data && typeof data.id === "string" ? data.id : "";
-            if (!id) {
-                return {
-                    ok: false,
-                    error: "Missing environment id.",
-                };
-            }
-            this.selectedEnvironmentId = id;
-            return {
-                ok: true,
-                selectedEnvironmentId: this.selectedEnvironmentId,
-                environments: this.logic.getEnvironments(),
-            };
-        });
-
-        PluginRegistry.registerHandler(HostsManagerPlugin.TOGGLE_HANDLER, (data: unknown) => {
-            const id = data && typeof data === "object" && "id" in data && typeof data.id === "string" ? data.id : "";
-            if (!id) {
-                return {
-                    ok: false,
-                    error: "Missing environment id.",
-                };
-            }
-            this.logic.toggleEnvironment(id);
-            this.selectedEnvironmentId = id;
-            return {
-                ok: true,
-                selectedEnvironmentId: this.selectedEnvironmentId,
-                environments: this.logic.getEnvironments(),
-            };
-        });
-
-        PluginRegistry.registerHandler(HostsManagerPlugin.GET_DATA_HANDLER, () => {
-            return {
-                ok: true,
-                selectedEnvironmentId: this.selectedEnvironmentId,
-                environments: this.logic.getEnvironments(),
-            };
-        });
-
-        PluginRegistry.registerHandler(HostsManagerPlugin.APPLY_HANDLER, () => {
-            const activeRecords = this.logic.getActiveRecords();
-            const request = createHostsWriteActionRequest({
-                action: "system.hosts.write",
-                payload: {
-                    records: activeRecords,
-                    tag: "fdo-managed",
-                    dryRun: false
-                }
-            });
-
-            return createPrivilegedActionBackendRequest(request, {
-                correlationIdPrefix: "hosts-mgr"
-            });
-        });
     }
 
     render(): string {
@@ -181,10 +124,10 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
         return this.dom.renderHTML(content);
     }
 
-    renderOnLoad(): string {
-        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
-        return `
-            (() => {
+    renderOnLoad() {
+            const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+            return defineExampleSetup(`
+            ({listen}) => {
                 const envList = document.getElementById("env-list");
                 const preview = document.getElementById("hosts-preview");
                 const previewTitle = document.getElementById("hosts-preview-title");
@@ -364,21 +307,31 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
                         </div>
                     \`).join('');
 
-                    envList.querySelectorAll("[data-select-id]").forEach((row) => {
-                        row.addEventListener("click", async () => {
-                            const id = row.getAttribute("data-select-id");
-                            await selectEnvironment(id);
-                        });
-                    });
-
-                    envList.querySelectorAll("[data-toggle-id]").forEach((btn) => {
-                        btn.addEventListener("click", async (event) => {
-                            event.stopPropagation();
-                            const id = btn.getAttribute("data-toggle-id");
-                            await toggleEnvironment(id);
-                        });
-                    });
                 };
+
+                listen(envList, "click", async (event) => {
+                    const target = event.target;
+                    if (!(target instanceof Element)) {
+                        return;
+                    }
+
+                    const toggleButton = target.closest("[data-toggle-id]");
+                    if (toggleButton && envList.contains(toggleButton)) {
+                        const id = toggleButton.getAttribute("data-toggle-id");
+                        if (id) {
+                            await toggleEnvironment(id);
+                        }
+                        return;
+                    }
+
+                    const row = target.closest("[data-select-id]");
+                    if (row && envList.contains(row)) {
+                        const id = row.getAttribute("data-select-id");
+                        if (id) {
+                            await selectEnvironment(id);
+                        }
+                    }
+                });
 
                 const reloadData = async () => {
                     const response = await window.createBackendReq("UI_MESSAGE", {
@@ -394,11 +347,11 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
                     }
                 };
 
-                refreshBtn.addEventListener("click", () => {
+                listen(refreshBtn, "click", () => {
                     void reloadData();
                 });
 
-                applyBtn.addEventListener("click", async () => {
+                listen(applyBtn, "click", async () => {
                     applyBtn.disabled = true;
                     const originalText = applyBtn.textContent;
                     applyBtn.textContent = "Applying...";
@@ -440,8 +393,70 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
                 });
 
                 void reloadData();
-            })();
-        `;
+            }
+        `, "index");
+        }
+
+    @handler(HostsManagerPlugin.APPLY_HANDLER)
+    private onHostsManagerPluginAPPLY_HANDLER() {
+        const activeRecords = this.logic.getActiveRecords();
+        const request = createHostsWriteActionRequest({
+                        action: "system.hosts.write",
+                        payload: {
+                            records: activeRecords,
+                            tag: "fdo-managed",
+                            dryRun: false
+                        }
+                    });
+        return createPrivilegedActionBackendRequest(request, {
+                        correlationIdPrefix: "hosts-mgr"
+                    });
+    }
+
+    @handler(HostsManagerPlugin.GET_DATA_HANDLER)
+    private onHostsManagerPluginGET_DATA_HANDLER() {
+        return {
+                        ok: true,
+                        selectedEnvironmentId: this.selectedEnvironmentId,
+                        environments: this.logic.getEnvironments(),
+                    };
+    }
+
+    @handler(HostsManagerPlugin.TOGGLE_HANDLER)
+    private onHostsManagerPluginTOGGLE_HANDLER(data: unknown) {
+        const id = data && typeof data === "object" && "id" in data && typeof data.id === "string" ? data.id : "";
+        if (!id) {
+                        return {
+                            ok: false,
+                            error: "Missing environment id.",
+                        };
+                    }
+
+        this.logic.toggleEnvironment(id);
+        this.selectedEnvironmentId = id;
+        return {
+                        ok: true,
+                        selectedEnvironmentId: this.selectedEnvironmentId,
+                        environments: this.logic.getEnvironments(),
+                    };
+    }
+
+    @handler(HostsManagerPlugin.SELECT_HANDLER)
+    private onHostsManagerPluginSELECT_HANDLER(data: unknown) {
+        const id = data && typeof data === "object" && "id" in data && typeof data.id === "string" ? data.id : "";
+        if (!id) {
+                        return {
+                            ok: false,
+                            error: "Missing environment id.",
+                        };
+                    }
+
+        this.selectedEnvironmentId = id;
+        return {
+                        ok: true,
+                        selectedEnvironmentId: this.selectedEnvironmentId,
+                        environments: this.logic.getEnvironments(),
+                    };
     }
 }
 

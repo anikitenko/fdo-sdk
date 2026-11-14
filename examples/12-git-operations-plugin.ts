@@ -3,27 +3,27 @@ import {
     createNetworkCapabilityBundle,
     createOperatorToolActionRequest,
     createOperatorToolCapabilityPreset,
-    defineRenderOnLoad,
-    createStorageCapabilityPreset,
     createPrivilegedActionBackendRequest,
+    createStorageCapabilityPreset,
     DOM,
     DOMButton,
     DOMInput,
     DOMNested,
     DOMSemantic,
     DOMText,
-    FDOInterface,
     FDO_SDK,
-    PluginCapability,
-    PluginMetadata,
+    type FDOInterface,
+    type PluginCapability,
+    type PluginMetadata,
     PluginRegistry,
-    QuickAction,
-    runCapabilityPreflight,
+    type QuickAction,
     requireCapability,
     requireNetworkScopeCapability,
-    SidePanelConfig,
-    StoreType,
+    runCapabilityPreflight,
+    type SidePanelConfig,
+    type StoreType
 } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "./shared/frontend-lifecycle";
 
 type GitOperationId =
     | "status"
@@ -138,7 +138,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
         icon: "git-repo",
     };
 
-    private readonly dom = new DOM();
+    private readonly dom = new DOM().collectStylesFrom();
     private readonly classNames = this.buildClassNames();
     private readonly gitCommand = this.resolveGitCommand();
     private readonly declaredCapabilities: PluginCapability[] = this.buildDeclaredCapabilities();
@@ -151,7 +151,6 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
 
     constructor() {
         super();
-        this.registerHandlers();
     }
 
     get metadata(): PluginMetadata {
@@ -1970,6 +1969,7 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
             }
         );
 
+        this.dom.collectStylesFrom(text, nested, semantic, button, input, commitMessageInput, aiPromptInput, aiAssistantSelectInput);
         const createActionButton = (id: string, label: string, classes: string[] = [this.cls("button")]) => {
             return button.createStaticButton(
                 label,
@@ -2250,1538 +2250,1535 @@ export default class GitOperationsPlugin extends FDO_SDK implements FDOInterface
     }
 
     renderOnLoad() {
-        function gitOperationsRenderOnLoad(): void {
-            function failOperation(message: string): never { throw new Error(message); }
-            const root = document.getElementById("git-ops-root");
-            const repoInput = document.getElementById("git-repo-path") as HTMLInputElement | null;
-            const outputCode = document.getElementById("git-output-code") as HTMLElement | null;
-            const summaryGrid = document.getElementById("git-summary-grid") as HTMLElement | null;
-            const summaryHint = document.getElementById("git-summary-hint") as HTMLElement | null;
-            const commandMeta = document.getElementById("git-command-meta") as HTMLElement | null;
-            const savePathButton = document.getElementById("git-save-path") as HTMLButtonElement | null;
-            const prefetchOriginalButton = document.getElementById("git-prefetch-original") as HTMLButtonElement | null;
-            const statusButton = document.getElementById("git-run-status") as HTMLButtonElement | null;
-            const branchesButton = document.getElementById("git-run-branches") as HTMLButtonElement | null;
-            const logButton = document.getElementById("git-run-log") as HTMLButtonElement | null;
-            const diffButton = document.getElementById("git-run-diff") as HTMLButtonElement | null;
-            const showButton = document.getElementById("git-run-show") as HTMLButtonElement | null;
-            const fetchButton = document.getElementById("git-run-fetch") as HTMLButtonElement | null;
-            const pullButton = document.getElementById("git-run-pull") as HTMLButtonElement | null;
-            const commitButton = document.getElementById("git-run-commit") as HTMLButtonElement | null;
-            const aiRefreshAssistantsButton = document.getElementById("git-ai-refresh-assistants") as HTMLButtonElement | null;
-            const aiCommitMessageButton = document.getElementById("git-ai-commit-message") as HTMLButtonElement | null;
-            const aiSummarizeOutputButton = document.getElementById("git-ai-summarize-output") as HTMLButtonElement | null;
-            const aiSuggestNextButton = document.getElementById("git-ai-suggest-next") as HTMLButtonElement | null;
-            const commitMessageInput = document.getElementById("git-commit-message") as HTMLInputElement | null;
-            const aiPromptInput = document.getElementById("git-ai-prompt") as HTMLInputElement | null;
-            const aiAssistantSelect = document.getElementById("git-ai-assistant-select") as HTMLSelectElement | null;
-            const snapshotButton = document.getElementById("git-run-snapshot") as HTMLButtonElement | null;
-            const historyList = document.getElementById("git-history-list") as HTMLElement | null;
-            const stagedFilesHint = document.getElementById("git-staged-files") as HTMLElement | null;
+            function gitOperationsRenderOnLoad({listen}: any): void {
+                function failOperation(message: string): never { throw new Error(message); }
+                const root = document.getElementById("git-ops-root");
+                const repoInput = document.getElementById("git-repo-path") as HTMLInputElement | null;
+                const outputCode = document.getElementById("git-output-code") as HTMLElement | null;
+                const summaryGrid = document.getElementById("git-summary-grid") as HTMLElement | null;
+                const summaryHint = document.getElementById("git-summary-hint") as HTMLElement | null;
+                const commandMeta = document.getElementById("git-command-meta") as HTMLElement | null;
+                const savePathButton = document.getElementById("git-save-path") as HTMLButtonElement | null;
+                const prefetchOriginalButton = document.getElementById("git-prefetch-original") as HTMLButtonElement | null;
+                const statusButton = document.getElementById("git-run-status") as HTMLButtonElement | null;
+                const branchesButton = document.getElementById("git-run-branches") as HTMLButtonElement | null;
+                const logButton = document.getElementById("git-run-log") as HTMLButtonElement | null;
+                const diffButton = document.getElementById("git-run-diff") as HTMLButtonElement | null;
+                const showButton = document.getElementById("git-run-show") as HTMLButtonElement | null;
+                const fetchButton = document.getElementById("git-run-fetch") as HTMLButtonElement | null;
+                const pullButton = document.getElementById("git-run-pull") as HTMLButtonElement | null;
+                const commitButton = document.getElementById("git-run-commit") as HTMLButtonElement | null;
+                const aiRefreshAssistantsButton = document.getElementById("git-ai-refresh-assistants") as HTMLButtonElement | null;
+                const aiCommitMessageButton = document.getElementById("git-ai-commit-message") as HTMLButtonElement | null;
+                const aiSummarizeOutputButton = document.getElementById("git-ai-summarize-output") as HTMLButtonElement | null;
+                const aiSuggestNextButton = document.getElementById("git-ai-suggest-next") as HTMLButtonElement | null;
+                const commitMessageInput = document.getElementById("git-commit-message") as HTMLInputElement | null;
+                const aiPromptInput = document.getElementById("git-ai-prompt") as HTMLInputElement | null;
+                const aiAssistantSelect = document.getElementById("git-ai-assistant-select") as HTMLSelectElement | null;
+                const snapshotButton = document.getElementById("git-run-snapshot") as HTMLButtonElement | null;
+                const historyList = document.getElementById("git-history-list") as HTMLElement | null;
+                const stagedFilesHint = document.getElementById("git-staged-files") as HTMLElement | null;
 
-            if (
-                !root ||
-                !repoInput ||
-                !outputCode ||
-                !summaryGrid ||
-                !summaryHint ||
-                !commandMeta ||
-                !savePathButton ||
-                !prefetchOriginalButton ||
-                !statusButton ||
-                !branchesButton ||
-                !logButton ||
-                !diffButton ||
-                !showButton ||
-                !fetchButton ||
-                !pullButton ||
-                !commitButton ||
-                !aiRefreshAssistantsButton ||
-                !aiCommitMessageButton ||
-                !aiSummarizeOutputButton ||
-                !aiSuggestNextButton ||
-                !commitMessageInput ||
-                !aiPromptInput ||
-                !aiAssistantSelect ||
-                !snapshotButton ||
-                !historyList ||
-                !stagedFilesHint
-            ) {
-                return;
-            }
-
-            const readConfig = (attr: string, fallback: string): string => {
-                const value = root.getAttribute(attr);
-                return typeof value === "string" && value.trim() ? value.trim() : fallback;
-            };
-
-            const PREPARE_HANDLER = readConfig("data-prepare-handler", "gitOps.v1.prepare");
-            const SAVE_REPO_PATH_HANDLER = readConfig("data-save-repo-path-handler", "gitOps.v1.saveRepoPath");
-            const PREFETCH_REQUEST_HANDLER = readConfig(
-                "data-prefetch-request-handler",
-                "gitOps.v1.prefetchOriginalRepoRequest"
-            );
-            const PREFETCH_HANDLER = readConfig("data-prefetch-handler", "gitOps.v1.prefetchOriginalRepo");
-            const BUILD_REQUEST_HANDLER = readConfig("data-build-request-handler", "gitOps.v1.buildRequest");
-            const BUILD_COMMIT_REQUEST_HANDLER = readConfig("data-build-commit-request-handler", "gitOps.v1.buildCommitRequest");
-            const BUILD_ID = readConfig("data-build-id", "unknown");
-            const AI_ASSIST_HANDLER = readConfig("data-ai-assist-handler", "fdo.ai.request.v1");
-            const AI_ASSISTANTS_LIST_HANDLER = readConfig("data-ai-assistants-list-handler", "fdo.ai.assistants.list.v1");
-            const AI_ASSISTANT_ID = readConfig("data-ai-assistant-id", "");
-            const AI_ASSISTANT_PURPOSE = readConfig("data-ai-assistant-purpose", "automation");
-            const AI_ASSISTANT_PROVIDER = readConfig("data-ai-assistant-provider", "");
-            const AI_ASSISTANT_MODEL = readConfig("data-ai-assistant-model", "");
-            const ORIGINAL_CONFIGURED_REPO_PUBLIC_KEY = readConfig(
-                "data-original-public-key",
-                "fdo.public.git.originalConfiguredRepository"
-            );
-
-            const classes = {
-                summaryItem: summaryGrid.getAttribute("data-summary-item-class") || "",
-                summaryLabel: summaryGrid.getAttribute("data-summary-label-class") || "",
-                summaryValue: summaryGrid.getAttribute("data-summary-value-class") || "",
-            };
-
-            const operationCatalog: Record<string, { title: string; args: string[] }> = {
-                status: { title: "Status", args: ["status", "--porcelain=v2", "--branch"] },
-                branches: { title: "Branches", args: ["branch", "-vv"] },
-                log: { title: "Recent Log", args: ["log", "--oneline", "--decorate", "-n", "15"] },
-                diffStat: { title: "Diff Stat", args: ["diff", "--stat", "--compact-summary"] },
-                showHead: { title: "Show HEAD", args: ["show", "--stat", "--no-patch", "HEAD"] },
-                fetch: { title: "Fetch --all --prune", args: ["fetch", "--all", "--prune"] },
-                pullFFOnly: { title: "Pull --ff-only", args: ["pull", "--ff-only"] },
-                commitStaged: { title: "Commit Staged", args: ["commit", "-m", "<message>"] },
-            };
-
-            const buttons = [
-                savePathButton,
-                prefetchOriginalButton,
-                statusButton,
-                branchesButton,
-                logButton,
-                diffButton,
-                showButton,
-                fetchButton,
-                pullButton,
-                commitButton,
-                aiRefreshAssistantsButton,
-                aiCommitMessageButton,
-                aiSummarizeOutputButton,
-                aiSuggestNextButton,
-                snapshotButton,
-            ];
-
-            const historyClasses = {
-                item: historyList.getAttribute("data-item-class") || "",
-                primary: historyList.getAttribute("data-primary-class") || "",
-                meta: historyList.getAttribute("data-meta-class") || "",
-                ok: historyList.getAttribute("data-status-ok-class") || "",
-                failed: historyList.getAttribute("data-status-failed-class") || "",
-            };
-
-            type ExecutionHistoryEntry = {
-                id: string;
-                at: string;
-                commandId: string;
-                label: string;
-                category: string;
-                status: "ok" | "failed";
-                dryRun: boolean;
-                durationMs: number;
-                correlationId: string;
-                repoPath: string;
-                errorCode: string;
-                errorMessage: string;
-            };
-
-            type AiAssistantOption = {
-                id: string;
-                name: string;
-                purpose: string;
-                provider: string;
-                model: string;
-                isDefault: boolean;
-            };
-
-            const state: {
-                gitCommand: string;
-                lastStatus: null | GitStatusSummary;
-                storageMode: string;
-                storageDiagnostic: string;
-                originalConfiguredRepoPath: string;
-                originalConfiguredRepoPublicKey: string;
-                lastRemoteRepository: Record<string, unknown> | null;
-                executionHistory: ExecutionHistoryEntry[];
-                runtimePrepared: boolean;
-                aiAssistants: AiAssistantOption[];
-                aiAssistantsLoaded: boolean;
-                aiAssistantsLastLoadedAt: number;
-                aiAssistantsFetchSeq: number;
-                selectedAssistantId: string;
-            } = {
-                gitCommand: "git",
-                lastStatus: null,
-                storageMode: "unknown",
-                storageDiagnostic: "",
-                originalConfiguredRepoPath: "",
-                originalConfiguredRepoPublicKey: ORIGINAL_CONFIGURED_REPO_PUBLIC_KEY,
-                lastRemoteRepository: null,
-                executionHistory: [],
-                runtimePrepared: false,
-                aiAssistants: [],
-                aiAssistantsLoaded: false,
-                aiAssistantsLastLoadedAt: 0,
-                aiAssistantsFetchSeq: 0,
-                selectedAssistantId: AI_ASSISTANT_ID,
-            };
-
-            const notifier = typeof window.Notyf === "function"
-                ? new window.Notyf({ duration: 2600, position: { x: "right", y: "top" } })
-                : null;
-
-            const notifySuccess = (message: string) => {
-                if (notifier && typeof notifier.success === "function") {
-                    notifier.success(message);
+                if (
+                    !root ||
+                    !repoInput ||
+                    !outputCode ||
+                    !summaryGrid ||
+                    !summaryHint ||
+                    !commandMeta ||
+                    !savePathButton ||
+                    !prefetchOriginalButton ||
+                    !statusButton ||
+                    !branchesButton ||
+                    !logButton ||
+                    !diffButton ||
+                    !showButton ||
+                    !fetchButton ||
+                    !pullButton ||
+                    !commitButton ||
+                    !aiRefreshAssistantsButton ||
+                    !aiCommitMessageButton ||
+                    !aiSummarizeOutputButton ||
+                    !aiSuggestNextButton ||
+                    !commitMessageInput ||
+                    !aiPromptInput ||
+                    !aiAssistantSelect ||
+                    !snapshotButton ||
+                    !historyList ||
+                    !stagedFilesHint
+                ) {
+                    return;
                 }
-            };
 
-            const notifyError = (message: string) => {
-                if (notifier && typeof notifier.error === "function") {
-                    notifier.error(message);
-                }
-            };
-
-            const escapeHtml = (value: unknown): string =>
-                String(value ?? "")
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#39;");
-
-            const normalizeAssistantOption = (candidate: unknown, index: number): AiAssistantOption | null => {
-                if (typeof candidate !== "object" || candidate === null) {
-                    return null;
-                }
-                const record = candidate as Record<string, unknown>;
-                const id = typeof record.id === "string" ? record.id.trim() : "";
-                if (!id) {
-                    return null;
-                }
-                const name = typeof record.name === "string" && record.name.trim()
-                    ? record.name.trim()
-                    : `assistant-${index + 1}`;
-                const purpose = typeof record.purpose === "string" ? record.purpose.trim() : "";
-                const provider = typeof record.provider === "string" ? record.provider.trim() : "";
-                const model = typeof record.model === "string" ? record.model.trim() : "";
-                const isDefault = record.default === true || record.isDefault === true;
-                return {
-                    id,
-                    name,
-                    purpose,
-                    provider,
-                    model,
-                    isDefault,
+                const readConfig = (attr: string, fallback: string): string => {
+                    const value = root.getAttribute(attr);
+                    return typeof value === "string" && value.trim() ? value.trim() : fallback;
                 };
-            };
 
-            const assistantLabel = (assistant: AiAssistantOption): string => {
-                const parts = [assistant.name];
-                const providerModel = [assistant.provider, assistant.model].filter(Boolean).join(" / ");
-                if (providerModel) {
-                    parts.push(providerModel);
-                }
-                if (assistant.purpose) {
-                    parts.push(`[${assistant.purpose}]`);
-                }
-                return parts.join(" · ");
-            };
+                const PREPARE_HANDLER = readConfig("data-prepare-handler", "gitOps.v1.prepare");
+                const SAVE_REPO_PATH_HANDLER = readConfig("data-save-repo-path-handler", "gitOps.v1.saveRepoPath");
+                const PREFETCH_REQUEST_HANDLER = readConfig(
+                    "data-prefetch-request-handler",
+                    "gitOps.v1.prefetchOriginalRepoRequest"
+                );
+                const PREFETCH_HANDLER = readConfig("data-prefetch-handler", "gitOps.v1.prefetchOriginalRepo");
+                const BUILD_REQUEST_HANDLER = readConfig("data-build-request-handler", "gitOps.v1.buildRequest");
+                const BUILD_COMMIT_REQUEST_HANDLER = readConfig("data-build-commit-request-handler", "gitOps.v1.buildCommitRequest");
+                const BUILD_ID = readConfig("data-build-id", "unknown");
+                const AI_ASSIST_HANDLER = readConfig("data-ai-assist-handler", "fdo.ai.request.v1");
+                const AI_ASSISTANTS_LIST_HANDLER = readConfig("data-ai-assistants-list-handler", "fdo.ai.assistants.list.v1");
+                const AI_ASSISTANT_ID = readConfig("data-ai-assistant-id", "");
+                const AI_ASSISTANT_PURPOSE = readConfig("data-ai-assistant-purpose", "automation");
+                const AI_ASSISTANT_PROVIDER = readConfig("data-ai-assistant-provider", "");
+                const AI_ASSISTANT_MODEL = readConfig("data-ai-assistant-model", "");
+                const ORIGINAL_CONFIGURED_REPO_PUBLIC_KEY = readConfig(
+                    "data-original-public-key",
+                    "fdo.public.git.originalConfiguredRepository"
+                );
 
-            const setAssistantLoadingState = (loading: boolean) => {
-                aiAssistantSelect.disabled = loading;
-                if (loading) {
-                    aiAssistantSelect.innerHTML = `<option value="">AI Assistant: loading...</option>`;
-                    aiAssistantSelect.value = "";
-                }
-            };
+                const classes = {
+                    summaryItem: summaryGrid.getAttribute("data-summary-item-class") || "",
+                    summaryLabel: summaryGrid.getAttribute("data-summary-label-class") || "",
+                    summaryValue: summaryGrid.getAttribute("data-summary-value-class") || "",
+                };
 
-            const renderAssistantOptions = () => {
-                const options = state.aiAssistants;
-                let nextSelected = options.find((item) => item.id === state.selectedAssistantId)?.id || "";
-                if (!nextSelected) {
-                    const byPurpose = options.find((item) => item.purpose === AI_ASSISTANT_PURPOSE);
-                    const byDefault = options.find((item) => item.isDefault);
-                    nextSelected = (byPurpose || byDefault || options[0] || { id: "" }).id || "";
-                }
-                state.selectedAssistantId = nextSelected;
+                const operationCatalog: Record<string, { title: string; args: string[] }> = {
+                    status: { title: "Status", args: ["status", "--porcelain=v2", "--branch"] },
+                    branches: { title: "Branches", args: ["branch", "-vv"] },
+                    log: { title: "Recent Log", args: ["log", "--oneline", "--decorate", "-n", "15"] },
+                    diffStat: { title: "Diff Stat", args: ["diff", "--stat", "--compact-summary"] },
+                    showHead: { title: "Show HEAD", args: ["show", "--stat", "--no-patch", "HEAD"] },
+                    fetch: { title: "Fetch --all --prune", args: ["fetch", "--all", "--prune"] },
+                    pullFFOnly: { title: "Pull --ff-only", args: ["pull", "--ff-only"] },
+                    commitStaged: { title: "Commit Staged", args: ["commit", "-m", "<message>"] },
+                };
 
-                if (options.length === 0) {
-                    aiAssistantSelect.innerHTML = `<option value="">AI Assistant: default routing (${escapeHtml(AI_ASSISTANT_PURPOSE || "automation")})</option>`;
-                    aiAssistantSelect.value = "";
-                    return;
-                }
-
-                const rows = [
-                    `<option value="">AI Assistant: default routing (${escapeHtml(AI_ASSISTANT_PURPOSE || "automation")})</option>`,
-                    ...options.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(assistantLabel(item))}</option>`),
+                const buttons = [
+                    savePathButton,
+                    prefetchOriginalButton,
+                    statusButton,
+                    branchesButton,
+                    logButton,
+                    diffButton,
+                    showButton,
+                    fetchButton,
+                    pullButton,
+                    commitButton,
+                    aiRefreshAssistantsButton,
+                    aiCommitMessageButton,
+                    aiSummarizeOutputButton,
+                    aiSuggestNextButton,
+                    snapshotButton,
                 ];
-                aiAssistantSelect.innerHTML = rows.join("");
-                aiAssistantSelect.value = state.selectedAssistantId;
-                aiAssistantSelect.disabled = false;
-            };
 
-            const resolveSelectedAssistant = (): AiAssistantOption | null => {
-                const selected = state.aiAssistants.find((item) => item.id === state.selectedAssistantId) || null;
-                if (selected) {
-                    return selected;
-                }
-                const byPurpose = state.aiAssistants.find((item) => item.purpose === AI_ASSISTANT_PURPOSE) || null;
-                const byDefault = state.aiAssistants.find((item) => item.isDefault) || null;
-                const fallback = byPurpose || byDefault || state.aiAssistants[0] || null;
-                state.selectedAssistantId = fallback?.id || "";
-                return fallback;
-            };
+                const historyClasses = {
+                    item: historyList.getAttribute("data-item-class") || "",
+                    primary: historyList.getAttribute("data-primary-class") || "",
+                    meta: historyList.getAttribute("data-meta-class") || "",
+                    ok: historyList.getAttribute("data-status-ok-class") || "",
+                    failed: historyList.getAttribute("data-status-failed-class") || "",
+                };
 
-            const fetchAssistants = async (silent = false, force = false): Promise<void> => {
-                const now = Date.now();
-                if (!force && state.aiAssistantsLoaded && now - state.aiAssistantsLastLoadedAt < 120000) {
-                    return;
-                }
+                type ExecutionHistoryEntry = {
+                    id: string;
+                    at: string;
+                    commandId: string;
+                    label: string;
+                    category: string;
+                    status: "ok" | "failed";
+                    dryRun: boolean;
+                    durationMs: number;
+                    correlationId: string;
+                    repoPath: string;
+                    errorCode: string;
+                    errorMessage: string;
+                };
 
-                const currentSeq = state.aiAssistantsFetchSeq + 1;
-                state.aiAssistantsFetchSeq = currentSeq;
-                if (!silent) {
-                    setAssistantLoadingState(true);
-                }
-                try {
-                    const response = await window.createBackendReq("UI_MESSAGE", {
-                        handler: AI_ASSISTANTS_LIST_HANDLER,
-                        content: {
-                            purpose: AI_ASSISTANT_PURPOSE || undefined,
-                            provider: AI_ASSISTANT_PROVIDER || undefined,
-                            model: AI_ASSISTANT_MODEL || undefined,
-                        },
-                    });
+                type AiAssistantOption = {
+                    id: string;
+                    name: string;
+                    purpose: string;
+                    provider: string;
+                    model: string;
+                    isDefault: boolean;
+                };
 
-                    if (response && (response.ok === false || response.success === false)) {
-                        const code = typeof response.code === "string" ? ` (${response.code})` : "";
-                        const message = typeof response.error === "string"
-                            ? response.error
-                            : "Failed to fetch AI assistants.";
-                        failOperation(`${message}${code}`);
+                const state: {
+                    gitCommand: string;
+                    lastStatus: null | GitStatusSummary;
+                    storageMode: string;
+                    storageDiagnostic: string;
+                    originalConfiguredRepoPath: string;
+                    originalConfiguredRepoPublicKey: string;
+                    lastRemoteRepository: Record<string, unknown> | null;
+                    executionHistory: ExecutionHistoryEntry[];
+                    runtimePrepared: boolean;
+                    aiAssistants: AiAssistantOption[];
+                    aiAssistantsLoaded: boolean;
+                    aiAssistantsLastLoadedAt: number;
+                    aiAssistantsFetchSeq: number;
+                    selectedAssistantId: string;
+                } = {
+                    gitCommand: "git",
+                    lastStatus: null,
+                    storageMode: "unknown",
+                    storageDiagnostic: "",
+                    originalConfiguredRepoPath: "",
+                    originalConfiguredRepoPublicKey: ORIGINAL_CONFIGURED_REPO_PUBLIC_KEY,
+                    lastRemoteRepository: null,
+                    executionHistory: [],
+                    runtimePrepared: false,
+                    aiAssistants: [],
+                    aiAssistantsLoaded: false,
+                    aiAssistantsLastLoadedAt: 0,
+                    aiAssistantsFetchSeq: 0,
+                    selectedAssistantId: AI_ASSISTANT_ID,
+                };
+
+                const notifier = typeof window.Notyf === "function"
+                    ? new window.Notyf({ duration: 2600, position: { x: "right", y: "top" } })
+                    : null;
+
+                const notifySuccess = (message: string) => {
+                    if (notifier && typeof notifier.success === "function") {
+                        notifier.success(message);
                     }
+                };
 
-                    const rawAssistants: unknown[] = Array.isArray(response)
-                        ? response
-                        : (
-                            Array.isArray(response?.assistants)
-                                ? response.assistants
-                                : (Array.isArray(response?.items) ? response.items : [])
-                        );
-                    if (currentSeq !== state.aiAssistantsFetchSeq) {
+                const notifyError = (message: string) => {
+                    if (notifier && typeof notifier.error === "function") {
+                        notifier.error(message);
+                    }
+                };
+
+                const escapeHtml = (value: unknown): string =>
+                    String(value ?? "")
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#39;");
+
+                const normalizeAssistantOption = (candidate: unknown, index: number): AiAssistantOption | null => {
+                    if (typeof candidate !== "object" || candidate === null) {
+                        return null;
+                    }
+                    const record = candidate as Record<string, unknown>;
+                    const id = typeof record.id === "string" ? record.id.trim() : "";
+                    if (!id) {
+                        return null;
+                    }
+                    const name = typeof record.name === "string" && record.name.trim()
+                        ? record.name.trim()
+                        : `assistant-${index + 1}`;
+                    const purpose = typeof record.purpose === "string" ? record.purpose.trim() : "";
+                    const provider = typeof record.provider === "string" ? record.provider.trim() : "";
+                    const model = typeof record.model === "string" ? record.model.trim() : "";
+                    const isDefault = record.default === true || record.isDefault === true;
+                    return {
+                        id,
+                        name,
+                        purpose,
+                        provider,
+                        model,
+                        isDefault,
+                    };
+                };
+
+                const assistantLabel = (assistant: AiAssistantOption): string => {
+                    const parts = [assistant.name];
+                    const providerModel = [assistant.provider, assistant.model].filter(Boolean).join(" / ");
+                    if (providerModel) {
+                        parts.push(providerModel);
+                    }
+                    if (assistant.purpose) {
+                        parts.push(`[${assistant.purpose}]`);
+                    }
+                    return parts.join(" · ");
+                };
+
+                const setAssistantLoadingState = (loading: boolean) => {
+                    aiAssistantSelect.disabled = loading;
+                    if (loading) {
+                        aiAssistantSelect.innerHTML = `<option value="">AI Assistant: loading...</option>`;
+                        aiAssistantSelect.value = "";
+                    }
+                };
+
+                const renderAssistantOptions = () => {
+                    const options = state.aiAssistants;
+                    let nextSelected = options.find((item) => item.id === state.selectedAssistantId)?.id || "";
+                    if (!nextSelected) {
+                        const byPurpose = options.find((item) => item.purpose === AI_ASSISTANT_PURPOSE);
+                        const byDefault = options.find((item) => item.isDefault);
+                        nextSelected = (byPurpose || byDefault || options[0] || { id: "" }).id || "";
+                    }
+                    state.selectedAssistantId = nextSelected;
+
+                    if (options.length === 0) {
+                        aiAssistantSelect.innerHTML = `<option value="">AI Assistant: default routing (${escapeHtml(AI_ASSISTANT_PURPOSE || "automation")})</option>`;
+                        aiAssistantSelect.value = "";
                         return;
                     }
 
-                    const uniqueById = new Set<string>();
-                    state.aiAssistants = rawAssistants
-                        .map((item: unknown, index: number) => normalizeAssistantOption(item, index))
-                        .filter((item: AiAssistantOption | null): item is AiAssistantOption => Boolean(item))
-                        .filter((item) => {
-                            if (uniqueById.has(item.id)) {
-                                return false;
-                            }
-                            uniqueById.add(item.id);
-                            return true;
-                        })
-                        .sort((a, b) => {
-                            if (a.isDefault !== b.isDefault) {
-                                return a.isDefault ? -1 : 1;
-                            }
-                            return a.name.localeCompare(b.name);
-                        })
-                        .slice(0, 100);
-                    state.aiAssistantsLoaded = true;
-                    state.aiAssistantsLastLoadedAt = now;
-                    renderAssistantOptions();
+                    const rows = [
+                        `<option value="">AI Assistant: default routing (${escapeHtml(AI_ASSISTANT_PURPOSE || "automation")})</option>`,
+                        ...options.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(assistantLabel(item))}</option>`),
+                    ];
+                    aiAssistantSelect.innerHTML = rows.join("");
+                    aiAssistantSelect.value = state.selectedAssistantId;
+                    aiAssistantSelect.disabled = false;
+                };
 
-                    if (!silent) {
-                        const note = state.aiAssistants.length > 0
-                            ? `Loaded ${state.aiAssistants.length} AI assistant${state.aiAssistants.length > 1 ? "s" : ""}.`
-                            : "No AI assistants returned. Requests will use host default routing.";
-                        setMeta(note);
-                        notifySuccess("AI assistants refreshed");
+                const resolveSelectedAssistant = (): AiAssistantOption | null => {
+                    const selected = state.aiAssistants.find((item) => item.id === state.selectedAssistantId) || null;
+                    if (selected) {
+                        return selected;
                     }
-                } catch (error) {
+                    const byPurpose = state.aiAssistants.find((item) => item.purpose === AI_ASSISTANT_PURPOSE) || null;
+                    const byDefault = state.aiAssistants.find((item) => item.isDefault) || null;
+                    const fallback = byPurpose || byDefault || state.aiAssistants[0] || null;
+                    state.selectedAssistantId = fallback?.id || "";
+                    return fallback;
+                };
+
+                const fetchAssistants = async (silent = false, force = false): Promise<void> => {
+                    const now = Date.now();
+                    if (!force && state.aiAssistantsLoaded && now - state.aiAssistantsLastLoadedAt < 120000) {
+                        return;
+                    }
+
+                    const currentSeq = state.aiAssistantsFetchSeq + 1;
+                    state.aiAssistantsFetchSeq = currentSeq;
                     if (!silent) {
+                        setAssistantLoadingState(true);
+                    }
+                    try {
+                        const response = await window.createBackendReq("UI_MESSAGE", {
+                            handler: AI_ASSISTANTS_LIST_HANDLER,
+                            content: {
+                                purpose: AI_ASSISTANT_PURPOSE || undefined,
+                                provider: AI_ASSISTANT_PROVIDER || undefined,
+                                model: AI_ASSISTANT_MODEL || undefined,
+                            },
+                        });
+
+                        if (response && (response.ok === false || response.success === false)) {
+                            const code = typeof response.code === "string" ? ` (${response.code})` : "";
+                            const message = typeof response.error === "string"
+                                ? response.error
+                                : "Failed to fetch AI assistants.";
+                            failOperation(`${message}${code}`);
+                        }
+
+                        const rawAssistants: unknown[] = Array.isArray(response)
+                            ? response
+                            : (
+                                Array.isArray(response?.assistants)
+                                    ? response.assistants
+                                    : (Array.isArray(response?.items) ? response.items : [])
+                            );
+                        if (currentSeq !== state.aiAssistantsFetchSeq) {
+                            return;
+                        }
+
+                        const uniqueById = new Set<string>();
+                        state.aiAssistants = rawAssistants
+                            .map((item: unknown, index: number) => normalizeAssistantOption(item, index))
+                            .filter((item: AiAssistantOption | null): item is AiAssistantOption => Boolean(item))
+                            .filter((item) => {
+                                if (uniqueById.has(item.id)) {
+                                    return false;
+                                }
+                                uniqueById.add(item.id);
+                                return true;
+                            })
+                            .sort((a, b) => {
+                                if (a.isDefault !== b.isDefault) {
+                                    return a.isDefault ? -1 : 1;
+                                }
+                                return a.name.localeCompare(b.name);
+                            })
+                            .slice(0, 100);
+                        state.aiAssistantsLoaded = true;
+                        state.aiAssistantsLastLoadedAt = now;
                         renderAssistantOptions();
-                    } else {
-                        aiAssistantSelect.disabled = false;
+
+                        if (!silent) {
+                            const note = state.aiAssistants.length > 0
+                                ? `Loaded ${state.aiAssistants.length} AI assistant${state.aiAssistants.length > 1 ? "s" : ""}.`
+                                : "No AI assistants returned. Requests will use host default routing.";
+                            setMeta(note);
+                            notifySuccess("AI assistants refreshed");
+                        }
+                    } catch (error) {
+                        if (!silent) {
+                            renderAssistantOptions();
+                        } else {
+                            aiAssistantSelect.disabled = false;
+                        }
+                        throw error;
+                    } finally {
+                        if (!silent && currentSeq === state.aiAssistantsFetchSeq) {
+                            aiAssistantSelect.disabled = false;
+                        }
                     }
-                    throw error;
-                } finally {
-                    if (!silent && currentSeq === state.aiAssistantsFetchSeq) {
-                        aiAssistantSelect.disabled = false;
+                };
+
+                const formatIsoToLocal = (isoValue: string): string => {
+                    const date = new Date(isoValue);
+                    if (Number.isNaN(date.getTime())) {
+                        return isoValue;
                     }
-                }
-            };
+                    return date.toLocaleString();
+                };
 
-            const formatIsoToLocal = (isoValue: string): string => {
-                const date = new Date(isoValue);
-                if (Number.isNaN(date.getTime())) {
-                    return isoValue;
-                }
-                return date.toLocaleString();
-            };
+                const parseErrorCodeFromMessage = (message: string): string => {
+                    const match = message.match(/\(([A-Z0-9_]+)\)/);
+                    return match ? match[1] : "";
+                };
 
-            const parseErrorCodeFromMessage = (message: string): string => {
-                const match = message.match(/\(([A-Z0-9_]+)\)/);
-                return match ? match[1] : "";
-            };
-
-            const renderExecutionHistory = () => {
-                if (state.executionHistory.length === 0) {
-                    historyList.innerHTML = `
-                        <div class="${historyClasses.item}">
-                            <p class="${historyClasses.primary}">No command runs yet.</p>
-                            <p class="${historyClasses.meta}">Run a command or snapshot to populate timeline.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                historyList.innerHTML = state.executionHistory
-                    .slice(0, 12)
-                    .map((entry) => {
-                        const statusClass = entry.status === "ok" ? historyClasses.ok : historyClasses.failed;
-                        const dryRunLabel = entry.dryRun ? "dry-run" : "apply";
-                        const correlationLabel = entry.correlationId || "unknown";
-                        const errorSuffix = entry.status === "failed" && entry.errorMessage
-                            ? ` | ${entry.errorMessage}`
-                            : "";
-                        return `
+                const renderExecutionHistory = () => {
+                    if (state.executionHistory.length === 0) {
+                        historyList.innerHTML = `
                             <div class="${historyClasses.item}">
-                                <p class="${historyClasses.primary}">
-                                    ${escapeHtml(entry.label)} ·
-                                    <span class="${statusClass}">${escapeHtml(entry.status.toUpperCase())}</span>
-                                </p>
-                                <p class="${historyClasses.meta}">
-                                    ${escapeHtml(formatIsoToLocal(entry.at))} | ${escapeHtml(entry.category)} | ${escapeHtml(dryRunLabel)} | ${escapeHtml(String(entry.durationMs))}ms
-                                </p>
-                                <p class="${historyClasses.meta}">
-                                    repo: ${escapeHtml(entry.repoPath)} | correlation: ${escapeHtml(correlationLabel)}${escapeHtml(errorSuffix)}
-                                </p>
+                                <p class="${historyClasses.primary}">No command runs yet.</p>
+                                <p class="${historyClasses.meta}">Run a command or snapshot to populate timeline.</p>
                             </div>
                         `;
-                    })
-                    .join("");
-            };
-
-            const pushExecutionHistory = (entry: Omit<ExecutionHistoryEntry, "id" | "at">) => {
-                state.executionHistory.unshift({
-                    id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                    at: new Date().toISOString(),
-                    ...entry,
-                });
-                if (state.executionHistory.length > 30) {
-                    state.executionHistory = state.executionHistory.slice(0, 30);
-                }
-                renderExecutionHistory();
-            };
-
-            const formatPrivilegedActionError = (
-                response: any,
-                options?: { context?: string; fallbackCorrelationId?: string }
-            ): string => {
-                const context = options?.context?.trim() || "Privileged action failed";
-                const fallbackCorrelationId = options?.fallbackCorrelationId?.trim() || "";
-                const correlationId = typeof response?.correlationId === "string" && response.correlationId.trim()
-                    ? response.correlationId.trim()
-                    : (fallbackCorrelationId || "unknown");
-                const errorMessage = typeof response?.error === "string" && response.error.trim()
-                    ? response.error.trim()
-                    : "Unknown host error";
-                const code = typeof response?.code === "string" && response.code.trim()
-                    ? ` (${response.code.trim()})`
-                    : "";
-                const stderr = typeof response?.result?.stderr === "string" ? response.result.stderr.trim() : "";
-                const stdout = typeof response?.result?.stdout === "string" ? response.result.stdout.trim() : "";
-                const detail = stderr || stdout;
-                const detailLabel = stderr ? "stderr" : "stdout";
-                const detailSuffix = detail ? `\n${detailLabel}: ${detail}` : "";
-                return `${context}${code}: ${errorMessage}${detailSuffix}\nCorrelation ID: ${correlationId}`;
-            };
-
-            const appendGitExecutionHints = (
-                baseMessage: string,
-                response: any,
-                options?: { cwdHint?: string }
-            ): string => {
-                const hints: string[] = [];
-                const code = typeof response?.code === "string" ? response.code.trim() : "";
-                const stderr = String(response?.result?.stderr || "");
-                const stdout = String(response?.result?.stdout || "");
-                const combined = `${stderr}\n${stdout}`.toLowerCase();
-                const cwdHint = typeof options?.cwdHint === "string" ? options.cwdHint.trim() : "";
-
-                if (code === "PROCESS_SPAWN_ENOENT" && cwdHint) {
-                    hints.push(
-                        `With process cwd execution, ENOENT can also mean the repository path does not exist or is inaccessible: ${cwdHint}`
-                    );
-                }
-
-                if (combined.includes("not a git repository")) {
-                    hints.push(
-                        "The selected path is not a Git repository. Verify the repository path points to a directory containing a .git folder."
-                    );
-                }
-
-                if (combined.includes("detected dubious ownership") || combined.includes("safe.directory")) {
-                    hints.push(
-                        `Git blocked access due to ownership safety checks. If this repository is trusted, run: git config --global --add safe.directory "${cwdHint || "<repo-path>"}"`
-                    );
-                }
-
-                if (combined.includes("index.lock") || combined.includes("another git process seems to be running")) {
-                    hints.push(
-                        "A Git lock file is present. Ensure no other Git process is running, then remove stale .git/index.lock if safe."
-                    );
-                }
-
-                if (combined.includes("authentication failed") || combined.includes("could not read username")
-                    || combined.includes("repository not found") || combined.includes("permission denied (publickey)")) {
-                    hints.push(
-                        "Remote authentication failed. Refresh credentials/SSH agent and verify remote access permissions."
-                    );
-                }
-
-                if (code === "PROCESS_TIMEOUT") {
-                    hints.push(
-                        "The command timed out. Increase timeoutMs for large repositories or run a narrower operation first."
-                    );
-                }
-
-                if (combined.includes("permission denied") && !combined.includes("publickey")) {
-                    hints.push(
-                        "Filesystem permission error. Verify read/execute access for the selected repository path."
-                    );
-                }
-
-                if (hints.length === 0) {
-                    return baseMessage;
-                }
-
-                const uniqueHints = Array.from(new Set(hints));
-                return `${baseMessage}\nHints:\n${uniqueHints.map((hint) => `- ${hint}`).join("\n")}`;
-            };
-
-            const resolveEnvelopeCorrelationId = (envelope: any): string => {
-                if (typeof envelope?.result?.correlationId === "string" && envelope.result.correlationId.trim()) {
-                    return envelope.result.correlationId.trim();
-                }
-                if (typeof envelope?.correlationId === "string" && envelope.correlationId.trim()) {
-                    return envelope.correlationId.trim();
-                }
-                return "";
-            };
-
-            const extractPrivilegedRequestPayload = (envelope: any, context: string) => {
-                const correlationId = resolveEnvelopeCorrelationId(envelope);
-                const requestPayload =
-                    envelope?.result?.request
-                    ?? envelope?.request
-                    ?? (typeof envelope?.action === "string" ? envelope : null);
-                if (!requestPayload || typeof requestPayload !== "object") {
-                    failOperation(`${context} is missing a privileged request payload.`);
-                }
-
-                return {
-                    correlationId,
-                    requestPayload,
-                };
-            };
-
-            const executePrivilegedRequestEnvelope = async (
-                envelope: any,
-                options: { context: string; cwdHint?: string }
-            ) => {
-                const { correlationId, requestPayload } = extractPrivilegedRequestPayload(envelope, options.context);
-                const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
-                if (response && response.ok) {
-                    return {
-                        response,
-                        correlationId,
-                    };
-                }
-
-                const formatted = formatPrivilegedActionError(response, {
-                    context: options.context,
-                    fallbackCorrelationId: correlationId,
-                });
-                failOperation(appendGitExecutionHints(formatted, response, { cwdHint: options.cwdHint }));
-            };
-
-            const setBusy = (busy: boolean) => {
-                buttons.forEach((button) => {
-                    button.disabled = busy;
-                });
-            };
-
-            const setMeta = (text: string) => {
-                commandMeta.textContent = text;
-            };
-
-            const applySyntaxHighlight = () => {
-                if (window.hljs && typeof window.hljs.highlightElement === "function") {
-                    if (outputCode && outputCode.dataset) {
-                        delete outputCode.dataset.highlighted;
+                        return;
                     }
-                    outputCode.removeAttribute("data-highlighted");
-                    outputCode.classList.remove("hljs");
-                    window.hljs.highlightElement(outputCode);
-                }
-            };
 
-            const setOutput = (text: string) => {
-                outputCode.textContent = text;
-                applySyntaxHighlight();
-            };
+                    historyList.innerHTML = state.executionHistory
+                        .slice(0, 12)
+                        .map((entry) => {
+                            const statusClass = entry.status === "ok" ? historyClasses.ok : historyClasses.failed;
+                            const dryRunLabel = entry.dryRun ? "dry-run" : "apply";
+                            const correlationLabel = entry.correlationId || "unknown";
+                            const errorSuffix = entry.status === "failed" && entry.errorMessage
+                                ? ` | ${entry.errorMessage}`
+                                : "";
+                            return `
+                                <div class="${historyClasses.item}">
+                                    <p class="${historyClasses.primary}">
+                                        ${escapeHtml(entry.label)} ·
+                                        <span class="${statusClass}">${escapeHtml(entry.status.toUpperCase())}</span>
+                                    </p>
+                                    <p class="${historyClasses.meta}">
+                                        ${escapeHtml(formatIsoToLocal(entry.at))} | ${escapeHtml(entry.category)} | ${escapeHtml(dryRunLabel)} | ${escapeHtml(String(entry.durationMs))}ms
+                                    </p>
+                                    <p class="${historyClasses.meta}">
+                                        repo: ${escapeHtml(entry.repoPath)} | correlation: ${escapeHtml(correlationLabel)}${escapeHtml(errorSuffix)}
+                                    </p>
+                                </div>
+                            `;
+                        })
+                        .join("");
+                };
 
-            const renderSummary = (status: typeof state.lastStatus) => {
-                if (!status) {
+                const pushExecutionHistory = (entry: Omit<ExecutionHistoryEntry, "id" | "at">) => {
+                    state.executionHistory.unshift({
+                        id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                        at: new Date().toISOString(),
+                        ...entry,
+                    });
+                    if (state.executionHistory.length > 30) {
+                        state.executionHistory = state.executionHistory.slice(0, 30);
+                    }
+                    renderExecutionHistory();
+                };
+
+                const formatPrivilegedActionError = (
+                    response: any,
+                    options?: { context?: string; fallbackCorrelationId?: string }
+                ): string => {
+                    const context = options?.context?.trim() || "Privileged action failed";
+                    const fallbackCorrelationId = options?.fallbackCorrelationId?.trim() || "";
+                    const correlationId = typeof response?.correlationId === "string" && response.correlationId.trim()
+                        ? response.correlationId.trim()
+                        : (fallbackCorrelationId || "unknown");
+                    const errorMessage = typeof response?.error === "string" && response.error.trim()
+                        ? response.error.trim()
+                        : "Unknown host error";
+                    const code = typeof response?.code === "string" && response.code.trim()
+                        ? ` (${response.code.trim()})`
+                        : "";
+                    const stderr = typeof response?.result?.stderr === "string" ? response.result.stderr.trim() : "";
+                    const stdout = typeof response?.result?.stdout === "string" ? response.result.stdout.trim() : "";
+                    const detail = stderr || stdout;
+                    const detailLabel = stderr ? "stderr" : "stdout";
+                    const detailSuffix = detail ? `\n${detailLabel}: ${detail}` : "";
+                    return `${context}${code}: ${errorMessage}${detailSuffix}\nCorrelation ID: ${correlationId}`;
+                };
+
+                const appendGitExecutionHints = (
+                    baseMessage: string,
+                    response: any,
+                    options?: { cwdHint?: string }
+                ): string => {
+                    const hints: string[] = [];
+                    const code = typeof response?.code === "string" ? response.code.trim() : "";
+                    const stderr = String(response?.result?.stderr || "");
+                    const stdout = String(response?.result?.stdout || "");
+                    const combined = `${stderr}\n${stdout}`.toLowerCase();
+                    const cwdHint = typeof options?.cwdHint === "string" ? options.cwdHint.trim() : "";
+
+                    if (code === "PROCESS_SPAWN_ENOENT" && cwdHint) {
+                        hints.push(
+                            `With process cwd execution, ENOENT can also mean the repository path does not exist or is inaccessible: ${cwdHint}`
+                        );
+                    }
+
+                    if (combined.includes("not a git repository")) {
+                        hints.push(
+                            "The selected path is not a Git repository. Verify the repository path points to a directory containing a .git folder."
+                        );
+                    }
+
+                    if (combined.includes("detected dubious ownership") || combined.includes("safe.directory")) {
+                        hints.push(
+                            `Git blocked access due to ownership safety checks. If this repository is trusted, run: git config --global --add safe.directory "${cwdHint || "<repo-path>"}"`
+                        );
+                    }
+
+                    if (combined.includes("index.lock") || combined.includes("another git process seems to be running")) {
+                        hints.push(
+                            "A Git lock file is present. Ensure no other Git process is running, then remove stale .git/index.lock if safe."
+                        );
+                    }
+
+                    if (combined.includes("authentication failed") || combined.includes("could not read username")
+                        || combined.includes("repository not found") || combined.includes("permission denied (publickey)")) {
+                        hints.push(
+                            "Remote authentication failed. Refresh credentials/SSH agent and verify remote access permissions."
+                        );
+                    }
+
+                    if (code === "PROCESS_TIMEOUT") {
+                        hints.push(
+                            "The command timed out. Increase timeoutMs for large repositories or run a narrower operation first."
+                        );
+                    }
+
+                    if (combined.includes("permission denied") && !combined.includes("publickey")) {
+                        hints.push(
+                            "Filesystem permission error. Verify read/execute access for the selected repository path."
+                        );
+                    }
+
+                    if (hints.length === 0) {
+                        return baseMessage;
+                    }
+
+                    const uniqueHints = Array.from(new Set(hints));
+                    return `${baseMessage}\nHints:\n${uniqueHints.map((hint) => `- ${hint}`).join("\n")}`;
+                };
+
+                const resolveEnvelopeCorrelationId = (envelope: any): string => {
+                    if (typeof envelope?.result?.correlationId === "string" && envelope.result.correlationId.trim()) {
+                        return envelope.result.correlationId.trim();
+                    }
+                    if (typeof envelope?.correlationId === "string" && envelope.correlationId.trim()) {
+                        return envelope.correlationId.trim();
+                    }
+                    return "";
+                };
+
+                const extractPrivilegedRequestPayload = (envelope: any, context: string) => {
+                    const correlationId = resolveEnvelopeCorrelationId(envelope);
+                    const requestPayload =
+                        envelope?.result?.request
+                        ?? envelope?.request
+                        ?? (typeof envelope?.action === "string" ? envelope : null);
+                    if (!requestPayload || typeof requestPayload !== "object") {
+                        failOperation(`${context} is missing a privileged request payload.`);
+                    }
+
+                    return {
+                        correlationId,
+                        requestPayload,
+                    };
+                };
+
+                const executePrivilegedRequestEnvelope = async (
+                    envelope: any,
+                    options: { context: string; cwdHint?: string }
+                ) => {
+                    const { correlationId, requestPayload } = extractPrivilegedRequestPayload(envelope, options.context);
+                    const response = await window.createBackendReq("requestPrivilegedAction", requestPayload);
+                    if (response && response.ok) {
+                        return {
+                            response,
+                            correlationId,
+                        };
+                    }
+
+                    const formatted = formatPrivilegedActionError(response, {
+                        context: options.context,
+                        fallbackCorrelationId: correlationId,
+                    });
+                    failOperation(appendGitExecutionHints(formatted, response, { cwdHint: options.cwdHint }));
+                };
+
+                const setBusy = (busy: boolean) => {
+                    buttons.forEach((button) => {
+                        button.disabled = busy;
+                    });
+                };
+
+                const setMeta = (text: string) => {
+                    commandMeta.textContent = text;
+                };
+
+                const applySyntaxHighlight = () => {
+                    if (window.hljs && typeof window.hljs.highlightElement === "function") {
+                        if (outputCode && outputCode.dataset) {
+                            delete outputCode.dataset.highlighted;
+                        }
+                        outputCode.removeAttribute("data-highlighted");
+                        outputCode.classList.remove("hljs");
+                        window.hljs.highlightElement(outputCode);
+                    }
+                };
+
+                const setOutput = (text: string) => {
+                    outputCode.textContent = text;
+                    applySyntaxHighlight();
+                };
+
+                const renderSummary = (status: typeof state.lastStatus) => {
+                    if (!status) {
+                        summaryGrid.innerHTML = [
+                            ["Branch", "-"],
+                            ["Ahead/Behind", "-"],
+                            ["Staged", "0"],
+                            ["Modified", "0"],
+                            ["Untracked", "0"],
+                            ["Conflicts", "0"],
+                        ].map(([label, value]) => `
+                            <div class="${classes.summaryItem}">
+                                <div class="${classes.summaryLabel}">${escapeHtml(label)}</div>
+                                <div class="${classes.summaryValue}">${escapeHtml(value)}</div>
+                            </div>
+                        `).join("");
+                        summaryHint.textContent = "Run Status to populate summary diagnostics.";
+                        return;
+                    }
+
                     summaryGrid.innerHTML = [
-                        ["Branch", "-"],
-                        ["Ahead/Behind", "-"],
-                        ["Staged", "0"],
-                        ["Modified", "0"],
-                        ["Untracked", "0"],
-                        ["Conflicts", "0"],
+                        ["Branch", status.branch || "(detached)"],
+                        ["Ahead/Behind", status.aheadBehind || "n/a"],
+                        ["Staged", String(status.staged)],
+                        ["Modified", String(status.modified)],
+                        ["Untracked", String(status.untracked)],
+                        ["Conflicts", String(status.conflicts)],
                     ].map(([label, value]) => `
                         <div class="${classes.summaryItem}">
                             <div class="${classes.summaryLabel}">${escapeHtml(label)}</div>
                             <div class="${classes.summaryValue}">${escapeHtml(value)}</div>
                         </div>
                     `).join("");
-                    summaryHint.textContent = "Run Status to populate summary diagnostics.";
-                    return;
-                }
 
-                summaryGrid.innerHTML = [
-                    ["Branch", status.branch || "(detached)"],
-                    ["Ahead/Behind", status.aheadBehind || "n/a"],
-                    ["Staged", String(status.staged)],
-                    ["Modified", String(status.modified)],
-                    ["Untracked", String(status.untracked)],
-                    ["Conflicts", String(status.conflicts)],
-                ].map(([label, value]) => `
-                    <div class="${classes.summaryItem}">
-                        <div class="${classes.summaryLabel}">${escapeHtml(label)}</div>
-                        <div class="${classes.summaryValue}">${escapeHtml(value)}</div>
-                    </div>
-                `).join("");
-
-                summaryHint.textContent = status.isClean
-                    ? "Working tree is clean."
-                    : "Working tree has pending changes.";
-            };
-
-            const renderStagedFilesHint = (status: typeof state.lastStatus) => {
-                if (!status || !Array.isArray(status.stagedFiles) || status.stagedFiles.length === 0) {
-                    stagedFilesHint.textContent = "Staged files: none detected. Stage changes before generating commit message.";
-                    return;
-                }
-                const preview = status.stagedFiles.slice(0, 6).join(", ");
-                const suffix = status.stagedFiles.length > 6 ? ` (+${status.stagedFiles.length - 6} more)` : "";
-                stagedFilesHint.textContent = `Staged files (${status.stagedFiles.length}): ${preview}${suffix}`;
-            };
-
-            const extractPorcelainPath = (line: string): string => {
-                const tabParts = line.split("\t").map((entry) => entry.trim()).filter(Boolean);
-                if (tabParts.length > 0) {
-                    return tabParts[tabParts.length - 1];
-                }
-                const tokens = line.trim().split(/\s+/);
-                return tokens.length > 0 ? tokens[tokens.length - 1] : "";
-            };
-
-            const parseStatusOutput = (stdout: string) => {
-                const stagedFiles = new Set<string>();
-                const status: GitStatusSummary = {
-                    branch: "",
-                    aheadBehind: "",
-                    staged: 0,
-                    modified: 0,
-                    untracked: 0,
-                    conflicts: 0,
-                    isClean: true,
-                    stagedFiles: [],
+                    summaryHint.textContent = status.isClean
+                        ? "Working tree is clean."
+                        : "Working tree has pending changes.";
                 };
 
-                String(stdout || "")
-                    .split(/\r?\n/)
-                    .forEach((line) => {
-                        if (line.startsWith("# branch.head ")) {
-                            status.branch = line.slice("# branch.head ".length).trim();
-                            return;
-                        }
-                        if (line.startsWith("# branch.ab ")) {
-                            status.aheadBehind = line.slice("# branch.ab ".length).trim();
-                            return;
-                        }
-                        if (line.startsWith("? ")) {
-                            status.untracked += 1;
-                            status.isClean = false;
-                            return;
-                        }
-                        if (line.startsWith("u ")) {
-                            status.conflicts += 1;
-                            status.isClean = false;
-                            return;
-                        }
-                        if (line.startsWith("1 ") || line.startsWith("2 ")) {
-                            const parts = line.split(" ");
-                            const xy = parts[1] || "..";
-                            const stagedCode = xy.charAt(0);
-                            const workTreeCode = xy.charAt(1);
-                            if (stagedCode && stagedCode !== "." && stagedCode !== "?" && stagedCode !== " ") {
-                                status.staged += 1;
+                const renderStagedFilesHint = (status: typeof state.lastStatus) => {
+                    if (!status || !Array.isArray(status.stagedFiles) || status.stagedFiles.length === 0) {
+                        stagedFilesHint.textContent = "Staged files: none detected. Stage changes before generating commit message.";
+                        return;
+                    }
+                    const preview = status.stagedFiles.slice(0, 6).join(", ");
+                    const suffix = status.stagedFiles.length > 6 ? ` (+${status.stagedFiles.length - 6} more)` : "";
+                    stagedFilesHint.textContent = `Staged files (${status.stagedFiles.length}): ${preview}${suffix}`;
+                };
+
+                const extractPorcelainPath = (line: string): string => {
+                    const tabParts = line.split("\t").map((entry) => entry.trim()).filter(Boolean);
+                    if (tabParts.length > 0) {
+                        return tabParts[tabParts.length - 1];
+                    }
+                    const tokens = line.trim().split(/\s+/);
+                    return tokens.length > 0 ? tokens[tokens.length - 1] : "";
+                };
+
+                const parseStatusOutput = (stdout: string) => {
+                    const stagedFiles = new Set<string>();
+                    const status: GitStatusSummary = {
+                        branch: "",
+                        aheadBehind: "",
+                        staged: 0,
+                        modified: 0,
+                        untracked: 0,
+                        conflicts: 0,
+                        isClean: true,
+                        stagedFiles: [],
+                    };
+
+                    String(stdout || "")
+                        .split(/\r?\n/)
+                        .forEach((line) => {
+                            if (line.startsWith("# branch.head ")) {
+                                status.branch = line.slice("# branch.head ".length).trim();
+                                return;
+                            }
+                            if (line.startsWith("# branch.ab ")) {
+                                status.aheadBehind = line.slice("# branch.ab ".length).trim();
+                                return;
+                            }
+                            if (line.startsWith("? ")) {
+                                status.untracked += 1;
                                 status.isClean = false;
-                                const path = extractPorcelainPath(line);
-                                if (path) {
-                                    stagedFiles.add(path);
+                                return;
+                            }
+                            if (line.startsWith("u ")) {
+                                status.conflicts += 1;
+                                status.isClean = false;
+                                return;
+                            }
+                            if (line.startsWith("1 ") || line.startsWith("2 ")) {
+                                const parts = line.split(" ");
+                                const xy = parts[1] || "..";
+                                const stagedCode = xy.charAt(0);
+                                const workTreeCode = xy.charAt(1);
+                                if (stagedCode && stagedCode !== "." && stagedCode !== "?" && stagedCode !== " ") {
+                                    status.staged += 1;
+                                    status.isClean = false;
+                                    const path = extractPorcelainPath(line);
+                                    if (path) {
+                                        stagedFiles.add(path);
+                                    }
+                                }
+                                if (workTreeCode && workTreeCode !== "." && workTreeCode !== " ") {
+                                    status.modified += 1;
+                                    status.isClean = false;
                                 }
                             }
-                            if (workTreeCode && workTreeCode !== "." && workTreeCode !== " ") {
-                                status.modified += 1;
-                                status.isClean = false;
+                        });
+
+                    status.stagedFiles = Array.from(stagedFiles).sort((left, right) => left.localeCompare(right));
+                    return status;
+                };
+
+                const persistRepoPath = async (silent = false): Promise<string> => {
+                    const repoPath = String(repoInput.value || "").trim();
+                    if (!repoPath) {
+                        failOperation("Repository path is required.");
+                    }
+
+                    const saveResult = await window.createBackendReq("UI_MESSAGE", {
+                        handler: SAVE_REPO_PATH_HANDLER,
+                        content: { cwd: repoPath },
+                    });
+                    if (saveResult && (saveResult.ok === false || saveResult.success === false)) {
+                        const code = typeof saveResult.code === "string" ? ` (${saveResult.code})` : "";
+                        const message = typeof saveResult.error === "string"
+                            ? saveResult.error
+                            : "Failed to persist repository path.";
+                        failOperation(`${message}${code}`);
+                    }
+
+                    const storedPath = typeof saveResult?.storedPath === "string" ? saveResult.storedPath : repoPath;
+                    const persistence = typeof saveResult?.persistence === "string" ? saveResult.persistence : state.storageMode;
+                    const storageDiagnostic = typeof saveResult?.storageDiagnostic === "string"
+                        ? saveResult.storageDiagnostic.trim()
+                        : "";
+                    const originalConfiguredRepoPath =
+                        typeof saveResult?.originalConfiguredRepoPath === "string" && saveResult.originalConfiguredRepoPath.trim()
+                            ? saveResult.originalConfiguredRepoPath.trim()
+                            : "";
+                    const originalConfiguredRepoPublicKey =
+                        typeof saveResult?.originalConfiguredRepoPublicKey === "string" && saveResult.originalConfiguredRepoPublicKey.trim()
+                            ? saveResult.originalConfiguredRepoPublicKey.trim()
+                            : "";
+
+                    repoInput.value = storedPath;
+                    state.storageMode = persistence;
+                    state.storageDiagnostic = storageDiagnostic;
+                    if (originalConfiguredRepoPath) {
+                        state.originalConfiguredRepoPath = originalConfiguredRepoPath;
+                    }
+                    if (originalConfiguredRepoPublicKey) {
+                        state.originalConfiguredRepoPublicKey = originalConfiguredRepoPublicKey;
+                    }
+
+                    const prefetchHint = state.originalConfiguredRepoPath
+                        ? ` Original configured repository (public key ${state.originalConfiguredRepoPublicKey}): ${state.originalConfiguredRepoPath}.`
+                        : "";
+                    setMeta(`Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Repository path saved (${persistence}).${prefetchHint} No command executed yet.`);
+
+                    if (!silent) {
+                        notifySuccess(`Repository path saved (${persistence})`);
+                    }
+
+                    return storedPath;
+                };
+
+                const prefetchOriginalRepoPath = async (silent = false): Promise<string> => {
+                    const startedAt = Date.now();
+                    let fallbackCwd = String(repoInput.value || "").trim();
+                    try {
+                        fallbackCwd = await persistRepoPath(true);
+                        if (!fallbackCwd) {
+                            failOperation("Repository path is required before prefetch.");
+                        }
+
+                        const requestBuildResponse = await window.createBackendReq("UI_MESSAGE", {
+                            handler: PREFETCH_REQUEST_HANDLER,
+                            content: { cwd: fallbackCwd },
+                        });
+
+                        if (requestBuildResponse && (requestBuildResponse.ok === false || requestBuildResponse.success === false)) {
+                            const code = typeof requestBuildResponse.code === "string" ? ` (${requestBuildResponse.code})` : "";
+                            const message = typeof requestBuildResponse.error === "string"
+                                ? requestBuildResponse.error
+                                : "Failed to prepare original configured repository prefetch request.";
+                            failOperation(`${message}${code}`);
+                        }
+
+                        const originalConfiguredRepoPath =
+                            typeof requestBuildResponse?.originalConfiguredRepoPath === "string"
+                            && requestBuildResponse.originalConfiguredRepoPath.trim()
+                                ? requestBuildResponse.originalConfiguredRepoPath.trim()
+                                : "";
+                        if (!originalConfiguredRepoPath) {
+                            failOperation("Original configured repository is unavailable.");
+                        }
+
+                        const originalConfiguredRepoPublicKey =
+                            typeof requestBuildResponse?.originalConfiguredRepoPublicKey === "string"
+                            && requestBuildResponse.originalConfiguredRepoPublicKey.trim()
+                                ? requestBuildResponse.originalConfiguredRepoPublicKey.trim()
+                                : state.originalConfiguredRepoPublicKey;
+                        const requestEnvelope =
+                            requestBuildResponse?.requestEnvelope && typeof requestBuildResponse.requestEnvelope === "object"
+                                ? requestBuildResponse.requestEnvelope
+                                : null;
+                        let remoteOriginUrl = "";
+                        if (requestEnvelope) {
+                            setMeta(`Resolving remote origin through scoped Git execution (${originalConfiguredRepoPath})...`);
+                            try {
+                                const { response: inspectResponse } = await executePrivilegedRequestEnvelope(requestEnvelope, {
+                                    context: "Git remote origin inspection failed",
+                                    cwdHint: originalConfiguredRepoPath,
+                                });
+                                const remoteOriginStdout = String(inspectResponse?.result?.stdout || "");
+                                remoteOriginUrl = remoteOriginStdout
+                                    .split(/\r?\n/)
+                                    .map((line) => line.trim())
+                                    .find((line) => line.length > 0) || "";
+                            } catch (inspectError) {
+                                const inspectMessage = inspectError instanceof Error ? inspectError.message : String(inspectError);
+                                setMeta(`Remote origin inspection warning: ${inspectMessage}. Continuing without metadata.`);
+                            }
+                        } else {
+                            setMeta("Remote origin inspection envelope is missing. Continuing without metadata prefetch.");
+                        }
+
+                        const response = await window.createBackendReq("UI_MESSAGE", {
+                            handler: PREFETCH_HANDLER,
+                            content: {
+                                cwd: originalConfiguredRepoPath,
+                                remoteOriginUrl,
+                            },
+                        });
+                        if (response && (response.ok === false || response.success === false)) {
+                            const code = typeof response.code === "string" ? ` (${response.code})` : "";
+                            const message = typeof response.error === "string"
+                                ? response.error
+                                : "Failed to prefetch original configured repository.";
+                            failOperation(`${message}${code}`);
+                        }
+
+                    const resolvedOriginalConfiguredRepoPath =
+                        typeof response?.originalConfiguredRepoPath === "string" && response.originalConfiguredRepoPath.trim()
+                            ? response.originalConfiguredRepoPath.trim()
+                            : originalConfiguredRepoPath;
+                    const resolvedOriginalConfiguredRepoPublicKey =
+                        typeof response?.originalConfiguredRepoPublicKey === "string" && response.originalConfiguredRepoPublicKey.trim()
+                            ? response.originalConfiguredRepoPublicKey.trim()
+                            : originalConfiguredRepoPublicKey;
+                    const remoteRepository = response?.remoteRepository && typeof response.remoteRepository === "object"
+                        ? response.remoteRepository as Record<string, unknown>
+                        : null;
+                    const prefetchWarning = typeof response?.warning === "string" ? response.warning.trim() : "";
+                    const storageDiagnostic =
+                        typeof response?.storageDiagnostic === "string" && response.storageDiagnostic.trim()
+                            ? response.storageDiagnostic.trim()
+                            : "";
+                    const persistence =
+                        typeof response?.persistence === "string" && response.persistence.trim()
+                            ? response.persistence.trim()
+                            : state.storageMode;
+
+                    repoInput.value = resolvedOriginalConfiguredRepoPath;
+                    state.originalConfiguredRepoPath = resolvedOriginalConfiguredRepoPath;
+                    state.originalConfiguredRepoPublicKey = resolvedOriginalConfiguredRepoPublicKey;
+                    state.lastRemoteRepository = remoteRepository;
+                    state.storageMode = persistence;
+                    state.storageDiagnostic = storageDiagnostic;
+
+                    const warningSuffix = prefetchWarning
+                        ? ` Metadata prefetch warning: ${prefetchWarning}.`
+                        : "";
+                    setMeta(
+                        `Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Prefetched original configured repository ${resolvedOriginalConfiguredRepoPath} (public key ${resolvedOriginalConfiguredRepoPublicKey}, ${persistence}). Remote origin: ${remoteOriginUrl || "unavailable"}.${warningSuffix} No command executed yet.`
+                    );
+                    if (remoteRepository) {
+                        setOutput(`$ prefetched remote repository metadata\n\n${JSON.stringify(remoteRepository, null, 2)}`);
+                    } else {
+                        const warningText = prefetchWarning
+                            ? `\nwarning: ${prefetchWarning}`
+                            : "";
+                        setOutput(`$ prefetch completed, but no remote repository metadata was returned.${warningText}`);
+                    }
+
+                        if (!silent) {
+                            const repositoryLabel =
+                                remoteRepository && typeof remoteRepository.repository === "string" && remoteRepository.repository.trim()
+                                    ? ` (${remoteRepository.repository})`
+                                    : "";
+                            if (prefetchWarning) {
+                                notifyError(`Original repository prefetched with warning${repositoryLabel}: ${prefetchWarning}`);
+                            } else {
+                                notifySuccess(`Original configured repository prefetched${repositoryLabel}`);
                             }
                         }
-                    });
-
-                status.stagedFiles = Array.from(stagedFiles).sort((left, right) => left.localeCompare(right));
-                return status;
-            };
-
-            const persistRepoPath = async (silent = false): Promise<string> => {
-                const repoPath = String(repoInput.value || "").trim();
-                if (!repoPath) {
-                    failOperation("Repository path is required.");
-                }
-
-                const saveResult = await window.createBackendReq("UI_MESSAGE", {
-                    handler: SAVE_REPO_PATH_HANDLER,
-                    content: { cwd: repoPath },
-                });
-                if (saveResult && (saveResult.ok === false || saveResult.success === false)) {
-                    const code = typeof saveResult.code === "string" ? ` (${saveResult.code})` : "";
-                    const message = typeof saveResult.error === "string"
-                        ? saveResult.error
-                        : "Failed to persist repository path.";
-                    failOperation(`${message}${code}`);
-                }
-
-                const storedPath = typeof saveResult?.storedPath === "string" ? saveResult.storedPath : repoPath;
-                const persistence = typeof saveResult?.persistence === "string" ? saveResult.persistence : state.storageMode;
-                const storageDiagnostic = typeof saveResult?.storageDiagnostic === "string"
-                    ? saveResult.storageDiagnostic.trim()
-                    : "";
-                const originalConfiguredRepoPath =
-                    typeof saveResult?.originalConfiguredRepoPath === "string" && saveResult.originalConfiguredRepoPath.trim()
-                        ? saveResult.originalConfiguredRepoPath.trim()
-                        : "";
-                const originalConfiguredRepoPublicKey =
-                    typeof saveResult?.originalConfiguredRepoPublicKey === "string" && saveResult.originalConfiguredRepoPublicKey.trim()
-                        ? saveResult.originalConfiguredRepoPublicKey.trim()
-                        : "";
-
-                repoInput.value = storedPath;
-                state.storageMode = persistence;
-                state.storageDiagnostic = storageDiagnostic;
-                if (originalConfiguredRepoPath) {
-                    state.originalConfiguredRepoPath = originalConfiguredRepoPath;
-                }
-                if (originalConfiguredRepoPublicKey) {
-                    state.originalConfiguredRepoPublicKey = originalConfiguredRepoPublicKey;
-                }
-
-                const prefetchHint = state.originalConfiguredRepoPath
-                    ? ` Original configured repository (public key ${state.originalConfiguredRepoPublicKey}): ${state.originalConfiguredRepoPath}.`
-                    : "";
-                setMeta(`Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Repository path saved (${persistence}).${prefetchHint} No command executed yet.`);
-
-                if (!silent) {
-                    notifySuccess(`Repository path saved (${persistence})`);
-                }
-
-                return storedPath;
-            };
-
-            const prefetchOriginalRepoPath = async (silent = false): Promise<string> => {
-                const startedAt = Date.now();
-                let fallbackCwd = String(repoInput.value || "").trim();
-                try {
-                    fallbackCwd = await persistRepoPath(true);
-                    if (!fallbackCwd) {
-                        failOperation("Repository path is required before prefetch.");
-                    }
-
-                    const requestBuildResponse = await window.createBackendReq("UI_MESSAGE", {
-                        handler: PREFETCH_REQUEST_HANDLER,
-                        content: { cwd: fallbackCwd },
-                    });
-
-                    if (requestBuildResponse && (requestBuildResponse.ok === false || requestBuildResponse.success === false)) {
-                        const code = typeof requestBuildResponse.code === "string" ? ` (${requestBuildResponse.code})` : "";
-                        const message = typeof requestBuildResponse.error === "string"
-                            ? requestBuildResponse.error
-                            : "Failed to prepare original configured repository prefetch request.";
-                        failOperation(`${message}${code}`);
-                    }
-
-                    const originalConfiguredRepoPath =
-                        typeof requestBuildResponse?.originalConfiguredRepoPath === "string"
-                        && requestBuildResponse.originalConfiguredRepoPath.trim()
-                            ? requestBuildResponse.originalConfiguredRepoPath.trim()
-                            : "";
-                    if (!originalConfiguredRepoPath) {
-                        failOperation("Original configured repository is unavailable.");
-                    }
-
-                    const originalConfiguredRepoPublicKey =
-                        typeof requestBuildResponse?.originalConfiguredRepoPublicKey === "string"
-                        && requestBuildResponse.originalConfiguredRepoPublicKey.trim()
-                            ? requestBuildResponse.originalConfiguredRepoPublicKey.trim()
-                            : state.originalConfiguredRepoPublicKey;
-                    const requestEnvelope =
-                        requestBuildResponse?.requestEnvelope && typeof requestBuildResponse.requestEnvelope === "object"
-                            ? requestBuildResponse.requestEnvelope
-                            : null;
-                    let remoteOriginUrl = "";
-                    if (requestEnvelope) {
-                        setMeta(`Resolving remote origin through scoped Git execution (${originalConfiguredRepoPath})...`);
-                        try {
-                            const { response: inspectResponse } = await executePrivilegedRequestEnvelope(requestEnvelope, {
-                                context: "Git remote origin inspection failed",
-                                cwdHint: originalConfiguredRepoPath,
-                            });
-                            const remoteOriginStdout = String(inspectResponse?.result?.stdout || "");
-                            remoteOriginUrl = remoteOriginStdout
-                                .split(/\r?\n/)
-                                .map((line) => line.trim())
-                                .find((line) => line.length > 0) || "";
-                        } catch (inspectError) {
-                            const inspectMessage = inspectError instanceof Error ? inspectError.message : String(inspectError);
-                            setMeta(`Remote origin inspection warning: ${inspectMessage}. Continuing without metadata.`);
-                        }
-                    } else {
-                        setMeta("Remote origin inspection envelope is missing. Continuing without metadata prefetch.");
-                    }
-
-                    const response = await window.createBackendReq("UI_MESSAGE", {
-                        handler: PREFETCH_HANDLER,
-                        content: {
-                            cwd: originalConfiguredRepoPath,
-                            remoteOriginUrl,
-                        },
-                    });
-                    if (response && (response.ok === false || response.success === false)) {
-                        const code = typeof response.code === "string" ? ` (${response.code})` : "";
-                        const message = typeof response.error === "string"
-                            ? response.error
-                            : "Failed to prefetch original configured repository.";
-                        failOperation(`${message}${code}`);
-                    }
-
-                const resolvedOriginalConfiguredRepoPath =
-                    typeof response?.originalConfiguredRepoPath === "string" && response.originalConfiguredRepoPath.trim()
-                        ? response.originalConfiguredRepoPath.trim()
-                        : originalConfiguredRepoPath;
-                const resolvedOriginalConfiguredRepoPublicKey =
-                    typeof response?.originalConfiguredRepoPublicKey === "string" && response.originalConfiguredRepoPublicKey.trim()
-                        ? response.originalConfiguredRepoPublicKey.trim()
-                        : originalConfiguredRepoPublicKey;
-                const remoteRepository = response?.remoteRepository && typeof response.remoteRepository === "object"
-                    ? response.remoteRepository as Record<string, unknown>
-                    : null;
-                const prefetchWarning = typeof response?.warning === "string" ? response.warning.trim() : "";
-                const storageDiagnostic =
-                    typeof response?.storageDiagnostic === "string" && response.storageDiagnostic.trim()
-                        ? response.storageDiagnostic.trim()
-                        : "";
-                const persistence =
-                    typeof response?.persistence === "string" && response.persistence.trim()
-                        ? response.persistence.trim()
-                        : state.storageMode;
-
-                repoInput.value = resolvedOriginalConfiguredRepoPath;
-                state.originalConfiguredRepoPath = resolvedOriginalConfiguredRepoPath;
-                state.originalConfiguredRepoPublicKey = resolvedOriginalConfiguredRepoPublicKey;
-                state.lastRemoteRepository = remoteRepository;
-                state.storageMode = persistence;
-                state.storageDiagnostic = storageDiagnostic;
-
-                const warningSuffix = prefetchWarning
-                    ? ` Metadata prefetch warning: ${prefetchWarning}.`
-                    : "";
-                setMeta(
-                    `Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Prefetched original configured repository ${resolvedOriginalConfiguredRepoPath} (public key ${resolvedOriginalConfiguredRepoPublicKey}, ${persistence}). Remote origin: ${remoteOriginUrl || "unavailable"}.${warningSuffix} No command executed yet.`
-                );
-                if (remoteRepository) {
-                    setOutput(`$ prefetched remote repository metadata\n\n${JSON.stringify(remoteRepository, null, 2)}`);
-                } else {
-                    const warningText = prefetchWarning
-                        ? `\nwarning: ${prefetchWarning}`
-                        : "";
-                    setOutput(`$ prefetch completed, but no remote repository metadata was returned.${warningText}`);
-                }
-
-                    if (!silent) {
-                        const repositoryLabel =
-                            remoteRepository && typeof remoteRepository.repository === "string" && remoteRepository.repository.trim()
-                                ? ` (${remoteRepository.repository})`
-                                : "";
-                        if (prefetchWarning) {
-                            notifyError(`Original repository prefetched with warning${repositoryLabel}: ${prefetchWarning}`);
-                        } else {
-                            notifySuccess(`Original configured repository prefetched${repositoryLabel}`);
-                        }
-                    }
-                    pushExecutionHistory({
-                        commandId: "prefetch",
-                        label: "Prefetch Original Repo",
-                        category: "profile",
-                        status: "ok",
-                        dryRun: false,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: "",
-                        repoPath: resolvedOriginalConfiguredRepoPath,
-                        errorCode: "",
-                        errorMessage: "",
-                    });
-                    return resolvedOriginalConfiguredRepoPath;
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    pushExecutionHistory({
-                        commandId: "prefetch",
-                        label: "Prefetch Original Repo",
-                        category: "profile",
-                        status: "failed",
-                        dryRun: false,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: "",
-                        repoPath: fallbackCwd || "(unknown)",
-                        errorCode: parseErrorCodeFromMessage(message),
-                        errorMessage: message,
-                    });
-                    const degradedPath = fallbackCwd || state.originalConfiguredRepoPath || String(repoInput.value || "").trim();
-                    setMeta(`Prefetch degraded [build: ${BUILD_ID}]: ${message}`);
-                    setOutput(`$ prefetch degraded\n\n${message}`);
-                    if (!silent) {
-                        notifyError(`Prefetch degraded: ${message}`);
-                    }
-                    return degradedPath;
-                }
-            };
-
-            const runOperation = async (
-                operationId: string,
-                options: { append?: boolean; silent?: boolean; dryRun?: boolean } = {}
-            ) => {
-                const { append = false, silent = false, dryRun = false } = options;
-                const operation = operationCatalog[operationId];
-                if (!operation) {
-                    failOperation(`Unknown operation: ${operationId}`);
-                }
-                if (!state.runtimePrepared) {
-                    failOperation("Runtime is not prepared yet. Wait for initialization to finish.");
-                }
-                const startedAt = Date.now();
-
-                let repoPath = "";
-                try {
-                    repoPath = await persistRepoPath(true);
-                    if (!append) {
-                        setOutput(`$ preparing ${operation.title}...\n`);
-                    }
-                    setMeta(`Running ${operation.title} in ${repoPath}...`);
-
-                    const envelope = await window.createBackendReq("UI_MESSAGE", {
-                        handler: BUILD_REQUEST_HANDLER,
-                        content: {
-                            operation: operationId,
-                            cwd: repoPath,
-                            dryRun,
-                        },
-                    });
-
-                    if (!envelope || typeof envelope !== "object") {
-                        failOperation("Plugin backend did not return a structured privileged request envelope.");
-                    }
-
-                    const envelopeCorrelationId = resolveEnvelopeCorrelationId(envelope);
-                    const backendErrorCode = typeof envelope?.code === "string" ? envelope.code.trim() : "";
-                    const backendErrorText = typeof envelope?.error === "string" ? envelope.error.trim() : "";
-                    const backendFailed = (
-                        envelope?.ok === false
-                        || envelope?.success === false
-                        || Boolean(backendErrorCode)
-                        || Boolean(backendErrorText)
-                    );
-                    if (backendFailed) {
-                        const codeSuffix = backendErrorCode ? ` (${backendErrorCode})` : "";
-                        failOperation(
-                            `Git request preparation failed${codeSuffix}: ${backendErrorText || "Plugin backend handler failed."}\nCorrelation ID: ${envelopeCorrelationId || "unknown"}`
-                        );
-                    }
-
-                    const { response } = await executePrivilegedRequestEnvelope(envelope, {
-                        context: "Git operation failed",
-                        cwdHint: repoPath,
-                    });
-
-                    const result = response.result || {};
-                    const stdout = String(result.stdout || "");
-                    const stderr = String(result.stderr || "");
-                    const header = [
-                        `$ ${result.command || state.gitCommand} ${Array.isArray(result.args) ? result.args.join(" ") : operation.args.join(" ")}`,
-                        `# cwd: ${result.cwd || repoPath}`,
-                        `# mode: ${dryRun ? "dry-run" : "apply"}`,
-                        `# correlationId: ${response.correlationId || envelopeCorrelationId || "unknown"}`,
-                    ].join("\n");
-                    const payload = stdout || stderr
-                        ? [stdout, stderr ? `[stderr]\n${stderr}` : ""].filter(Boolean).join("\n\n")
-                        : "(no output)";
-                    const block = `${header}\n\n${payload}`;
-
-                    if (append) {
-                        const previous = String(outputCode.textContent || "").trim();
-                        setOutput(`${previous}\n\n${block}`.trim());
-                    } else {
-                        setOutput(block);
-                    }
-
-                    if (operationId === "status") {
-                        state.lastStatus = parseStatusOutput(stdout);
-                        renderSummary(state.lastStatus);
-                        renderStagedFilesHint(state.lastStatus);
-                    }
-
-                    const finalCorrelationId = response.correlationId || envelopeCorrelationId || "unknown";
-                    pushExecutionHistory({
-                        commandId: operationId,
-                        label: operation.title,
-                        category: "operation",
-                        status: "ok",
-                        dryRun,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: finalCorrelationId,
-                        repoPath: repoPath || "(unknown)",
-                        errorCode: "",
-                        errorMessage: "",
-                    });
-                    setMeta(`Last run: ${operation.title}${dryRun ? " [dry-run]" : ""} succeeded (correlation: ${finalCorrelationId}). Path persistence: ${state.storageMode}.`);
-                    if (!silent) {
-                        notifySuccess(`${operation.title}${dryRun ? " (dry-run)" : ""} completed`);
-                    }
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    pushExecutionHistory({
-                        commandId: operationId,
-                        label: operation.title,
-                        category: "operation",
-                        status: "failed",
-                        dryRun,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: "",
-                        repoPath: repoPath || String(repoInput.value || "").trim() || "(unknown)",
-                        errorCode: parseErrorCodeFromMessage(message),
-                        errorMessage: message,
-                    });
-                    throw error;
-                }
-            };
-
-            const runSnapshot = async () => {
-                setBusy(true);
-                const startedAt = Date.now();
-                try {
-                    const sequence = ["status", "branches", "log", "diffStat", "showHead"] as const;
-                    setMeta("Running snapshot sequence (status, branches, log, diff stat, show head)...");
-                    setOutput("$ running Git snapshot sequence...");
-                    for (let index = 0; index < sequence.length; index += 1) {
-                        const operationId = sequence[index];
-                        await runOperation(operationId, { append: index > 0, silent: true });
-                    }
-                    setMeta(`Snapshot completed successfully. Path persistence: ${state.storageMode}.`);
-                    notifySuccess("Git snapshot completed");
-                    pushExecutionHistory({
-                        commandId: "snapshot",
-                        label: "Run Snapshot Sequence",
-                        category: "inspect",
-                        status: "ok",
-                        dryRun: false,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: "",
-                        repoPath: String(repoInput.value || "").trim() || "(unknown)",
-                        errorCode: "",
-                        errorMessage: "",
-                    });
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    setOutput(`Snapshot failed:\n${message}`);
-                    setMeta(`Snapshot failed: ${message}`);
-                    notifyError("Snapshot failed");
-                    pushExecutionHistory({
-                        commandId: "snapshot",
-                        label: "Run Snapshot Sequence",
-                        category: "inspect",
-                        status: "failed",
-                        dryRun: false,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: "",
-                        repoPath: String(repoInput.value || "").trim() || "(unknown)",
-                        errorCode: parseErrorCodeFromMessage(message),
-                        errorMessage: message,
-                    });
-                } finally {
-                    setBusy(false);
-                }
-            };
-
-            const requestAiAssistance = async (
-                task: "commit-message" | "summarize-output" | "suggest-next-command"
-            ): Promise<string> => {
-                const startedAt = Date.now();
-                try {
-                    if (!state.aiAssistantsLoaded) {
-                        await fetchAssistants(true);
-                    }
-                    const repoPath = String(repoInput.value || "").trim();
-                    const selectedAssistant = resolveSelectedAssistant();
-                    if (task === "commit-message" && (!state.lastStatus || state.lastStatus.staged === 0)) {
-                        failOperation("No staged files detected. Run Status and stage changes before generating a commit message.");
-                    }
-                    const prompt = task === "commit-message"
-                        ? [
-                            "Generate a concise conventional-commit-style message for staged git changes.",
-                            "Use only staged files as scope context.",
-                            "Prefer imperative mood and keep it under 72 characters when possible.",
-                        ].join(" ")
-                        : (task === "summarize-output"
-                            ? [
-                                "Summarize the latest command output for an operator.",
-                                "Keep 3-5 short bullet points with key signals only.",
-                                "Do not generate commit messages.",
-                            ].join(" ")
-                            : [
-                                "Suggest the safest next Git command based on repository status/output.",
-                                "Include one concrete command plus brief reason.",
-                                "Do not generate commit messages.",
-                            ].join(" "));
-                    const outputText = String(outputCode.textContent || "");
-                    const response = await window.createBackendReq("UI_MESSAGE", {
-                        handler: AI_ASSIST_HANDLER,
-                        content: {
-                            task,
-                            repoPath,
-                            summary: {
-                                ...state.lastStatus,
-                                stagedFiles: Array.isArray(state.lastStatus?.stagedFiles) ? state.lastStatus.stagedFiles : [],
-                            },
-                            prompt: `${prompt} ${String(aiPromptInput.value || "").trim()}`.trim(),
-                            commandOutput: outputText,
-                            recentRuns: state.executionHistory.slice(0, 8),
-                            assistantId: selectedAssistant?.id || state.selectedAssistantId || undefined,
-                            assistantPurpose: AI_ASSISTANT_PURPOSE || "automation",
-                            assistantProvider: selectedAssistant?.provider || AI_ASSISTANT_PROVIDER || undefined,
-                            assistantModel: selectedAssistant?.model || AI_ASSISTANT_MODEL || undefined,
-                            stagedFiles: Array.isArray(state.lastStatus?.stagedFiles) ? state.lastStatus.stagedFiles : [],
-                        },
-                    });
-                    if (response && (response.ok === false || response.success === false)) {
-                        const code = typeof response.code === "string" ? ` (${response.code})` : "";
-                        const message = typeof response.error === "string"
-                            ? response.error
-                            : `AI assistance failed for task "${task}".`;
-                        failOperation(`${message}${code}`);
-                    }
-
-                    const aiText = typeof response?.commitMessage === "string"
-                        ? response.commitMessage.trim()
-                        : (
-                            typeof response?.message === "string"
-                                ? response.message.trim()
-                                : (typeof response?.text === "string" ? response.text.trim() : "")
-                        );
-                    if (!aiText) {
-                        failOperation(`AI provider returned an empty response for task "${task}".`);
-                    }
-
-                    if (task === "commit-message") {
-                        commitMessageInput.value = aiText;
-                    } else if (task === "summarize-output") {
-                        setOutput(`$ ai summary\n\n${aiText}`);
-                    } else if (task === "suggest-next-command") {
-                        setMeta(`AI suggestion: ${aiText}`);
-                    }
-                    const source = typeof response?.source === "string" ? response.source : "unknown";
-                    const warning = typeof response?.warning === "string" ? response.warning.trim() : "";
-                    const assistantInfo = selectedAssistant
-                        ? `${selectedAssistant.name} (${selectedAssistant.provider || "unknown"} / ${selectedAssistant.model || "default"})`
-                        : `host default (${AI_ASSISTANT_PURPOSE || "automation"})`;
-                    setMeta(`AI assistance completed for task "${task}" (${source}, assistant: ${assistantInfo}).`);
-                    if (warning) {
-                        notifyError(warning);
-                    } else {
-                        notifySuccess(`AI assistance completed (${task})`);
-                    }
-                    pushExecutionHistory({
-                        commandId: `ai:${task}`,
-                        label: `AI Assist (${task})`,
-                        category: "workspace",
-                        status: "ok",
-                        dryRun: false,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: "",
-                        repoPath: repoPath || "(unknown)",
-                        errorCode: "",
-                        errorMessage: "",
-                    });
-                    return aiText;
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    pushExecutionHistory({
-                        commandId: `ai:${task}`,
-                        label: `AI Assist (${task})`,
-                        category: "workspace",
-                        status: "failed",
-                        dryRun: false,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: "",
-                        repoPath: String(repoInput.value || "").trim() || "(unknown)",
-                        errorCode: parseErrorCodeFromMessage(message),
-                        errorMessage: message,
-                    });
-                    throw error;
-                }
-            };
-
-            const runCommitStaged = async (dryRun = false) => {
-                const startedAt = Date.now();
-                let repoPath = "";
-                const message = String(commitMessageInput.value || "").trim();
-                if (!message) {
-                    failOperation("Commit message is required. Generate one with AI or enter it manually.");
-                }
-
-                try {
-                    repoPath = await persistRepoPath(true);
-                    setMeta(`Running commit in ${repoPath}...`);
-                    const envelope = await window.createBackendReq("UI_MESSAGE", {
-                        handler: BUILD_COMMIT_REQUEST_HANDLER,
-                        content: {
-                            cwd: repoPath,
-                            message,
-                            dryRun,
-                        },
-                    });
-
-                    if (!envelope || typeof envelope !== "object") {
-                        failOperation("Plugin backend did not return a structured commit request envelope.");
-                    }
-
-                    const envelopeCorrelationId = resolveEnvelopeCorrelationId(envelope);
-                    const backendErrorCode = typeof envelope?.code === "string" ? envelope.code.trim() : "";
-                    const backendErrorText = typeof envelope?.error === "string" ? envelope.error.trim() : "";
-                    if (
-                        envelope?.ok === false
-                        || envelope?.success === false
-                        || Boolean(backendErrorCode)
-                        || Boolean(backendErrorText)
-                    ) {
-                        const codeSuffix = backendErrorCode ? ` (${backendErrorCode})` : "";
-                        failOperation(
-                            `Commit request preparation failed${codeSuffix}: ${backendErrorText || "Plugin backend handler failed."}\nCorrelation ID: ${envelopeCorrelationId || "unknown"}`
-                        );
-                    }
-
-                    const { response } = await executePrivilegedRequestEnvelope(envelope, {
-                        context: "Git commit failed",
-                        cwdHint: repoPath,
-                    });
-                    const result = response.result || {};
-                    const stdout = String(result.stdout || "");
-                    const stderr = String(result.stderr || "");
-                    const header = [
-                        `$ ${result.command || state.gitCommand} ${Array.isArray(result.args) ? result.args.join(" ") : operationCatalog.commitStaged.args.join(" ")}`,
-                        `# cwd: ${result.cwd || repoPath}`,
-                        `# mode: ${dryRun ? "dry-run" : "apply"}`,
-                        `# correlationId: ${response.correlationId || envelopeCorrelationId || "unknown"}`,
-                    ].join("\n");
-                    const payload = stdout || stderr
-                        ? [stdout, stderr ? `[stderr]\n${stderr}` : ""].filter(Boolean).join("\n\n")
-                        : "(no output)";
-                    setOutput(`${header}\n\n${payload}`);
-
-                    pushExecutionHistory({
-                        commandId: "commitStaged",
-                        label: "Commit Staged Changes",
-                        category: "workspace",
-                        status: "ok",
-                        dryRun,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: response.correlationId || envelopeCorrelationId || "unknown",
-                        repoPath: repoPath || "(unknown)",
-                        errorCode: "",
-                        errorMessage: "",
-                    });
-                    setMeta(`Commit ${dryRun ? "(dry-run) " : ""}completed successfully.`);
-                    notifySuccess(`Commit ${dryRun ? "(dry-run) " : ""}completed`);
-                } catch (error) {
-                    const errMessage = error instanceof Error ? error.message : String(error);
-                    pushExecutionHistory({
-                        commandId: "commitStaged",
-                        label: "Commit Staged Changes",
-                        category: "workspace",
-                        status: "failed",
-                        dryRun,
-                        durationMs: Date.now() - startedAt,
-                        correlationId: "",
-                        repoPath: repoPath || String(repoInput.value || "").trim() || "(unknown)",
-                        errorCode: parseErrorCodeFromMessage(errMessage),
-                        errorMessage: errMessage,
-                    });
-                    throw error;
-                }
-            };
-
-            const bindOperation = (button: HTMLButtonElement, operationId: string) => {
-                button.addEventListener("click", async () => {
-                    setBusy(true);
-                    try {
-                        await runOperation(operationId);
+                        pushExecutionHistory({
+                            commandId: "prefetch",
+                            label: "Prefetch Original Repo",
+                            category: "profile",
+                            status: "ok",
+                            dryRun: false,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: "",
+                            repoPath: resolvedOriginalConfiguredRepoPath,
+                            errorCode: "",
+                            errorMessage: "",
+                        });
+                        return resolvedOriginalConfiguredRepoPath;
                     } catch (error) {
                         const message = error instanceof Error ? error.message : String(error);
-                        setOutput(`Operation failed:\n${message}`);
-                        setMeta(`Last operation failed: ${message}`);
-                        notifyError("Git operation failed");
+                        pushExecutionHistory({
+                            commandId: "prefetch",
+                            label: "Prefetch Original Repo",
+                            category: "profile",
+                            status: "failed",
+                            dryRun: false,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: "",
+                            repoPath: fallbackCwd || "(unknown)",
+                            errorCode: parseErrorCodeFromMessage(message),
+                            errorMessage: message,
+                        });
+                        const degradedPath = fallbackCwd || state.originalConfiguredRepoPath || String(repoInput.value || "").trim();
+                        setMeta(`Prefetch degraded [build: ${BUILD_ID}]: ${message}`);
+                        setOutput(`$ prefetch degraded\n\n${message}`);
+                        if (!silent) {
+                            notifyError(`Prefetch degraded: ${message}`);
+                        }
+                        return degradedPath;
+                    }
+                };
+
+                const runOperation = async (
+                    operationId: string,
+                    options: { append?: boolean; silent?: boolean; dryRun?: boolean } = {}
+                ) => {
+                    const { append = false, silent = false, dryRun = false } = options;
+                    const operation = operationCatalog[operationId];
+                    if (!operation) {
+                        failOperation(`Unknown operation: ${operationId}`);
+                    }
+                    if (!state.runtimePrepared) {
+                        failOperation("Runtime is not prepared yet. Wait for initialization to finish.");
+                    }
+                    const startedAt = Date.now();
+
+                    let repoPath = "";
+                    try {
+                        repoPath = await persistRepoPath(true);
+                        if (!append) {
+                            setOutput(`$ preparing ${operation.title}...\n`);
+                        }
+                        setMeta(`Running ${operation.title} in ${repoPath}...`);
+
+                        const envelope = await window.createBackendReq("UI_MESSAGE", {
+                            handler: BUILD_REQUEST_HANDLER,
+                            content: {
+                                operation: operationId,
+                                cwd: repoPath,
+                                dryRun,
+                            },
+                        });
+
+                        if (!envelope || typeof envelope !== "object") {
+                            failOperation("Plugin backend did not return a structured privileged request envelope.");
+                        }
+
+                        const envelopeCorrelationId = resolveEnvelopeCorrelationId(envelope);
+                        const backendErrorCode = typeof envelope?.code === "string" ? envelope.code.trim() : "";
+                        const backendErrorText = typeof envelope?.error === "string" ? envelope.error.trim() : "";
+                        const backendFailed = (
+                            envelope?.ok === false
+                            || envelope?.success === false
+                            || Boolean(backendErrorCode)
+                            || Boolean(backendErrorText)
+                        );
+                        if (backendFailed) {
+                            const codeSuffix = backendErrorCode ? ` (${backendErrorCode})` : "";
+                            failOperation(
+                                `Git request preparation failed${codeSuffix}: ${backendErrorText || "Plugin backend handler failed."}\nCorrelation ID: ${envelopeCorrelationId || "unknown"}`
+                            );
+                        }
+
+                        const { response } = await executePrivilegedRequestEnvelope(envelope, {
+                            context: "Git operation failed",
+                            cwdHint: repoPath,
+                        });
+
+                        const result = response.result || {};
+                        const stdout = String(result.stdout || "");
+                        const stderr = String(result.stderr || "");
+                        const header = [
+                            `$ ${result.command || state.gitCommand} ${Array.isArray(result.args) ? result.args.join(" ") : operation.args.join(" ")}`,
+                            `# cwd: ${result.cwd || repoPath}`,
+                            `# mode: ${dryRun ? "dry-run" : "apply"}`,
+                            `# correlationId: ${response.correlationId || envelopeCorrelationId || "unknown"}`,
+                        ].join("\n");
+                        const payload = stdout || stderr
+                            ? [stdout, stderr ? `[stderr]\n${stderr}` : ""].filter(Boolean).join("\n\n")
+                            : "(no output)";
+                        const block = `${header}\n\n${payload}`;
+
+                        if (append) {
+                            const previous = String(outputCode.textContent || "").trim();
+                            setOutput(`${previous}\n\n${block}`.trim());
+                        } else {
+                            setOutput(block);
+                        }
+
+                        if (operationId === "status") {
+                            state.lastStatus = parseStatusOutput(stdout);
+                            renderSummary(state.lastStatus);
+                            renderStagedFilesHint(state.lastStatus);
+                        }
+
+                        const finalCorrelationId = response.correlationId || envelopeCorrelationId || "unknown";
+                        pushExecutionHistory({
+                            commandId: operationId,
+                            label: operation.title,
+                            category: "operation",
+                            status: "ok",
+                            dryRun,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: finalCorrelationId,
+                            repoPath: repoPath || "(unknown)",
+                            errorCode: "",
+                            errorMessage: "",
+                        });
+                        setMeta(`Last run: ${operation.title}${dryRun ? " [dry-run]" : ""} succeeded (correlation: ${finalCorrelationId}). Path persistence: ${state.storageMode}.`);
+                        if (!silent) {
+                            notifySuccess(`${operation.title}${dryRun ? " (dry-run)" : ""} completed`);
+                        }
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        pushExecutionHistory({
+                            commandId: operationId,
+                            label: operation.title,
+                            category: "operation",
+                            status: "failed",
+                            dryRun,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: "",
+                            repoPath: repoPath || String(repoInput.value || "").trim() || "(unknown)",
+                            errorCode: parseErrorCodeFromMessage(message),
+                            errorMessage: message,
+                        });
+                        throw error;
+                    }
+                };
+
+                const runSnapshot = async () => {
+                    setBusy(true);
+                    const startedAt = Date.now();
+                    try {
+                        const sequence = ["status", "branches", "log", "diffStat", "showHead"] as const;
+                        setMeta("Running snapshot sequence (status, branches, log, diff stat, show head)...");
+                        setOutput("$ running Git snapshot sequence...");
+                        for (let index = 0; index < sequence.length; index += 1) {
+                            const operationId = sequence[index];
+                            await runOperation(operationId, { append: index > 0, silent: true });
+                        }
+                        setMeta(`Snapshot completed successfully. Path persistence: ${state.storageMode}.`);
+                        notifySuccess("Git snapshot completed");
+                        pushExecutionHistory({
+                            commandId: "snapshot",
+                            label: "Run Snapshot Sequence",
+                            category: "inspect",
+                            status: "ok",
+                            dryRun: false,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: "",
+                            repoPath: String(repoInput.value || "").trim() || "(unknown)",
+                            errorCode: "",
+                            errorMessage: "",
+                        });
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        setOutput(`Snapshot failed:\n${message}`);
+                        setMeta(`Snapshot failed: ${message}`);
+                        notifyError("Snapshot failed");
+                        pushExecutionHistory({
+                            commandId: "snapshot",
+                            label: "Run Snapshot Sequence",
+                            category: "inspect",
+                            status: "failed",
+                            dryRun: false,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: "",
+                            repoPath: String(repoInput.value || "").trim() || "(unknown)",
+                            errorCode: parseErrorCodeFromMessage(message),
+                            errorMessage: message,
+                        });
+                    } finally {
+                        setBusy(false);
+                    }
+                };
+
+                const requestAiAssistance = async (
+                    task: "commit-message" | "summarize-output" | "suggest-next-command"
+                ): Promise<string> => {
+                    const startedAt = Date.now();
+                    try {
+                        if (!state.aiAssistantsLoaded) {
+                            await fetchAssistants(true);
+                        }
+                        const repoPath = String(repoInput.value || "").trim();
+                        const selectedAssistant = resolveSelectedAssistant();
+                        if (task === "commit-message" && (!state.lastStatus || state.lastStatus.staged === 0)) {
+                            failOperation("No staged files detected. Run Status and stage changes before generating a commit message.");
+                        }
+                        const prompt = task === "commit-message"
+                            ? [
+                                "Generate a concise conventional-commit-style message for staged git changes.",
+                                "Use only staged files as scope context.",
+                                "Prefer imperative mood and keep it under 72 characters when possible.",
+                            ].join(" ")
+                            : (task === "summarize-output"
+                                ? [
+                                    "Summarize the latest command output for an operator.",
+                                    "Keep 3-5 short bullet points with key signals only.",
+                                    "Do not generate commit messages.",
+                                ].join(" ")
+                                : [
+                                    "Suggest the safest next Git command based on repository status/output.",
+                                    "Include one concrete command plus brief reason.",
+                                    "Do not generate commit messages.",
+                                ].join(" "));
+                        const outputText = String(outputCode.textContent || "");
+                        const response = await window.createBackendReq("UI_MESSAGE", {
+                            handler: AI_ASSIST_HANDLER,
+                            content: {
+                                task,
+                                repoPath,
+                                summary: {
+                                    ...state.lastStatus,
+                                    stagedFiles: Array.isArray(state.lastStatus?.stagedFiles) ? state.lastStatus.stagedFiles : [],
+                                },
+                                prompt: `${prompt} ${String(aiPromptInput.value || "").trim()}`.trim(),
+                                commandOutput: outputText,
+                                recentRuns: state.executionHistory.slice(0, 8),
+                                assistantId: selectedAssistant?.id || state.selectedAssistantId || undefined,
+                                assistantPurpose: AI_ASSISTANT_PURPOSE || "automation",
+                                assistantProvider: selectedAssistant?.provider || AI_ASSISTANT_PROVIDER || undefined,
+                                assistantModel: selectedAssistant?.model || AI_ASSISTANT_MODEL || undefined,
+                                stagedFiles: Array.isArray(state.lastStatus?.stagedFiles) ? state.lastStatus.stagedFiles : [],
+                            },
+                        });
+                        if (response && (response.ok === false || response.success === false)) {
+                            const code = typeof response.code === "string" ? ` (${response.code})` : "";
+                            const message = typeof response.error === "string"
+                                ? response.error
+                                : `AI assistance failed for task "${task}".`;
+                            failOperation(`${message}${code}`);
+                        }
+
+                        const aiText = typeof response?.commitMessage === "string"
+                            ? response.commitMessage.trim()
+                            : (
+                                typeof response?.message === "string"
+                                    ? response.message.trim()
+                                    : (typeof response?.text === "string" ? response.text.trim() : "")
+                            );
+                        if (!aiText) {
+                            failOperation(`AI provider returned an empty response for task "${task}".`);
+                        }
+
+                        if (task === "commit-message") {
+                            commitMessageInput.value = aiText;
+                        } else if (task === "summarize-output") {
+                            setOutput(`$ ai summary\n\n${aiText}`);
+                        } else if (task === "suggest-next-command") {
+                            setMeta(`AI suggestion: ${aiText}`);
+                        }
+                        const source = typeof response?.source === "string" ? response.source : "unknown";
+                        const warning = typeof response?.warning === "string" ? response.warning.trim() : "";
+                        const assistantInfo = selectedAssistant
+                            ? `${selectedAssistant.name} (${selectedAssistant.provider || "unknown"} / ${selectedAssistant.model || "default"})`
+                            : `host default (${AI_ASSISTANT_PURPOSE || "automation"})`;
+                        setMeta(`AI assistance completed for task "${task}" (${source}, assistant: ${assistantInfo}).`);
+                        if (warning) {
+                            notifyError(warning);
+                        } else {
+                            notifySuccess(`AI assistance completed (${task})`);
+                        }
+                        pushExecutionHistory({
+                            commandId: `ai:${task}`,
+                            label: `AI Assist (${task})`,
+                            category: "workspace",
+                            status: "ok",
+                            dryRun: false,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: "",
+                            repoPath: repoPath || "(unknown)",
+                            errorCode: "",
+                            errorMessage: "",
+                        });
+                        return aiText;
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        pushExecutionHistory({
+                            commandId: `ai:${task}`,
+                            label: `AI Assist (${task})`,
+                            category: "workspace",
+                            status: "failed",
+                            dryRun: false,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: "",
+                            repoPath: String(repoInput.value || "").trim() || "(unknown)",
+                            errorCode: parseErrorCodeFromMessage(message),
+                            errorMessage: message,
+                        });
+                        throw error;
+                    }
+                };
+
+                const runCommitStaged = async (dryRun = false) => {
+                    const startedAt = Date.now();
+                    let repoPath = "";
+                    const message = String(commitMessageInput.value || "").trim();
+                    if (!message) {
+                        failOperation("Commit message is required. Generate one with AI or enter it manually.");
+                    }
+
+                    try {
+                        repoPath = await persistRepoPath(true);
+                        setMeta(`Running commit in ${repoPath}...`);
+                        const envelope = await window.createBackendReq("UI_MESSAGE", {
+                            handler: BUILD_COMMIT_REQUEST_HANDLER,
+                            content: {
+                                cwd: repoPath,
+                                message,
+                                dryRun,
+                            },
+                        });
+
+                        if (!envelope || typeof envelope !== "object") {
+                            failOperation("Plugin backend did not return a structured commit request envelope.");
+                        }
+
+                        const envelopeCorrelationId = resolveEnvelopeCorrelationId(envelope);
+                        const backendErrorCode = typeof envelope?.code === "string" ? envelope.code.trim() : "";
+                        const backendErrorText = typeof envelope?.error === "string" ? envelope.error.trim() : "";
+                        if (
+                            envelope?.ok === false
+                            || envelope?.success === false
+                            || Boolean(backendErrorCode)
+                            || Boolean(backendErrorText)
+                        ) {
+                            const codeSuffix = backendErrorCode ? ` (${backendErrorCode})` : "";
+                            failOperation(
+                                `Commit request preparation failed${codeSuffix}: ${backendErrorText || "Plugin backend handler failed."}\nCorrelation ID: ${envelopeCorrelationId || "unknown"}`
+                            );
+                        }
+
+                        const { response } = await executePrivilegedRequestEnvelope(envelope, {
+                            context: "Git commit failed",
+                            cwdHint: repoPath,
+                        });
+                        const result = response.result || {};
+                        const stdout = String(result.stdout || "");
+                        const stderr = String(result.stderr || "");
+                        const header = [
+                            `$ ${result.command || state.gitCommand} ${Array.isArray(result.args) ? result.args.join(" ") : operationCatalog.commitStaged.args.join(" ")}`,
+                            `# cwd: ${result.cwd || repoPath}`,
+                            `# mode: ${dryRun ? "dry-run" : "apply"}`,
+                            `# correlationId: ${response.correlationId || envelopeCorrelationId || "unknown"}`,
+                        ].join("\n");
+                        const payload = stdout || stderr
+                            ? [stdout, stderr ? `[stderr]\n${stderr}` : ""].filter(Boolean).join("\n\n")
+                            : "(no output)";
+                        setOutput(`${header}\n\n${payload}`);
+
+                        pushExecutionHistory({
+                            commandId: "commitStaged",
+                            label: "Commit Staged Changes",
+                            category: "workspace",
+                            status: "ok",
+                            dryRun,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: response.correlationId || envelopeCorrelationId || "unknown",
+                            repoPath: repoPath || "(unknown)",
+                            errorCode: "",
+                            errorMessage: "",
+                        });
+                        setMeta(`Commit ${dryRun ? "(dry-run) " : ""}completed successfully.`);
+                        notifySuccess(`Commit ${dryRun ? "(dry-run) " : ""}completed`);
+                    } catch (error) {
+                        const errMessage = error instanceof Error ? error.message : String(error);
+                        pushExecutionHistory({
+                            commandId: "commitStaged",
+                            label: "Commit Staged Changes",
+                            category: "workspace",
+                            status: "failed",
+                            dryRun,
+                            durationMs: Date.now() - startedAt,
+                            correlationId: "",
+                            repoPath: repoPath || String(repoInput.value || "").trim() || "(unknown)",
+                            errorCode: parseErrorCodeFromMessage(errMessage),
+                            errorMessage: errMessage,
+                        });
+                        throw error;
+                    }
+                };
+
+                const bindOperation = (button: HTMLButtonElement, operationId: string) => {
+                    listen(button, "click", async () => {
+                        setBusy(true);
+                        try {
+                            await runOperation(operationId);
+                        } catch (error) {
+                            const message = error instanceof Error ? error.message : String(error);
+                            setOutput(`Operation failed:\n${message}`);
+                            setMeta(`Last operation failed: ${message}`);
+                            notifyError("Git operation failed");
+                        } finally {
+                            setBusy(false);
+                        }
+                    });
+                };
+
+                bindOperation(statusButton, "status");
+                bindOperation(branchesButton, "branches");
+                bindOperation(logButton, "log");
+                bindOperation(diffButton, "diffStat");
+                bindOperation(showButton, "showHead");
+                bindOperation(fetchButton, "fetch");
+                bindOperation(pullButton, "pullFFOnly");
+                listen(commitButton, "click", async () => {
+                    setBusy(true);
+                    try {
+                        await runCommitStaged(false);
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        setOutput(`Commit failed:\n${message}`);
+                        setMeta(`Commit failed: ${message}`);
+                        notifyError("Commit failed");
                     } finally {
                         setBusy(false);
                     }
                 });
-            };
-
-            bindOperation(statusButton, "status");
-            bindOperation(branchesButton, "branches");
-            bindOperation(logButton, "log");
-            bindOperation(diffButton, "diffStat");
-            bindOperation(showButton, "showHead");
-            bindOperation(fetchButton, "fetch");
-            bindOperation(pullButton, "pullFFOnly");
-            commitButton.addEventListener("click", async () => {
-                setBusy(true);
-                try {
-                    await runCommitStaged(false);
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    setOutput(`Commit failed:\n${message}`);
-                    setMeta(`Commit failed: ${message}`);
-                    notifyError("Commit failed");
-                } finally {
-                    setBusy(false);
-                }
-            });
-            aiCommitMessageButton.addEventListener("click", async () => {
-                setBusy(true);
-                try {
-                    await requestAiAssistance("commit-message");
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    setMeta(`AI commit message generation failed: ${message}`);
-                    notifyError("AI commit message generation failed");
-                } finally {
-                    setBusy(false);
-                }
-            });
-            aiSummarizeOutputButton.addEventListener("click", async () => {
-                setBusy(true);
-                try {
-                    await requestAiAssistance("summarize-output");
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    setMeta(`AI output summary failed: ${message}`);
-                    notifyError("AI output summary failed");
-                } finally {
-                    setBusy(false);
-                }
-            });
-            aiSuggestNextButton.addEventListener("click", async () => {
-                setBusy(true);
-                try {
-                    await requestAiAssistance("suggest-next-command");
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    setMeta(`AI next-step suggestion failed: ${message}`);
-                    notifyError("AI next-step suggestion failed");
-                } finally {
-                    setBusy(false);
-                }
-            });
-            aiRefreshAssistantsButton.addEventListener("click", async () => {
-                setBusy(true);
-                try {
-                    await fetchAssistants(false, true);
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    setMeta(`AI assistant refresh failed: ${message}`);
-                    notifyError("AI assistant refresh failed");
-                } finally {
-                    setBusy(false);
-                }
-            });
-            aiAssistantSelect.addEventListener("change", () => {
-                state.selectedAssistantId = String(aiAssistantSelect.value || "").trim();
-                const selectedAssistant = state.aiAssistants.find((item) => item.id === state.selectedAssistantId) || null;
-                if (selectedAssistant) {
-                    setMeta(`AI assistant selected: ${selectedAssistant.name} (${selectedAssistant.provider || "unknown"} / ${selectedAssistant.model || "default"}).`);
-                    return;
-                }
-                setMeta(`AI assistant routing uses host default (${AI_ASSISTANT_PURPOSE || "automation"} purpose).`);
-            });
-
-            savePathButton.addEventListener("click", async () => {
-                setBusy(true);
-                try {
-                    await persistRepoPath(false);
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    setMeta(`Save path failed: ${message}`);
-                    notifyError("Failed to save repository path");
-                } finally {
-                    setBusy(false);
-                }
-            });
-
-            prefetchOriginalButton.addEventListener("click", async () => {
-                setBusy(true);
-                try {
-                    repoInput.value = await prefetchOriginalRepoPath(false);
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    setMeta(`Prefetch failed: ${message}`);
-                    notifyError("Failed to prefetch original repository");
-                } finally {
-                    setBusy(false);
-                }
-            });
-
-            snapshotButton.addEventListener("click", () => {
-                void runSnapshot();
-            });
-
-            repoInput.addEventListener("blur", () => {
-                void persistRepoPath(true).catch(() => {
-                    // Keep blur-save best-effort; explicit Save button surfaces errors.
+                listen(aiCommitMessageButton, "click", async () => {
+                    setBusy(true);
+                    try {
+                        await requestAiAssistance("commit-message");
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        setMeta(`AI commit message generation failed: ${message}`);
+                        notifyError("AI commit message generation failed");
+                    } finally {
+                        setBusy(false);
+                    }
                 });
-            });
+                listen(aiSummarizeOutputButton, "click", async () => {
+                    setBusy(true);
+                    try {
+                        await requestAiAssistance("summarize-output");
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        setMeta(`AI output summary failed: ${message}`);
+                        notifyError("AI output summary failed");
+                    } finally {
+                        setBusy(false);
+                    }
+                });
+                listen(aiSuggestNextButton, "click", async () => {
+                    setBusy(true);
+                    try {
+                        await requestAiAssistance("suggest-next-command");
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        setMeta(`AI next-step suggestion failed: ${message}`);
+                        notifyError("AI next-step suggestion failed");
+                    } finally {
+                        setBusy(false);
+                    }
+                });
+                listen(aiRefreshAssistantsButton, "click", async () => {
+                    setBusy(true);
+                    try {
+                        await fetchAssistants(false, true);
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        setMeta(`AI assistant refresh failed: ${message}`);
+                        notifyError("AI assistant refresh failed");
+                    } finally {
+                        setBusy(false);
+                    }
+                });
+                listen(aiAssistantSelect, "change", () => {
+                    state.selectedAssistantId = String(aiAssistantSelect.value || "").trim();
+                    const selectedAssistant = state.aiAssistants.find((item) => item.id === state.selectedAssistantId) || null;
+                    if (selectedAssistant) {
+                        setMeta(`AI assistant selected: ${selectedAssistant.name} (${selectedAssistant.provider || "unknown"} / ${selectedAssistant.model || "default"}).`);
+                        return;
+                    }
+                    setMeta(`AI assistant routing uses host default (${AI_ASSISTANT_PURPOSE || "automation"} purpose).`);
+                });
 
-            repoInput.addEventListener("keydown", (event: KeyboardEvent) => {
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    void persistRepoPath(false).catch((error) => {
+                listen(savePathButton, "click", async () => {
+                    setBusy(true);
+                    try {
+                        await persistRepoPath(false);
+                    } catch (error) {
                         const message = error instanceof Error ? error.message : String(error);
                         setMeta(`Save path failed: ${message}`);
-                    });
-                }
-            });
-
-            commitMessageInput.addEventListener("keydown", (event: KeyboardEvent) => {
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    setBusy(true);
-                    void runCommitStaged(event.shiftKey)
-                        .catch((error) => {
-                            const message = error instanceof Error ? error.message : String(error);
-                            setOutput(`Commit failed:\n${message}`);
-                            setMeta(`Commit failed: ${message}`);
-                            notifyError("Commit failed");
-                        })
-                        .finally(() => {
-                            setBusy(false);
-                        });
-                }
-            });
-
-            const prepareRuntime = async () => {
-                try {
-                    setMeta("Preparing runtime...");
-                    const response = await window.createBackendReq("UI_MESSAGE", {
-                        handler: PREPARE_HANDLER,
-                        content: {},
-                    });
-
-                    if (response && typeof response === "object") {
-                        if (response.ok === false || response.success === false) {
-                            const code = typeof response.code === "string" ? ` (${response.code})` : "";
-                            const errorText = typeof response.error === "string"
-                                ? response.error
-                                : "Unknown runtime preparation error.";
-                            setMeta(`Runtime preparation degraded${code}: ${errorText}`);
-                        }
-                        if (typeof response.gitCommand === "string" && response.gitCommand.trim()) {
-                            state.gitCommand = response.gitCommand.trim();
-                        }
-                        if (typeof response.defaultRepoPath === "string" && response.defaultRepoPath.trim()) {
-                            repoInput.value = response.defaultRepoPath.trim();
-                        }
-                        if (typeof response.storageMode === "string" && response.storageMode.trim()) {
-                            state.storageMode = response.storageMode.trim();
-                        }
-                        if (typeof response.storageDiagnostic === "string" && response.storageDiagnostic.trim()) {
-                            state.storageDiagnostic = response.storageDiagnostic.trim();
-                        } else {
-                            state.storageDiagnostic = "";
-                        }
-                        if (typeof response.originalConfiguredRepoPath === "string" && response.originalConfiguredRepoPath.trim()) {
-                            state.originalConfiguredRepoPath = response.originalConfiguredRepoPath.trim();
-                        }
-                        if (typeof response.originalConfiguredRepoPublicKey === "string" && response.originalConfiguredRepoPublicKey.trim()) {
-                            state.originalConfiguredRepoPublicKey = response.originalConfiguredRepoPublicKey.trim();
-                        }
-                        const lastAction = typeof response.lastAction === "string"
-                            ? response.lastAction.trim()
-                            : "none";
-                        const prefetchHint = state.originalConfiguredRepoPath
-                            ? ` Original configured repository (public key ${state.originalConfiguredRepoPublicKey}): ${state.originalConfiguredRepoPath}.`
-                            : "";
-                        setMeta(`Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Storage mode: ${state.storageMode}.${prefetchHint} Last action: ${lastAction}. No command executed yet.`);
-                    } else {
-                        setMeta(`Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Storage mode: ${state.storageMode}. No command executed yet.`);
+                        notifyError("Failed to save repository path");
+                    } finally {
+                        setBusy(false);
                     }
+                });
 
-                    state.runtimePrepared = true;
-                    renderSummary(null);
-                    renderStagedFilesHint(null);
-                    renderExecutionHistory();
-                    setOutput("$ runtime ready. choose an operation or run snapshot.");
-                    await fetchAssistants(true).catch((error) => {
+                listen(prefetchOriginalButton, "click", async () => {
+                    setBusy(true);
+                    try {
+                        repoInput.value = await prefetchOriginalRepoPath(false);
+                    } catch (error) {
                         const message = error instanceof Error ? error.message : String(error);
-                        setMeta(`Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Storage mode: ${state.storageMode}. Assistant discovery unavailable: ${message}`);
+                        setMeta(`Prefetch failed: ${message}`);
+                        notifyError("Failed to prefetch original repository");
+                    } finally {
+                        setBusy(false);
+                    }
+                });
+
+                listen(snapshotButton, "click", () => {
+                    void runSnapshot();
+                });
+
+                listen(repoInput, "blur", () => {
+                    void persistRepoPath(true).catch(() => {
+                        // Keep blur-save best-effort; explicit Save button surfaces errors.
                     });
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : String(error);
-                    setMeta(`Runtime preparation failed: ${message}`);
-                    setOutput(`Runtime preparation failed:\n${message}`);
-                }
-            };
+                });
 
-            void prepareRuntime();
+                listen(repoInput, "keydown", (event: KeyboardEvent) => {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        void persistRepoPath(false).catch((error) => {
+                            const message = error instanceof Error ? error.message : String(error);
+                            setMeta(`Save path failed: ${message}`);
+                        });
+                    }
+                });
+
+                listen(commitMessageInput, "keydown", (event: KeyboardEvent) => {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        setBusy(true);
+                        void runCommitStaged(event.shiftKey)
+                            .catch((error) => {
+                                const message = error instanceof Error ? error.message : String(error);
+                                setOutput(`Commit failed:\n${message}`);
+                                setMeta(`Commit failed: ${message}`);
+                                notifyError("Commit failed");
+                            })
+                            .finally(() => {
+                                setBusy(false);
+                            });
+                    }
+                });
+
+                const prepareRuntime = async () => {
+                    try {
+                        setMeta("Preparing runtime...");
+                        const response = await window.createBackendReq("UI_MESSAGE", {
+                            handler: PREPARE_HANDLER,
+                            content: {},
+                        });
+
+                        if (response && typeof response === "object") {
+                            if (response.ok === false || response.success === false) {
+                                const code = typeof response.code === "string" ? ` (${response.code})` : "";
+                                const errorText = typeof response.error === "string"
+                                    ? response.error
+                                    : "Unknown runtime preparation error.";
+                                setMeta(`Runtime preparation degraded${code}: ${errorText}`);
+                            }
+                            if (typeof response.gitCommand === "string" && response.gitCommand.trim()) {
+                                state.gitCommand = response.gitCommand.trim();
+                            }
+                            if (typeof response.defaultRepoPath === "string" && response.defaultRepoPath.trim()) {
+                                repoInput.value = response.defaultRepoPath.trim();
+                            }
+                            if (typeof response.storageMode === "string" && response.storageMode.trim()) {
+                                state.storageMode = response.storageMode.trim();
+                            }
+                            if (typeof response.storageDiagnostic === "string" && response.storageDiagnostic.trim()) {
+                                state.storageDiagnostic = response.storageDiagnostic.trim();
+                            } else {
+                                state.storageDiagnostic = "";
+                            }
+                            if (typeof response.originalConfiguredRepoPath === "string" && response.originalConfiguredRepoPath.trim()) {
+                                state.originalConfiguredRepoPath = response.originalConfiguredRepoPath.trim();
+                            }
+                            if (typeof response.originalConfiguredRepoPublicKey === "string" && response.originalConfiguredRepoPublicKey.trim()) {
+                                state.originalConfiguredRepoPublicKey = response.originalConfiguredRepoPublicKey.trim();
+                            }
+                            const lastAction = typeof response.lastAction === "string"
+                                ? response.lastAction.trim()
+                                : "none";
+                            const prefetchHint = state.originalConfiguredRepoPath
+                                ? ` Original configured repository (public key ${state.originalConfiguredRepoPublicKey}): ${state.originalConfiguredRepoPath}.`
+                                : "";
+                            setMeta(`Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Storage mode: ${state.storageMode}.${prefetchHint} Last action: ${lastAction}. No command executed yet.`);
+                        } else {
+                            setMeta(`Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Storage mode: ${state.storageMode}. No command executed yet.`);
+                        }
+
+                        state.runtimePrepared = true;
+                        renderSummary(null);
+                        renderStagedFilesHint(null);
+                        renderExecutionHistory();
+                        setOutput("$ runtime ready. choose an operation or run snapshot.");
+                        await fetchAssistants(true).catch((error) => {
+                            const message = error instanceof Error ? error.message : String(error);
+                            setMeta(`Ready [build: ${BUILD_ID}]. Executable: ${state.gitCommand}. Storage mode: ${state.storageMode}. Assistant discovery unavailable: ${message}`);
+                        });
+                    } catch (error) {
+                        const message = error instanceof Error ? error.message : String(error);
+                        setMeta(`Runtime preparation failed: ${message}`);
+                        setOutput(`Runtime preparation failed:\n${message}`);
+                    }
+                };
+
+                void prepareRuntime();
+            }
+
+            return defineExampleSetup(gitOperationsRenderOnLoad.toString(), "git-operations");
         }
-
-        return defineRenderOnLoad(gitOperationsRenderOnLoad, {
-            language: "typescript",
-            description: "Interactive iframe runtime wiring for Git operations, storage persistence, and scoped privileged action flows.",
-        });
-    }
 }
 
 new GitOperationsPlugin();

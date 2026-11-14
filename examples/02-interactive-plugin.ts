@@ -24,7 +24,8 @@
  * 5. Log all user interactions through SDK handlers
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata, PluginRegistry } from "@anikitenko/fdo-sdk";
+import { FDO_SDK, handler, type FDOInterface, type PluginMetadata } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "./shared/frontend-lifecycle";
 
 declare global {
   interface Window {
@@ -76,25 +77,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
    * potentially causing duplicate handler registrations.
    */
   init(): void {
-    try {
       this.log("InteractivePlugin initialized!");
-
-      PluginRegistry.registerHandler("incrementCounter", (data: unknown) => {
-        return this.handleIncrement(data);
-      });
-
-      PluginRegistry.registerHandler("decrementCounter", (data: unknown) => {
-        return this.handleDecrement(data);
-      });
-
-      PluginRegistry.registerHandler("submitForm", async (data: unknown) => {
-        return await this.handleFormSubmit(data);
-      });
-
-
-    } catch (error) {
-      this.error(error as Error);
-    }
   }
 
   /**
@@ -103,7 +86,8 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
    * @param _data - Data passed from the UI (can include button context, user info, etc.)
    * @returns Result object that can be used to update the UI
    */
-  private handleIncrement(_data: unknown): any {
+  @handler("incrementCounter")
+    private handleIncrement(_data: unknown): any {
     try {
       this.counter++;
       this.log(`Counter incremented to ${this.counter}`);
@@ -129,7 +113,8 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
    * @param _data - Data passed from the UI
    * @returns Result object
    */
-  private handleDecrement(_data: unknown): any {
+  @handler("decrementCounter")
+    private handleDecrement(_data: unknown): any {
     try {
       this.counter--;
       this.log(`Counter decremented to ${this.counter}`);
@@ -161,11 +146,12 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
    * @param data - Form data from the UI
    * @returns Promise resolving to result object
    */
-  private async handleFormSubmit(data: unknown): Promise<any> {
+  @handler("submitForm")
+    private async handleFormSubmit(data: unknown): Promise<any> {
     try {
       this.log(`Form submitted with data: ${JSON.stringify(data)}`);
       
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (this.signal.aborted) return {success:false,error:"Plugin is shutting down"};
       
       const userName =
         typeof data === "object" &&
@@ -275,9 +261,9 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
     }
   }
 
-  renderOnLoad(): string {
-    return `
-      () => {
+  renderOnLoad() {
+        return defineExampleSetup(`
+      ({listen, timeout, interval, onDispose, isDisposed}) => {
         const callHandler = (handler, content = {}) =>
           window.createBackendReq("UI_MESSAGE", { handler, content });
 
@@ -294,7 +280,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
           counterResult.style.color = color;
         };
 
-        incrementBtn?.addEventListener('click', async () => {
+        listen(incrementBtn, 'click', async () => {
           try {
             const result = await callHandler('incrementCounter', {});
             if (result?.success) {
@@ -307,7 +293,7 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
           }
         });
 
-        decrementBtn?.addEventListener('click', async () => {
+        listen(decrementBtn, 'click', async () => {
           try {
             const result = await callHandler('decrementCounter', {});
             if (result?.success) {
@@ -349,12 +335,12 @@ export default class InteractivePlugin extends FDO_SDK implements FDOInterface {
           }
         };
 
-        submitFormButton?.addEventListener("click", () => {
+        listen(submitFormButton, "click", () => {
           void handleFormSubmit();
         });
       }
-    `;
-  }
+    `, "02-interactive-plugin");
+      }
 }
 
 /**

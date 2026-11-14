@@ -1,4 +1,4 @@
-import {DOM, DOMText} from '@anikitenko/fdo-sdk';
+import { DOM, DOMText } from '@anikitenko/fdo-sdk';
 
 /** One isolated style owner per render; no dependence on Blueprint CSS classes. */
 export function createWebsiteCheckUI() {

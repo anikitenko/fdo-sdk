@@ -1,4 +1,4 @@
-import { DOM, DOMText, defineRenderOnLoadActions, RenderOnLoadModule } from '@anikitenko/fdo-sdk';
+import { DOM, DOMText, defineRenderOnLoadActions, type RenderOnLoadModule } from '@anikitenko/fdo-sdk';
 
 /** Markup/style only. No backend calls, frontend execution or FDO_SDK construction. */
 export function overlayMarkup(): string {

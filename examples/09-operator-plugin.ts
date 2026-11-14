@@ -1,16 +1,16 @@
 import {
+    FDO_SDK,
     createOperatorToolActionRequest,
     createOperatorToolCapabilityPreset,
     createPrivilegedActionBackendRequest,
-
-    FDOInterface,
-    FDO_SDK,
     getInlinePrivilegedActionErrorFormatterSource,
     getOperatorToolPreset,
-    PluginCapability,
-    PluginMetadata,
-    PluginRegistry,
+    handler,
+    type FDOInterface,
+    type PluginCapability,
+    type PluginMetadata
 } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "./shared/frontend-lifecycle";
 
 export default class OperatorPluginExample extends FDO_SDK implements FDOInterface {
     private readonly _metadata: PluginMetadata = {
@@ -35,20 +35,6 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
             preset: getOperatorToolPreset("docker-cli"),
             requestedCapabilities: createOperatorToolCapabilityPreset("docker-cli"),
         });
-
-        PluginRegistry.registerHandler("operator.buildDockerStatusRequest", async () => {
-            const request = createOperatorToolActionRequest("docker-cli", {
-                command: "/usr/local/bin/docker",
-                args: ["ps", "--format", "json"],
-                timeoutMs: 5000,
-                dryRun: true,
-                reason: "preview running containers for dashboard",
-            });
-
-            return createPrivilegedActionBackendRequest(request, {
-                correlationIdPrefix: "docker-cli",
-            });
-        });
     }
 
     render(): string {
@@ -65,10 +51,10 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
         `;
     }
 
-    renderOnLoad(): string {
-        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
-        return `
-            (() => {
+    renderOnLoad() {
+            const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+            return defineExampleSetup(`
+            ({listen, timeout, interval, onDispose, isDisposed}) => {
                 const button = document.getElementById("run-docker-status");
                 const output = document.getElementById("operator-result-box");
                 /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
@@ -84,7 +70,7 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
                         : JSON.stringify(value, null, 2);
                 };
 
-                button.addEventListener("click", async () => {
+                listen(button, "click", async () => {
                     setOutput("Building curated operator envelope...");
 
                     try {
@@ -123,8 +109,22 @@ export default class OperatorPluginExample extends FDO_SDK implements FDOInterfa
                         });
                     }
                 });
-            })();
-        `;
+            }
+        `, "09-operator-plugin");
+        }
+
+    @handler("operator.buildDockerStatusRequest")
+    private async onOperatorBuildDockerStatusRequest() {
+        const request = createOperatorToolActionRequest("docker-cli", {
+                        command: "/usr/local/bin/docker",
+                        args: ["ps", "--format", "json"],
+                        timeoutMs: 5000,
+                        dryRun: true,
+                        reason: "preview running containers for dashboard",
+                    });
+        return createPrivilegedActionBackendRequest(request, {
+                        correlationIdPrefix: "docker-cli",
+                    });
     }
 }
 

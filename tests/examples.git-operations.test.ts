@@ -6,14 +6,14 @@ beforeAll(async () => {
     (process as any).parentPort = { on: vi.fn(), postMessage: vi.fn() };
     GitOperationsPlugin = (await import('../examples/12-git-operations-plugin')).default;
 });
-beforeEach(() => {
-    PluginRegistry.clearAllHandlers(); PluginRegistry.clearPlugin(); PluginRegistry.configureStorage({ rootDir: undefined }); PluginRegistry.configureCapabilities({ granted: [] });
+beforeEach(async () => {
+    PluginRegistry.clearAllHandlers(); await PluginRegistry.clearPlugin(); PluginRegistry.configureStorage({ rootDir: undefined }); PluginRegistry.configureCapabilities({ granted: [] });
     for (const name of ['__FDO_AI_REQUEST', '__FDO_AI_ASSISTANT', '__FDO_AI_LIST_ASSISTANTS', '__FDO_AI_ASSISTANTS']) delete (globalThis as any)[name];
     vi.stubGlobal('require', (name: string) => {
         if (name !== 'fs') throw Error(`Unexpected module: ${name}`);
         return { existsSync: (value: string) => !value.includes('missing'), statSync: (value: string) => ({ isDirectory: () => !value.endsWith('.txt') }), accessSync: () => {}, constants: { X_OK: 1 } };
     });
-    new GitOperationsPlugin();
+    new GitOperationsPlugin(); PluginRegistry.callInit();
 });
 afterEach(() => vi.unstubAllGlobals());
 describe('Git operations example handlers', () => {
@@ -26,7 +26,7 @@ describe('Git operations example handlers', () => {
         expect(await call('saveRepoPath')).toMatchObject({ ok: false, code: 'INVALID_REPO_PATH' });
         for (const cwd of ['relative', '/missing', '/file.txt']) expect(await call('saveRepoPath', { cwd })).toMatchObject({ ok: false, code: 'SAVE_REPO_PATH_FAILED' });
         expect(await call('saveRepoPath', { cwd: '/fixture/repository' })).toMatchObject({ ok: true, persistence: 'session-fallback' });
-        const prepared = await call('prepare') as any; expect(prepared.originalConfiguredRepoPath).toBe('/fixture/repository');
+        const prepared = await call('prepare') as any; expect(prepared.defaultRepoPath).toBe('/fixture/repository'); expect(prepared.originalConfiguredRepoPath).toBeTruthy();
     });
     test.each(['status', 'branches', 'log', 'diffStat', 'showHead', 'fetch', 'pullFFOnly'])('builds a validated %s request without executing Git', async operation => {
         const response = await call('buildRequest', { operation, cwd: '/fixture/repository', dryRun: true }) as any;

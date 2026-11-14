@@ -22,7 +22,7 @@
  * 3. Show a brief description of what the plugin does
  */
 
-import { FDO_SDK, FDOInterface, PluginMetadata } from "@anikitenko/fdo-sdk";
+import { FDO_SDK, type FDOInterface, type PluginMetadata } from "@anikitenko/fdo-sdk";
 
 /**
  * BasicPlugin demonstrates the minimal plugin structure.
@@ -75,14 +75,7 @@ export default class BasicPlugin extends FDO_SDK implements FDOInterface {
    * For async operations, consider using promises or deferring work to handlers.
    */
   init(): void {
-    try {
       this.log("BasicPlugin initialized!");
-      
-      
-    } catch (error) {
-      this.error(error as Error);
-      
-    }
   }
 
   /**

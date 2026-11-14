@@ -1,15 +1,15 @@
 import {
+    FDO_SDK,
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createPrivilegedActionBackendRequest,
-
-    FDOInterface,
-    FDO_SDK,
     getInlinePrivilegedActionErrorFormatterSource,
-    PluginCapability,
-    PluginMetadata,
-    PluginRegistry,
+    handler,
+    type FDOInterface,
+    type PluginCapability,
+    type PluginMetadata
 } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "./shared/frontend-lifecycle";
 
 /**
  * Learning example 10: generic system file mutation.
@@ -51,29 +51,6 @@ export default class SystemFilePlugin extends FDO_SDK implements FDOInterface {
             scopeId: this.scopeId,
             handler: SystemFilePlugin.HANDLER,
         });
-
-        PluginRegistry.registerHandler(SystemFilePlugin.HANDLER, async () => {
-            const request = createFilesystemMutateActionRequest({
-                action: "system.fs.mutate",
-                payload: {
-                    scope: this.scopeId,
-                    dryRun: true,
-                    reason: "preview managed motd banner update",
-                    operations: [
-                        {
-                            type: "appendFile",
-                            path: "/etc/motd",
-                            content: "\nManaged by FDO SDK example plugin\n",
-                            encoding: "utf8",
-                        },
-                    ],
-                },
-            });
-
-            return createPrivilegedActionBackendRequest(request, {
-                correlationIdPrefix: "etc-motd",
-            });
-        });
     }
 
     render(): string {
@@ -90,10 +67,10 @@ export default class SystemFilePlugin extends FDO_SDK implements FDOInterface {
         `;
     }
 
-    renderOnLoad(): string {
-        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
-        return `
-            (() => {
+    renderOnLoad() {
+            const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+            return defineExampleSetup(`
+            ({listen, timeout, interval, onDispose, isDisposed}) => {
                 const button = document.getElementById("run-system-file-action");
                 const resultBox = document.getElementById("system-file-result");
                 /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
@@ -109,7 +86,7 @@ export default class SystemFilePlugin extends FDO_SDK implements FDOInterface {
                         : JSON.stringify(value, null, 2);
                 };
 
-                button.addEventListener("click", async () => {
+                listen(button, "click", async () => {
                     setResult("Building privileged-action envelope...");
 
                     try {
@@ -159,8 +136,31 @@ export default class SystemFilePlugin extends FDO_SDK implements FDOInterface {
                         });
                     }
                 });
-            })();
-        `;
+            }
+        `, "10-system-file-plugin");
+        }
+
+    @handler(SystemFilePlugin.HANDLER)
+    private async onSystemFilePluginHANDLER() {
+        const request = createFilesystemMutateActionRequest({
+                        action: "system.fs.mutate",
+                        payload: {
+                            scope: this.scopeId,
+                            dryRun: true,
+                            reason: "preview managed motd banner update",
+                            operations: [
+                                {
+                                    type: "appendFile",
+                                    path: "/etc/motd",
+                                    content: "\nManaged by FDO SDK example plugin\n",
+                                    encoding: "utf8",
+                                },
+                            ],
+                        },
+                    });
+        return createPrivilegedActionBackendRequest(request, {
+                        correlationIdPrefix: "etc-motd",
+                    });
     }
 }
 

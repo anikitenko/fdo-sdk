@@ -1,9 +1,9 @@
 /** Minimal lossless, one-view terminal. Requires the proposed host terminal renderer injection
  * in docs/SSH_TERMINALS.md; current FDO has no such injection. No emulator dependency is bundled.
  */
-import {FDO_SDK, PluginRegistry, HostServiceError, createSSHCapabilityBundle} from '@anikitenko/fdo-sdk';
-import type {SSHTerminalSession, SSHTerminalResult, SSHTerminalOutput} from '@anikitenko/fdo-sdk';
-import {randomUUID} from 'node:crypto';
+import type { SSHTerminalOutput, SSHTerminalResult, SSHTerminalSession } from '@anikitenko/fdo-sdk';
+import { FDO_SDK, HostServiceError, PluginRegistry, createSSHCapabilityBundle } from '@anikitenko/fdo-sdk';
+import { randomUUID } from 'node:crypto';
 
 type Run = {id:string; touched:number; session?:SSHTerminalSession; controller:AbortController;
     packet?:SSHTerminalOutput; acknowledge?:()=>void; done:boolean; result?:SSHTerminalResult; error?:string};
@@ -14,7 +14,8 @@ export default class InteractiveSSHExample extends FDO_SDK {
     init():void {
         let run:Run|undefined;
         const release = () => {if(run){const old=run;run=undefined;old.controller.abort();old.acknowledge?.();void old.session?.close().catch(()=>{});}};
-        const timer=setInterval(()=>{if(run && Date.now()-run.touched>30000)release();},1000);timer.unref?.();
+        this.lifecycle.interval(()=>{if(run && Date.now()-run.touched>30000)release();},1000);
+        this.onDispose(release);
         const data = (v:unknown):Record<string,unknown> => {
             if(!v || typeof v!=='object' || Array.isArray(v))throw new HostServiceError('INVALID_REQUEST');return v as Record<string,unknown>;
         };

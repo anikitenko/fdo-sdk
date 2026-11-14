@@ -112,6 +112,16 @@ Log destination:
 - in FDO host runtime this is typically `PLUGIN_HOME/logs/`
 - plugin identity is preserved in structured log metadata rather than an extra nested log folder
 
+## Acquiring Plugin Stores
+
+The SDK registers a plugin from the `FDO_SDK` base constructor, before subclass
+field initializers have run and before the plugin metadata is available. Do not
+call `PluginRegistry.useStore(...)` in a field initializer. Acquire stores in
+synchronous `init()` instead, then use the retained store from handlers and
+rendering. If an optional backend is unavailable, log the reason and make any
+session-only fallback explicit to users; do not describe fallback data as
+persistent.
+
 ## Persistent Storage Lifecycle
 
 JSON stores retain at most one active write and one pending snapshot. Repeated

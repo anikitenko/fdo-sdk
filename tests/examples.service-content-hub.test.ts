@@ -11,9 +11,9 @@ beforeAll(async () => {
     ServiceContentHubPlugin = (await import("../examples/13-service-content-hub-plugin")).default;
 });
 
-beforeEach(() => {
+beforeEach(async () => {
     PluginRegistry.clearAllHandlers();
-    PluginRegistry.clearPlugin();
+    await PluginRegistry.clearPlugin();
     PluginRegistry.configureStorage({ rootDir: undefined });
     PluginRegistry.configureCapabilities({ granted: [] });
     delete (globalThis as { __FDO_CONTENT_BROKER?: unknown }).__FDO_CONTENT_BROKER;
@@ -24,7 +24,7 @@ beforeEach(() => {
 
 describe("Service content hub example handlers", () => {
     test("prepare uses session fallback when json store capability is unavailable", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
 
         const response = await PluginRegistry.callHandler("serviceHub.v1.prepare", {});
 
@@ -35,7 +35,7 @@ describe("Service content hub example handlers", () => {
     });
 
     test("list workspaces validates malformed endpoint url", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
         PluginRegistry.configureCapabilities({
             granted: ["system.network", "system.network.https", "system.network.scope.external-services"],
         });
@@ -53,7 +53,7 @@ describe("Service content hub example handlers", () => {
     });
 
     test("list workspaces retries transient provider failures and normalizes response", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
         PluginRegistry.configureCapabilities({
             granted: [
                 "system.network",
@@ -102,7 +102,7 @@ describe("Service content hub example handlers", () => {
     });
 
     test("sharepoint workspace fallback requires query or site id when no broker is available", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
         PluginRegistry.configureCapabilities({
             granted: [
                 "system.network",
@@ -132,7 +132,7 @@ describe("Service content hub example handlers", () => {
     });
 
     test("ai assistants handler uses host canonical global name", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
         (globalThis as { __FDO_AI_LIST_ASSISTANTS?: unknown }).__FDO_AI_LIST_ASSISTANTS = vi.fn().mockResolvedValue({
             assistants: [{ id: "assistant-1", name: "Default Assistant" }],
         });
@@ -147,7 +147,7 @@ describe("Service content hub example handlers", () => {
     });
 
     test("auth start requests sharepoint device code flow and returns pending verification payload", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
         PluginRegistry.configureCapabilities({
             granted: ["system.network", "system.network.https", "system.network.scope.external-services"],
         });
@@ -200,7 +200,7 @@ describe("Service content hub example handlers", () => {
     });
 
     test("auth start keeps pending when broker marks interaction required with nested redirect url", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
         PluginRegistry.configureCapabilities({
             granted: ["system.network", "system.network.https", "system.network.scope.external-services"],
         });
@@ -226,7 +226,7 @@ describe("Service content hub example handlers", () => {
     });
 
     test("auth start keeps pending when host transport wraps provider payload in raw", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
         PluginRegistry.configureCapabilities({
             granted: ["system.network", "system.network.https", "system.network.scope.external-services"],
         });
@@ -257,7 +257,7 @@ describe("Service content hub example handlers", () => {
     });
 
     test("auth start keeps pending when host returns transport envelope without raw payload", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
         PluginRegistry.configureCapabilities({
             granted: ["system.network", "system.network.https", "system.network.scope.external-services"],
         });
@@ -285,12 +285,12 @@ describe("Service content hub example handlers", () => {
     });
 
     test("auth refresh polls microsoft token endpoint for sharepoint device code flow", async () => {
-        new ServiceContentHubPlugin();
+        new ServiceContentHubPlugin(); PluginRegistry.callInit();
         PluginRegistry.configureCapabilities({
             granted: ["system.network", "system.network.https", "system.network.scope.external-services"],
         });
 
-        const plugin = new ServiceContentHubPlugin();
+        const plugin = new ServiceContentHubPlugin(); PluginRegistry.callInit();
         await PluginRegistry.callHandler("serviceHub.v1.saveContext", {
             providerId: "sharepoint",
             endpointUrl: "https://graph.microsoft.com/v1.0",
@@ -359,7 +359,7 @@ describe('Service content hub validation and broker failure scenarios', () => {
     const context = { providerId: 'custom-api', endpointUrl: 'https://content.example.test', sessionId: 'session', workspaceId: 'workspace' };
     const call = (name: string, payload: unknown = context) => PluginRegistry.callHandler(`serviceHub.v1.${name}`, payload);
     const grantNetwork = () => PluginRegistry.configureCapabilities({ granted: ['system.network', 'system.network.https', 'system.network.scope.external-services'] });
-    beforeEach(() => { new ServiceContentHubPlugin(); grantNetwork(); });
+    beforeEach(async () => { new ServiceContentHubPlugin(); PluginRegistry.callInit(); grantNetwork(); });
     test.each([
         ['content.listWorkspaces', {}, 'SESSION_REQUIRED'],
         ['content.listItems', {}, 'CONTEXT_REQUIRED'],

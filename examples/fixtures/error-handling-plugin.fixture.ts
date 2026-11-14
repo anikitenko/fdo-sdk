@@ -1,4 +1,5 @@
-import { FDOInterface, FDO_SDK, PluginMetadata, PluginRegistry, handleError } from "@anikitenko/fdo-sdk";
+import { DOMText, type FDOInterface, FDO_SDK, type PluginMetadata, handleError, handler } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "../shared/frontend-lifecycle";
 
 /**
  * Scenario fixture: Error-safe lifecycle and handler behavior.
@@ -23,31 +24,17 @@ export default class ErrorHandlingFixturePlugin extends FDO_SDK implements FDOIn
     return this._metadata;
   }
 
-  @handleError({ errorMessage: "Fixture init failed" })
+  
   init(): void {
     this.info("Error handling fixture initialized", {
       plugin: this.metadata.name,
       version: this.metadata.version,
     });
-
-    PluginRegistry.registerHandler("fixture.ok", (data: unknown) => ({
-      ok: true,
-      data,
-    }));
-
-    PluginRegistry.registerHandler("fixture.fail", () => {
-      throw new Error("Intentional fixture handler failure");
-    });
   }
 
   @handleError({
     returnErrorUI: true,
-    errorUIRenderer: (error: Error) => `
-      <div style="padding: 16px; border: 1px solid #d33; border-radius: 6px; color: #a11; background: #fff7f7;">
-        <h2>Plugin Error</h2>
-        <p>${error.message}</p>
-      </div>
-    `,
+    errorUIRenderer: (error: Error) => new DOMText().createPText(error.message),
   })
   render(): string {
     return `
@@ -64,9 +51,9 @@ export default class ErrorHandlingFixturePlugin extends FDO_SDK implements FDOIn
     `;
   }
 
-  renderOnLoad(): string {
-    return `
-      (() => {
+  renderOnLoad() {
+        return defineExampleSetup(`
+      ({listen, timeout, interval, onDispose, isDisposed}) => {
         const successButton = document.getElementById("fixture-ok-button");
         const failureButton = document.getElementById("fixture-fail-button");
         const output = document.getElementById("fixture-error-output");
@@ -96,16 +83,29 @@ export default class ErrorHandlingFixturePlugin extends FDO_SDK implements FDOIn
           }
         };
 
-        successButton.addEventListener("click", () => {
+        listen(successButton, "click", () => {
           void runHandler("fixture.ok", { source: "fixture-ui" });
         });
 
-        failureButton.addEventListener("click", () => {
+        listen(failureButton, "click", () => {
           void runHandler("fixture.fail", {});
         });
-      })();
-    `;
-  }
+      }
+        `, "error-handling-plugin.fixture");
+      }
+
+    @handler("fixture.fail")
+    private onFixtureFail() {
+        throw new Error("Intentional fixture handler failure");
+    }
+
+    @handler("fixture.ok")
+    private onFixtureOk(data: unknown) {
+        return ({
+              ok: true,
+              data,
+            });
+    }
 }
 
 new ErrorHandlingFixturePlugin();

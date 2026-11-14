@@ -1,13 +1,13 @@
 import {
-  DOMInput,
-  DOMLink,
-  DOMNested,
-  DOMSemantic,
-  DOMTable,
-  DOMText,
-  FDOInterface,
-  FDO_SDK,
-  PluginMetadata,
+    DOMInput,
+    DOMLink,
+    DOMNested,
+    DOMSemantic,
+    DOMTable,
+    DOMText,
+    type FDOInterface,
+    FDO_SDK,
+    type PluginMetadata,
 } from "@anikitenko/fdo-sdk";
 
 /**
@@ -38,6 +38,20 @@ export default class AdvancedDOMPlugin extends FDO_SDK implements FDOInterface {
       const semantic = new DOMSemantic();
       const table = new DOMTable();
       const link = new DOMLink("docs-link", { style: { color: "#0b65d8", textDecoration: "none" } });
+
+      const operatorInput = new DOMInput(
+          "username-input",
+          {
+            style: {
+              padding: "8px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              width: "280px",
+            },
+          },
+          { defaultValue: "platform-team", readOnly: true }
+        );
+      semantic.collectStylesFrom(text, nested, table, link, operatorInput);
 
     const tableHeader = table.createTableHead([
       table.createTableRow([
@@ -85,18 +99,7 @@ export default class AdvancedDOMPlugin extends FDO_SDK implements FDOInterface {
         text.createLabelText("Operator name", "username-input", {
           style: { display: "block", marginBottom: "6px", fontWeight: "600" },
         }),
-        new DOMInput(
-          "username-input",
-          {
-            style: {
-              padding: "8px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              width: "280px",
-            },
-          },
-          { defaultValue: "platform-team", readOnly: true }
-        ).createInput("text"),
+        operatorInput.createInput("text"),
         nested.createBlockDiv(
           [
             text.createSmallText(

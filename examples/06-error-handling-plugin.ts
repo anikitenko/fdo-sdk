@@ -22,13 +22,13 @@
  * 5. Log the underlying error details through the SDK logger
  */
 
-import {
-  FDO_SDK,
-  FDOInterface,
-  PluginMetadata,
-  PluginRegistry,
-  handleError,
+import { DOMText,
+    FDO_SDK,
+    handleError, handler,
+    type FDOInterface,
+    type PluginMetadata
 } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "./shared/frontend-lifecycle";
 
 declare global {
   interface Window {
@@ -52,17 +52,13 @@ export default class ErrorHandlingPlugin extends FDO_SDK implements FDOInterface
     return this._metadata;
   }
 
-  @handleError({
-    errorMessage: "Plugin initialization failed",
-  })
+  
   init(): void {
     this.info("ErrorHandlingPlugin initialized");
-
-    PluginRegistry.registerHandler("simulateSuccess", (data: unknown) => this.handleSuccess(data));
-    PluginRegistry.registerHandler("simulateError", () => this.handleFailure());
   }
 
   @handleError()
+    @handler("simulateSuccess")
   private handleSuccess(data: unknown): unknown {
     return {
       ok: true,
@@ -74,25 +70,14 @@ export default class ErrorHandlingPlugin extends FDO_SDK implements FDOInterface
   @handleError({
     errorMessage: "Simulated backend handler failure",
   })
+    @handler("simulateError")
   private handleFailure(): never {
     throw new Error("Intentional handler exception for demo");
   }
 
   @handleError({
     returnErrorUI: true,
-    errorUIRenderer: (error: Error) => `
-      <div
-        style={{
-          padding: "16px",
-          border: "1px solid #d22",
-          borderRadius: "6px",
-          backgroundColor: "#fff7f7"
-        }}
-      >
-        <h2>Plugin Error</h2>
-        <p>${error.message}</p>
-      </div>
-    `,
+    errorUIRenderer: (error: Error) => new DOMText().createPText(error.message),
   })
   render(): string {
     return `
@@ -159,9 +144,9 @@ export default class ErrorHandlingPlugin extends FDO_SDK implements FDOInterface
     `;
   }
 
-  renderOnLoad(): string {
-    return `
-      () => {
+  renderOnLoad() {
+        return defineExampleSetup(`
+      ({listen, timeout, interval, onDispose, isDisposed}) => {
         const callHandler = (handler, content = {}) =>
           window.createBackendReq("UI_MESSAGE", { handler, content });
 
@@ -182,16 +167,16 @@ export default class ErrorHandlingPlugin extends FDO_SDK implements FDOInterface
           }
         };
 
-        successButton.addEventListener("click", () => {
+        listen(successButton, "click", () => {
           void runHandler("simulateSuccess", { source: "ui" });
         });
 
-        errorButton.addEventListener("click", () => {
+        listen(errorButton, "click", () => {
           void runHandler("simulateError", {});
         });
       }
-    `;
-  }
+    `, "06-error-handling-plugin");
+      }
 }
 
 new ErrorHandlingPlugin();

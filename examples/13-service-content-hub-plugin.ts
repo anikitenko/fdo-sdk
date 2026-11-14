@@ -1,25 +1,25 @@
 import {
     createAICapabilityPreset,
     createClipboardWriteRequest,
-    DOMButton,
-    DOMInput,
     createNetworkCapabilityBundle,
     createStorageCapabilityPreset,
     defineRenderOnLoadActions,
+    DOMButton,
+    DOMInput,
     DOMNested,
     DOMSemantic,
     DOMText,
-    FDOInterface,
     FDO_SDK,
-    PluginCapability,
-    PluginMetadata,
+    type FDOInterface,
+    type PluginCapability,
+    type PluginMetadata,
     PluginRegistry,
-    QuickAction,
+    type QuickAction,
     requireCapability,
     requireNetworkScopeCapability,
     runCapabilityPreflight,
-    SidePanelConfig,
-    StoreType,
+    type SidePanelConfig,
+    type StoreType,
 } from "@anikitenko/fdo-sdk";
 
 function failBrokerResponse(message: string): never {
@@ -225,7 +225,6 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
 
     constructor() {
         super();
-        this.registerHandlers();
     }
 
     get metadata(): PluginMetadata {
@@ -298,13 +297,19 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
         const nested = new DOMNested();
         const semantic = new DOMSemantic();
         const button = new DOMButton();
+        semantic.collectStylesFrom(text, nested, button);
 
+        const ownedInput = (...args: ConstructorParameters<typeof DOMInput>) => {
+            const input = new DOMInput(...args);
+            semantic.collectStylesFrom(input);
+            return input;
+        };
         const contextInputs = nested.createBlockDiv(
             [
-                new DOMInput("sh-workspace-id", {}, {
+                ownedInput("sh-workspace-id", {}, {
                     placeholder: "SharePoint Site ID",
                 }).createInput("text"),
-                new DOMInput("sh-path", {}, {
+                ownedInput("sh-path", {}, {
                     placeholder: "Path (/)",
                 }).createInput("text"),
             ],
@@ -342,10 +347,10 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
         );
         const sharePointAuthInputs = nested.createBlockDiv(
             [
-                new DOMInput("sh-auth-client-id", {}, {
+                ownedInput("sh-auth-client-id", {}, {
                     placeholder: "SharePoint App (client) ID",
                 }).createInput("text"),
-                new DOMInput("sh-auth-tenant-id", {}, {
+                ownedInput("sh-auth-tenant-id", {}, {
                     placeholder: "Tenant ID or domain (for example: organizations or your-tenant-id)",
                 }).createInput("text"),
             ],
@@ -398,10 +403,10 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
                 button.createStaticButton("List Workspaces", {}, "sh-list-workspaces"),
                 button.createStaticButton("List Items", {}, "sh-list-items"),
                 button.createStaticButton("Next Page", {}, "sh-next-page"),
-                new DOMInput("sh-cursor", { style: { minWidth: "220px" } }, {
+                ownedInput("sh-cursor", { style: { minWidth: "220px" } }, {
                     placeholder: "Cursor (optional)",
                 }).createInput("text"),
-                new DOMInput("sh-search-query", { style: { minWidth: "240px" } }, {
+                ownedInput("sh-search-query", { style: { minWidth: "240px" } }, {
                     placeholder: "Search query...",
                 }).createInput("text"),
                 button.createStaticButton("Search", { classes: ["pure-button-primary"] }, "sh-search-items"),
@@ -411,8 +416,8 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
 
         const selectionActions = nested.createBlockDiv(
             [
-                new DOMInput("sh-selected-item-id", { style: { minWidth: "320px" } }).createSelect([
-                    new DOMInput("sh-selected-item-id-option").createOption("Select a result row...", ""),
+                ownedInput("sh-selected-item-id", { style: { minWidth: "320px" } }).createSelect([
+                    ownedInput("sh-selected-item-id-option").createOption("Select a result row...", ""),
                 ]),
                 button.createStaticButton("Create Share Link", {}, "sh-create-share-link"),
                 button.createStaticButton("Open In Browser", {}, "sh-open-browser"),
@@ -521,7 +526,9 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
 
     renderOnLoad() {
         return defineRenderOnLoadActions({
+            lifecycleKey: "service-content-hub",
             setup: () => {
+                let disposed = false;
                 function failOperation(message: string): never { throw new Error(message); }
                 const root = document.getElementById("service-hub-root");
                 if (!root) {
@@ -531,7 +538,7 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
                     const value = root.getAttribute(attr);
                     return typeof value === "string" && value.trim() ? value.trim() : fallback;
                 };
-                const byId = (id: string) => document.getElementById(id);
+                const byId = (id: string) => disposed ? null : root.querySelector<HTMLElement>(`[id="${id}"]`);
                 const readInput = (id: string) => {
                     const element = byId(id) as HTMLInputElement | null;
                     return element ? String(element.value || "").trim() : "";
@@ -544,6 +551,7 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
                 };
                 const runtimeWindow = window as {
                     Notyf?: new (options?: unknown) => {
+                        dismissAll?: () => void;
                         success: (message: string) => void;
                         error: (message: string) => void;
                     };
@@ -1146,6 +1154,15 @@ export default class ServiceContentHubPlugin extends FDO_SDK implements FDOInter
                 })().catch((error) => {
                     setText("sh-meta", `Runtime prepare failed: ${error instanceof Error ? error.message : String(error)}`);
                 });
+                const ownedWindow = window as any;
+                const ownedRuntime = ownedWindow.__serviceHubRuntime;
+                const ownedAction = ownedWindow.__serviceHubRunAction;
+                return () => {
+                    disposed = true;
+                    notifier?.dismissAll?.();
+                    if (ownedWindow.__serviceHubRuntime === ownedRuntime) delete ownedWindow.__serviceHubRuntime;
+                    if (ownedWindow.__serviceHubRunAction === ownedAction) delete ownedWindow.__serviceHubRunAction;
+                };
             },
             handlers: {
                 saveContext: async () => (window as { __serviceHubRunAction?: (action: string) => Promise<void> }).__serviceHubRunAction?.("saveContext"),

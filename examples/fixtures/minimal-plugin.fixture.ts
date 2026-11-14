@@ -1,4 +1,4 @@
-import { FDOInterface, FDO_SDK, PluginMetadata } from "@anikitenko/fdo-sdk";
+import { type FDOInterface, FDO_SDK, type PluginMetadata } from "@anikitenko/fdo-sdk";
 
 /**
  * Scenario fixture: Minimal plugin baseline.

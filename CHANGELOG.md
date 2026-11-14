@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Fix JSON stores throwing `ENOTDIR` from `useStore('json')` when the storage root or an ancestor is a file; the failure is now reported by `flush()` like other write failures.
 * Add optional host adapters for timestamped SSH status monitoring and streaming execution with explicit cancellation; retain buffered `ssh.exec` compatibility.
 * Add opt-in `ssh.status.watch` capability and safe `CANCELLED` service error code.
 * Reject JSON `flush()`/`dispose()` after failed queued writes; allow recovery after a successful full snapshot. Previously these failures were logged and swallowed.
