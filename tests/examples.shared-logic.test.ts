@@ -23,12 +23,20 @@ describe('shared logic example startup', () => {
     });
 
     it('the provider entry registers itself and renders its UI', async () => {
-        await import('../examples/19-shared-logic-provider');
+        const {default: Provider} = await import('../examples/19-shared-logic-provider');
+        const implementation = vi.spyOn(Provider.prototype, 'check');
         const payload = PluginRegistry.callRenderer();
         expect(payload.render).toBeTypeOf('string');
         expect(JSON.parse(payload.render!)).toContain('This plugin exports website-availability v1.');
         expect(JSON.parse(payload.render!)).toContain('<style>');
         expect(JSON.parse(payload.render!)).toContain('@media');
+        expect(JSON.parse(payload.render!)).toContain('id="provider-check-button"');
+        expect(JSON.parse(payload.render!)).toContain('id="provider-check-url"');
+        expect(JSON.parse(payload.render!)).toContain('aria-live="polite"');
+        const onLoad = JSON.parse(payload.onLoad!);
+        expect(onLoad).toContain('provider-website-check');
+        expect(onLoad).toMatch(/window\.createBackendReq\(['"]UI_MESSAGE['"]/);
+        expect(onLoad).not.toMatch(/fetch\s*\(|XMLHttpRequest|WebSocket/);
         let check!: (input: {url:string}, context: {signal:AbortSignal}) => Promise<unknown>;
         vi.spyOn(SharedLogic.prototype, 'register').mockImplementation((_definition, methods) => {
             check = methods.check as typeof check;
@@ -39,7 +47,21 @@ describe('shared logic example startup', () => {
         const signal = new AbortController().signal;
         await expect(check({url:'https://example.com'}, {signal})).resolves.toEqual({available:true,status:200});
         expect(fetch).toHaveBeenCalledWith('https://example.com/', {method:'HEAD',redirect:'error',signal});
+        await expect(PluginRegistry.callHandler('checkWebsite', {url:' https://example.com '})).resolves.toEqual({ok:true,available:true,status:200});
+        expect(implementation).toHaveBeenCalledTimes(2);
+        expect(implementation).toHaveBeenLastCalledWith({url:' https://example.com '});
+        const localSignal = fetch.mock.calls[1][1]!.signal as AbortSignal;
+        expect(localSignal).not.toBe(signal);
+        expect(localSignal.aborted).toBe(false);
+        for (const input of [null, {}, {url:42}, {url:'invalid URL'}, {url:'http://example.com'}, {url:'https://user:password@example.com'}]) {
+            await expect(PluginRegistry.callHandler('checkWebsite', input)).resolves.toEqual({ok:false,code:'INVALID_REQUEST'});
+        }
+        expect(fetch).toHaveBeenCalledTimes(2);
+        fetch.mockRejectedValueOnce(new Error('Network unavailable'));
+        await expect(PluginRegistry.callHandler('checkWebsite', {url:'https://example.com'})).resolves.toEqual({ok:false,code:'SERVICE_ERROR'});
         expect(port.listenerCount('message')).toBe(1);
+        await PluginRegistry.clearPlugin();
+        expect(localSignal.aborted).toBe(true);
     });
 
     it('the consumer entry registers itself and renders its UI', async () => {

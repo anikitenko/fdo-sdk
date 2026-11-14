@@ -1,4 +1,4 @@
-import { DOM, createComponentGallery, UI_COMPONENT_PREVIEWS } from '@anikitenko/fdo-sdk/ui';
+import { createComponentGallery, DOM, UI_COMPONENT_PREVIEWS } from '@anikitenko/fdo-sdk/ui';
 
 /** No component controllers or plugin handlers are needed for this preview surface. */
 export function staticGallery(): string {

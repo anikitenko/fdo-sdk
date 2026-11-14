@@ -1,6 +1,17 @@
 import {
-    DOM, createInlineAlert, createToast, createToastRegion, createAsyncActionButton, createTabs, createDisclosure, createAccordion,
-    mountInlineAlert, mountToastRegion, mountAsyncActionButton, mountTabs, mountDisclosure, mountAccordion,
+    DOM,
+    createAccordion,
+    createAsyncActionButton,
+    createDisclosure,
+    createInlineAlert,
+    createTabs,
+    createToast, createToastRegion,
+    mountAccordion,
+    mountAsyncActionButton,
+    mountDisclosure,
+    mountInlineAlert,
+    mountTabs,
+    mountToastRegion,
 } from '@anikitenko/fdo-sdk/ui';
 
 /** Pure serializable composition; pass a document-unique prefix per view. */

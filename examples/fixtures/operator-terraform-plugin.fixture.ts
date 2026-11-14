@@ -1,17 +1,17 @@
 import {
-  createPrivilegedActionBackendRequest,
-
-  FDOInterface,
-  FDO_SDK,
-  getInlinePrivilegedActionErrorFormatterSource,
-  getOperatorToolPreset,
-  PluginCapability,
-  PluginMetadata,
-  PluginRegistry,
-  createOperatorToolActionRequest,
-  createOperatorToolCapabilityPreset,
-  createScopedWorkflowRequest,
+    FDO_SDK,
+    createOperatorToolActionRequest,
+    createOperatorToolCapabilityPreset,
+    createPrivilegedActionBackendRequest,
+    createScopedWorkflowRequest,
+    getInlinePrivilegedActionErrorFormatterSource,
+    getOperatorToolPreset,
+    handler,
+    type FDOInterface,
+    type PluginCapability,
+    type PluginMetadata
 } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "../shared/frontend-lifecycle";
 
 /**
  * Scenario fixture: Infrastructure plan console.
@@ -53,15 +53,6 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
       requestedCapabilities: createOperatorToolCapabilityPreset("terraform"),
       handlers: OperatorTerraformFixturePlugin.HANDLERS,
     });
-
-    PluginRegistry.registerHandler(
-      OperatorTerraformFixturePlugin.HANDLERS.PREVIEW_PLAN,
-      async () => this.buildPreviewPlanEnvelope()
-    );
-    PluginRegistry.registerHandler(
-      OperatorTerraformFixturePlugin.HANDLERS.PREVIEW_APPLY_WORKFLOW,
-      async () => this.buildPreviewApplyWorkflowEnvelope()
-    );
   }
 
   render(): string {
@@ -81,10 +72,10 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
     `;
   }
 
-  renderOnLoad(): string {
-    const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
-    return `
-      (() => {
+  renderOnLoad() {
+        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+        return defineExampleSetup(`
+      ({listen, timeout, interval, onDispose, isDisposed}) => {
         const previewPlanButton = document.getElementById("terraform-preview-plan");
         const previewApplyWorkflowButton = document.getElementById("terraform-preview-apply-workflow");
         const output = document.getElementById("terraform-workflow-result");
@@ -130,18 +121,19 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
           }
         };
 
-        previewPlanButton.addEventListener("click", () => {
+        listen(previewPlanButton, "click", () => {
           void runEnvelopeHandler("${OperatorTerraformFixturePlugin.HANDLERS.PREVIEW_PLAN}");
         });
 
-        previewApplyWorkflowButton.addEventListener("click", () => {
+        listen(previewApplyWorkflowButton, "click", () => {
           void runEnvelopeHandler("${OperatorTerraformFixturePlugin.HANDLERS.PREVIEW_APPLY_WORKFLOW}");
         });
-      })();
-    `;
-  }
+      }
+        `, "operator-terraform-plugin.fixture");
+      }
 
-  private buildPreviewPlanEnvelope() {
+  @handler(OperatorTerraformFixturePlugin.HANDLERS.PREVIEW_PLAN)
+    private buildPreviewPlanEnvelope() {
     const request = createOperatorToolActionRequest("terraform", {
       command: "/usr/local/bin/terraform",
       args: ["plan", "-input=false"],
@@ -190,7 +182,8 @@ export default class OperatorTerraformFixturePlugin extends FDO_SDK implements F
     });
   }
 
-  private buildPreviewApplyWorkflowEnvelope() {
+  @handler(OperatorTerraformFixturePlugin.HANDLERS.PREVIEW_APPLY_WORKFLOW)
+    private buildPreviewApplyWorkflowEnvelope() {
     return createPrivilegedActionBackendRequest(this.buildPreviewApplyWorkflow(), {
       correlationIdPrefix: "terraform",
     });

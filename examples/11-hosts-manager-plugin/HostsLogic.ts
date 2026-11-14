@@ -1,4 +1,4 @@
-import { HostsRecord } from "@anikitenko/fdo-sdk";
+import { type HostsRecord } from "@anikitenko/fdo-sdk";
 
 export interface HostEnvironment {
     id: string;
@@ -29,7 +29,7 @@ export class HostsLogic {
     ];
 
     getEnvironments(): HostEnvironment[] {
-        return this.environments;
+        return this.environments.map(environment => ({...environment, records:environment.records.map(record => ({...record}))}));
     }
 
     toggleEnvironment(id: string): void {

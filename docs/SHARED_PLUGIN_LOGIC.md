@@ -27,6 +27,13 @@ messages or stacks.
 
 See [the website provider](../examples/19-shared-logic-provider.ts).
 
+That example also has its own website-check UI. Its `@handler()` method calls
+`this.check(input)` directly, reusing the very same `@sharedFunction()` method that
+other plugins call through `this.shared.client(...)`. Exporting a method keeps it
+callable as a normal instance method; the provider needs no service grant to itself.
+The optional shared-call context supplies remote cancellation, while local calls use
+the provider's lifecycle signal. Network permissions still apply to both paths.
+
 ## Method decorators
 
 Use the SDK's legacy TypeScript method decorators with `experimentalDecorators: true`

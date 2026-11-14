@@ -1,4 +1,5 @@
-import { FDOInterface, FDO_SDK, PluginCapability, PluginMetadata, PluginRegistry, StoreType } from "@anikitenko/fdo-sdk";
+import { type FDOInterface, FDO_SDK, type PluginCapability, type PluginMetadata, PluginRegistry, type StoreType, handler } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "../shared/frontend-lifecycle";
 
 /**
  * Scenario fixture: Scoped storage usage.
@@ -25,7 +26,7 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
     icon: "database",
   };
 
-  private sessionStore: StoreType = PluginRegistry.useStore("default");
+  private sessionStore!: StoreType;
   private persistentStore?: StoreType;
   private jsonStoreAvailable = false;
   private readonly THEME_KEY = "theme";
@@ -42,6 +43,7 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
   }
 
   init(): void {
+    this.sessionStore = PluginRegistry.useStore("default");
     const visitCount = (this.sessionStore.get<number>(this.VISITS_KEY) ?? 0) + 1;
     this.sessionStore.set(this.VISITS_KEY, visitCount);
     this.sessionStore.set(this.LAST_ACTION_KEY, "fixture-initialized");
@@ -63,13 +65,10 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
       jsonStoreAvailable: this.jsonStoreAvailable,
       visitCount,
     });
-
-    PluginRegistry.registerHandler(StorageFixturePlugin.HANDLERS.GET_SNAPSHOT, () => this.getSnapshot());
-    PluginRegistry.registerHandler(StorageFixturePlugin.HANDLERS.SAVE_PREFERENCE, (data: unknown) => this.savePreference(data));
-    PluginRegistry.registerHandler(StorageFixturePlugin.HANDLERS.RECORD_ACTION, (data: unknown) => this.recordAction(data));
   }
 
-  private getSnapshot() {
+  @handler(StorageFixturePlugin.HANDLERS.GET_SNAPSHOT)
+    private getSnapshot() {
     const persistedTheme = this.jsonStoreAvailable
       ? this.persistentStore?.get<string>(this.THEME_KEY) ?? "not set"
       : this.sessionStore.get<string>(this.THEME_KEY) ?? "not set (session fallback)";
@@ -84,7 +83,8 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
     };
   }
 
-  private savePreference(data: unknown) {
+  @handler(StorageFixturePlugin.HANDLERS.SAVE_PREFERENCE)
+    private savePreference(data: unknown) {
     const theme =
       typeof data === "object" &&
       data !== null &&
@@ -121,7 +121,8 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
     };
   }
 
-  private recordAction(data: unknown) {
+  @handler(StorageFixturePlugin.HANDLERS.RECORD_ACTION)
+    private recordAction(data: unknown) {
     const action =
       typeof data === "object" &&
       data !== null &&
@@ -157,9 +158,9 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
     `;
   }
 
-  renderOnLoad(): string {
-    return `
-      (() => {
+  renderOnLoad() {
+        return defineExampleSetup(`
+      ({listen, timeout, interval, onDispose, isDisposed}) => {
         const refreshButton = document.getElementById("storage-refresh");
         const saveThemeButton = document.getElementById("storage-save-theme");
         const recordActionButton = document.getElementById("storage-record-action");
@@ -189,11 +190,11 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
           }
         };
 
-        refreshButton.addEventListener("click", () => {
+        listen(refreshButton, "click", () => {
           void refresh();
         });
 
-        saveThemeButton.addEventListener("click", async () => {
+        listen(saveThemeButton, "click", async () => {
           setOutput("Saving theme...");
           try {
             const result = await callHandler("${StorageFixturePlugin.HANDLERS.SAVE_PREFERENCE}", { theme: "dark" });
@@ -210,7 +211,7 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
           }
         });
 
-        recordActionButton.addEventListener("click", async () => {
+        listen(recordActionButton, "click", async () => {
           setOutput("Recording action...");
           try {
             await callHandler("${StorageFixturePlugin.HANDLERS.RECORD_ACTION}", {
@@ -225,9 +226,9 @@ export default class StorageFixturePlugin extends FDO_SDK implements FDOInterfac
         });
 
         void refresh();
-      })();
-    `;
-  }
+      }
+        `, "storage-plugin.fixture");
+      }
 }
 
 new StorageFixturePlugin();

@@ -2,14 +2,14 @@ import {
     createFilesystemMutateActionRequest,
     createFilesystemScopeCapability,
     createPrivilegedActionBackendRequest,
-
-    FDOInterface,
     FDO_SDK,
     getInlinePrivilegedActionErrorFormatterSource,
-    PluginCapability,
-    PluginRegistry,
-    PluginMetadata,
+    handler,
+    type FDOInterface,
+    type PluginCapability,
+    type PluginMetadata
 } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "./shared/frontend-lifecycle";
 
 export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
     private readonly _metadata: PluginMetadata = {
@@ -33,29 +33,6 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
 
     init(): void {
         this.log("PrivilegedActionsPlugin initialized");
-
-        PluginRegistry.registerHandler("privileged.buildDryRunRequest", async () => {
-            const request = createFilesystemMutateActionRequest({
-                action: "system.fs.mutate",
-                payload: {
-                    scope: "etc-hosts",
-                    dryRun: true,
-                    reason: "preview managed hosts block update",
-                    operations: [
-                        {
-                            type: "writeFile",
-                            path: "/etc/hosts",
-                            content: "# managed by fdo plugin",
-                            encoding: "utf8",
-                        },
-                    ],
-                },
-            });
-
-            return createPrivilegedActionBackendRequest(request, {
-                correlationIdPrefix: "etc-hosts",
-            });
-        });
     }
 
     render(): string {
@@ -72,10 +49,10 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
         `;
     }
 
-    renderOnLoad(): string {
-        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
-        return `
-            (() => {
+    renderOnLoad() {
+            const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+            return defineExampleSetup(`
+            ({listen, timeout, interval, onDispose, isDisposed}) => {
                 const button = document.getElementById("run-privileged-action");
                 const resultBox = document.getElementById("result-box");
                 /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
@@ -91,7 +68,7 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
                         : JSON.stringify(value, null, 2);
                 };
 
-                button.addEventListener("click", async () => {
+                listen(button, "click", async () => {
                     setResult("Building privileged-action envelope...");
 
                     try {
@@ -134,8 +111,31 @@ export class PrivilegedActionsPlugin extends FDO_SDK implements FDOInterface {
                         });
                     }
                 });
-            })();
-        `;
+            }
+        `, "08-privileged-actions-plugin");
+        }
+
+    @handler("privileged.buildDryRunRequest")
+    private async onPrivilegedBuildDryRunRequest() {
+        const request = createFilesystemMutateActionRequest({
+                        action: "system.fs.mutate",
+                        payload: {
+                            scope: "etc-hosts",
+                            dryRun: true,
+                            reason: "preview managed hosts block update",
+                            operations: [
+                                {
+                                    type: "writeFile",
+                                    path: "/etc/hosts",
+                                    content: "# managed by fdo plugin",
+                                    encoding: "utf8",
+                                },
+                            ],
+                        },
+                    });
+        return createPrivilegedActionBackendRequest(request, {
+                        correlationIdPrefix: "etc-hosts",
+                    });
     }
 }
 

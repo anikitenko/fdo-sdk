@@ -96,6 +96,16 @@ describe('JSON storage backpressure and ownership', () => {
         await store.dispose!();
     });
 
+    it('opens a store below a non-directory and leaves the failure to flush()', async () => {
+        const blocker = path.join(directory, 'blocker');
+        fs.writeFileSync(blocker, 'file');
+        const blocked = createJsonStore({filePath: path.join(blocker, 'nested', 'store.json'), logger});
+        blocked.set('key', 'value');
+        vi.mocked(atomicWriteFile).mockRejectedValueOnce(Object.assign(new Error('ENOTDIR'), {code: 'ENOTDIR'}));
+        await expect(blocked.flush!()).rejects.toThrow();
+        await blocked.dispose!().catch(() => {});
+    });
+
     it('resolves symlink and relative aliases to one owner', () => {
         const alias = path.join(directory, 'alias');
         fs.symlinkSync(directory, alias, 'dir');

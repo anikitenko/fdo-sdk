@@ -1,17 +1,17 @@
 import {
-  createOperatorToolActionRequest,
-  createOperatorToolCapabilityPreset,
-  createPrivilegedActionBackendRequest,
-  createScopedWorkflowRequest,
-
-  FDOInterface,
-  FDO_SDK,
-  getInlinePrivilegedActionErrorFormatterSource,
-  getOperatorToolPreset,
-  PluginCapability,
-  PluginMetadata,
-  PluginRegistry,
+    FDO_SDK,
+    createOperatorToolActionRequest,
+    createOperatorToolCapabilityPreset,
+    createPrivilegedActionBackendRequest,
+    createScopedWorkflowRequest,
+    getInlinePrivilegedActionErrorFormatterSource,
+    getOperatorToolPreset,
+    handler,
+    type FDOInterface,
+    type PluginCapability,
+    type PluginMetadata
 } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "../shared/frontend-lifecycle";
 
 /**
  * Scenario fixture: Kubernetes operator console.
@@ -53,15 +53,6 @@ export default class OperatorKubernetesFixturePlugin extends FDO_SDK implements 
       requestedCapabilities: createOperatorToolCapabilityPreset("kubectl"),
       handlers: OperatorKubernetesFixturePlugin.HANDLERS,
     });
-
-    PluginRegistry.registerHandler(
-      OperatorKubernetesFixturePlugin.HANDLERS.PREVIEW_OBJECTS,
-      async () => this.buildPreviewObjectsEnvelope()
-    );
-    PluginRegistry.registerHandler(
-      OperatorKubernetesFixturePlugin.HANDLERS.INSPECT_RESTART,
-      async () => this.buildInspectRestartWorkflowEnvelope()
-    );
   }
 
   render(): string {
@@ -81,10 +72,10 @@ export default class OperatorKubernetesFixturePlugin extends FDO_SDK implements 
     `;
   }
 
-  renderOnLoad(): string {
-    const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
-    return `
-      (() => {
+  renderOnLoad() {
+        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+        return defineExampleSetup(`
+      ({listen, timeout, interval, onDispose, isDisposed}) => {
         const previewObjectsButton = document.getElementById("kubectl-preview-objects");
         const inspectRestartWorkflowButton = document.getElementById("kubectl-inspect-restart-workflow");
         const output = document.getElementById("kubectl-workflow-result");
@@ -131,18 +122,19 @@ export default class OperatorKubernetesFixturePlugin extends FDO_SDK implements 
           }
         };
 
-        previewObjectsButton.addEventListener("click", () => {
+        listen(previewObjectsButton, "click", () => {
           void runEnvelopeHandler("${OperatorKubernetesFixturePlugin.HANDLERS.PREVIEW_OBJECTS}");
         });
 
-        inspectRestartWorkflowButton.addEventListener("click", () => {
+        listen(inspectRestartWorkflowButton, "click", () => {
           void runEnvelopeHandler("${OperatorKubernetesFixturePlugin.HANDLERS.INSPECT_RESTART}");
         });
-      })();
-    `;
-  }
+      }
+        `, "operator-kubernetes-plugin.fixture");
+      }
 
-  private buildPreviewObjectsEnvelope() {
+  @handler(OperatorKubernetesFixturePlugin.HANDLERS.PREVIEW_OBJECTS)
+    private buildPreviewObjectsEnvelope() {
     const request = createOperatorToolActionRequest("kubectl", {
       command: "/usr/local/bin/kubectl",
       args: ["get", "pods", "--all-namespaces", "-o", "json"],
@@ -191,7 +183,8 @@ export default class OperatorKubernetesFixturePlugin extends FDO_SDK implements 
     });
   }
 
-  private buildInspectRestartWorkflowEnvelope() {
+  @handler(OperatorKubernetesFixturePlugin.HANDLERS.INSPECT_RESTART)
+    private buildInspectRestartWorkflowEnvelope() {
     return createPrivilegedActionBackendRequest(this.buildInspectActWorkflow(), {
       correlationIdPrefix: "kubectl",
     });

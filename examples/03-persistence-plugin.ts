@@ -24,13 +24,21 @@
  * 5. Clear and record session data through explicit UI actions
  */
 
-import { FDO_SDK, FDOInterface, PluginCapability, PluginMetadata, PluginRegistry } from "@anikitenko/fdo-sdk";
+import { DOMText, type StoreType, FDO_SDK, PluginRegistry, handler, type FDOInterface, type PluginCapability, type PluginMetadata } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "./shared/frontend-lifecycle";
 
-declare global {
-  interface Window {
-    createBackendReq: (type: string, data?: any) => Promise<any>;
-    callHandler: (handler: string, content?: unknown) => Promise<any>;
-  }
+type PersistenceActionResult =
+  | {
+      success: true;
+      message: string;
+      persistence?: "persistent-json" | "session-fallback";
+      savedData?: Record<string, unknown>;
+      timestamp?: string;
+    }
+  | { success: false; error: string };
+
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
 }
 
 /**
@@ -61,8 +69,9 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
    * StoreDefault is automatically available without registration.
    * StoreJson must be registered before use.
    */
-  private tempStore: any; // StoreDefault for temporary data
-  private persistentStore: any; // StoreJson for persistent data
+  private tempStore!: StoreType; // StoreDefault for temporary data
+  private preferenceStore!: StoreType; // StoreJson or the session-only StoreDefault fallback
+  private jsonStoreAvailable = false;
 
   /**
    * Key naming convention.
@@ -97,36 +106,16 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
    * Storage operations in render() can cause performance issues and data inconsistencies.
    */
   init(): void {
+    this.info("PersistencePlugin initialized");
+    this.tempStore = PluginRegistry.useStore("default");
     try {
-      this.log("PersistencePlugin initialized!");
-
-      this.tempStore = PluginRegistry.useStore("default");
-
-      try {
-        this.persistentStore = PluginRegistry.useStore("json");
-      } catch (error) {
-        this.log("StoreJson not available, using StoreDefault for all storage");
-        this.persistentStore = this.tempStore;
-      }
-
-      this.initializeSessionData();
-
-      PluginRegistry.registerHandler("savePreferences", (data: any) => {
-        return this.handleSavePreferences(data);
-      });
-
-      PluginRegistry.registerHandler("clearPreferences", (_data: unknown) => {
-        return this.handleClearPreferences();
-      });
-
-      PluginRegistry.registerHandler("recordAction", (data: any) => {
-        return this.handleRecordAction(data);
-      });
-
-      
+      this.preferenceStore = PluginRegistry.useStore("json");
+      this.jsonStoreAvailable = true;
     } catch (error) {
-      this.error(error as Error);
+      this.warn("JSON storage is unavailable; preferences will be session-only.", { error });
+      this.preferenceStore = this.tempStore;
     }
+    this.initializeSessionData();
   }
 
   /**
@@ -135,7 +124,7 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
    */
   private initializeSessionData(): void {
     try {
-      const visitCount = this.tempStore.get(this.KEYS.VISIT_COUNT) || 0;
+      const visitCount = this.tempStore.get<number>(this.KEYS.VISIT_COUNT) || 0;
       this.tempStore.set(this.KEYS.VISIT_COUNT, visitCount + 1);
 
       this.tempStore.set(this.KEYS.SESSION_START, new Date().toISOString());
@@ -143,35 +132,36 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
       this.log(`Session initialized. Visit count: ${visitCount + 1}`);
       
     } catch (error) {
-      this.error(error as Error);
+      this.error(toError(error));
     }
   }
 
   /**
-   * Handle saving user preferences to persistent storage.
+   * Save preferences to JSON storage, or to session storage when JSON is unavailable.
    * 
-   * @param data - Preference data from the UI
+   * @param input - Preference data from the UI
    * @returns Result object
    */
-  private handleSavePreferences(data: any): any {
+  @handler("savePreferences")
+  private handleSavePreferences(input: unknown): PersistenceActionResult {
+    if (!input || typeof input !== "object" || Array.isArray(input)) return { success: false, error: "Invalid preferences" };
+    const data = input as Record<string, unknown>;
+    if ((data.userName !== undefined && (typeof data.userName !== "string" || data.userName.length > 200))
+      || (data.theme !== undefined && !["light", "dark", "auto"].includes(String(data.theme)))
+      || (data.notificationsEnabled !== undefined && typeof data.notificationsEnabled !== "boolean")) {
+      return { success: false, error: "Invalid preferences" };
+    }
     try {
-      if (!data) {
-        return {
-          success: false,
-          error: "No data provided"
-        };
-      }
-
       if (data.userName !== undefined) {
-        this.persistentStore.set(this.KEYS.USER_NAME, data.userName);
+        this.preferenceStore.set(this.KEYS.USER_NAME, data.userName);
       }
 
       if (data.theme !== undefined) {
-        this.persistentStore.set(this.KEYS.USER_THEME, data.theme);
+        this.preferenceStore.set(this.KEYS.USER_THEME, data.theme);
       }
 
       if (data.notificationsEnabled !== undefined) {
-        this.persistentStore.set(this.KEYS.NOTIFICATIONS_ENABLED, data.notificationsEnabled);
+        this.preferenceStore.set(this.KEYS.NOTIFICATIONS_ENABLED, data.notificationsEnabled);
       }
 
       this.log("Preferences saved successfully");
@@ -179,11 +169,12 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
       return {
         success: true,
         message: "Preferences saved successfully",
-        savedData: data
+        savedData: data,
+        persistence: this.jsonStoreAvailable ? "persistent-json" : "session-fallback",
       };
       
     } catch (error) {
-      this.error(error as Error);
+      this.error(toError(error));
       return {
         success: false,
         error: "Failed to save preferences"
@@ -196,21 +187,23 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
    * 
    * @returns Result object
    */
-  private handleClearPreferences(): any {
+  @handler("clearPreferences")
+  private handleClearPreferences(): PersistenceActionResult {
     try {
-      this.persistentStore.remove(this.KEYS.USER_NAME);
-      this.persistentStore.remove(this.KEYS.USER_THEME);
-      this.persistentStore.remove(this.KEYS.NOTIFICATIONS_ENABLED);
+      this.preferenceStore.remove(this.KEYS.USER_NAME);
+      this.preferenceStore.remove(this.KEYS.USER_THEME);
+      this.preferenceStore.remove(this.KEYS.NOTIFICATIONS_ENABLED);
 
       this.log("Preferences cleared");
 
       return {
         success: true,
-        message: "All preferences have been cleared"
+        message: "All preferences have been cleared",
+        persistence: this.jsonStoreAvailable ? "persistent-json" : "session-fallback",
       };
       
     } catch (error) {
-      this.error(error as Error);
+      this.error(toError(error));
       return {
         success: false,
         error: "Failed to clear preferences"
@@ -224,7 +217,9 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
    * @param data - Action data
    * @returns Result object
    */
-  private handleRecordAction(data: any): any {
+  @handler("recordAction")
+    private handleRecordAction(data: unknown) {
+    if (!data || typeof data !== "object" || !("action" in data) || typeof data.action !== "string" || data.action.length > 200) return {success:false,error:"Invalid action"};
     try {
       const action = data.action || "unknown";
       const timestamp = new Date().toISOString();
@@ -243,7 +238,7 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
       };
       
     } catch (error) {
-      this.error(error as Error);
+      this.error(toError(error));
       return {
         success: false,
         error: "Failed to record action"
@@ -260,13 +255,14 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
    */
   render(): string {
     try {
-      const userName = this.persistentStore.get(this.KEYS.USER_NAME) || "Not set";
-      const theme = this.persistentStore.get(this.KEYS.USER_THEME) || "light";
-      const notificationsEnabled = this.persistentStore.get(this.KEYS.NOTIFICATIONS_ENABLED) ?? true;
+      const escaped = (value: unknown) => new DOMText().createText(String(value)).replace(/"/g, "&quot;");
+      const userName = escaped(this.preferenceStore.get<string>(this.KEYS.USER_NAME) || "Not set");
+      const theme = escaped(this.preferenceStore.get<string>(this.KEYS.USER_THEME) || "light");
+      const notificationsEnabled = this.preferenceStore.get(this.KEYS.NOTIFICATIONS_ENABLED) ?? true;
 
-      const visitCount = this.tempStore.get(this.KEYS.VISIT_COUNT) || 0;
-      const lastAction = this.tempStore.get(this.KEYS.LAST_ACTION);
-      const sessionStart = this.tempStore.get(this.KEYS.SESSION_START);
+      const visitCount = this.tempStore.get<number>(this.KEYS.VISIT_COUNT) || 0;
+      const lastAction = this.tempStore.get<{action:string;timestamp:string}>(this.KEYS.LAST_ACTION);
+      const sessionStart = this.tempStore.get<string>(this.KEYS.SESSION_START);
 
       return `
         <div style={{ padding: "20px", fontFamily: "system-ui, sans-serif", lineHeight: "1.5" }}>
@@ -274,9 +270,11 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
           <p>${this._metadata.description}</p>
 
           <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#e8f4f8", borderRadius: "5px" }}>
-            <h3>Persistent Preferences (StoreJson)</h3>
+            <h3>${this.jsonStoreAvailable ? "Persistent Preferences (StoreJson)" : "Session Preferences (StoreDefault fallback)"}</h3>
             <p style={{ fontSize: "12px", color: "#666", marginBottom: "15px" }}>
-              These preferences are saved to a file and persist across application restarts.
+              ${this.jsonStoreAvailable
+                ? "These preferences are saved to a file and persist across application restarts."
+                : "JSON storage is unavailable in this host. These preferences are kept in memory and will not persist across restarts."}
             </p>
 
             <div>
@@ -351,7 +349,7 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
             <div>
               <p style={{ marginBottom: "10px" }}><strong>Visit Count:</strong> <span id="current-visit-count">${visitCount}</span></p>
               <p style={{ marginBottom: "10px" }}><strong>Session Started:</strong> ${sessionStart ? new Date(sessionStart).toLocaleString() : "N/A"}</p>
-              <p style={{ marginBottom: "15px" }}><strong>Last Action:</strong> <span id="current-last-action">${lastAction ? `${lastAction.action} at ${new Date(lastAction.timestamp).toLocaleTimeString()}` : "None"}</span></p>
+              <p style={{ marginBottom: "15px" }}><strong>Last Action:</strong> <span id="current-last-action">${lastAction ? `${escaped(lastAction.action)} at ${new Date(lastAction.timestamp).toLocaleTimeString()}` : "None"}</span></p>
             </div>
 
             <button id="record-action-btn" type="button" style={{ padding: "10px 20px", cursor: "pointer" }}>
@@ -383,9 +381,9 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
     }
   }
 
-  renderOnLoad(): string {
-    return `
-      () => {
+  renderOnLoad() {
+        return defineExampleSetup(`
+      ({listen, timeout, interval, onDispose, isDisposed}) => {
         const callHandler = (handler, content = {}) =>
           window.createBackendReq("UI_MESSAGE", { handler, content });
 
@@ -443,11 +441,11 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
           }
         };
 
-        saveBtn?.addEventListener("click", () => {
+        listen(saveBtn, "click", () => {
           void savePreferences();
         });
 
-        clearBtn?.addEventListener("click", async () => {
+        listen(clearBtn, "click", async () => {
           try {
             const result = await callHandler("clearPreferences", {});
             if (result?.success) {
@@ -481,7 +479,7 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
           }
         });
 
-        recordBtn?.addEventListener("click", async () => {
+        listen(recordBtn, "click", async () => {
           try {
             const result = await callHandler("recordAction", { action: "Button Click" });
             if (result?.success) {
@@ -503,8 +501,8 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
           }
         });
       }
-    `;
-  }
+    `, "03-persistence-plugin");
+      }
 }
 
 /**
@@ -513,7 +511,7 @@ export default class PersistencePlugin extends FDO_SDK implements FDOInterface {
  * 1. Use StoreDefault for temporary data (in-memory, cleared on restart)
  * 2. Use StoreJson for persistent data (file-based, survives restarts)
  * 3. Always namespace your keys to avoid conflicts (pluginName:category:key)
- * 4. Wrap all storage operations in try-catch blocks
+ * 4. Handle storage errors at the operation boundary and report failures explicitly
  * 5. Initialize storage in init(), not in render()
  * 6. Storage supports all JSON-serializable types (strings, numbers, objects, arrays)
  * 

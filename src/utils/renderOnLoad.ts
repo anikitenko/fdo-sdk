@@ -132,7 +132,7 @@ function normalizeActionBinding(binding: RenderOnLoadActionBinding): RenderOnLoa
     };
 }
 
-function normalizeActionHandlers(handlers: Record<string, RenderOnLoadActionHandler>): Record<string, string> {
+function normalizeActionHandlers(handlers: Record<string, RenderOnLoadActionHandler>, hasSetup = false): Record<string, string> {
     const normalized: Record<string, string> = {};
     for (const [handlerIdRaw, handlerSource] of Object.entries(handlers)) {
         const handlerId = String(handlerIdRaw || "").trim();
@@ -148,7 +148,7 @@ function normalizeActionHandlers(handlers: Record<string, RenderOnLoadActionHand
         normalized[handlerId] = expression;
     }
 
-    if (Object.keys(normalized).length === 0) {
+    if (Object.keys(normalized).length === 0 && !hasSetup) {
         throw new Error("Render-on-load action helper requires at least one handler.");
     }
 
@@ -176,11 +176,11 @@ export function defineRenderOnLoad(
 
 export function createRenderOnLoadActionsSource(options: RenderOnLoadActionBindingsModuleOptions): string {
     const strict = options.strict === true;
-    const normalizedHandlers = normalizeActionHandlers(options.handlers);
+    const normalizedHandlers = normalizeActionHandlers(options.handlers, Boolean(options.setup));
     const normalizedBindings = (Array.isArray(options.bindings) ? options.bindings : [])
         .map(normalizeActionBinding);
 
-    if (normalizedBindings.length === 0) {
+    if (normalizedBindings.length === 0 && !options.setup) {
         throw new Error("Render-on-load action helper requires at least one binding.");
     }
 

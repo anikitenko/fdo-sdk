@@ -12,7 +12,8 @@
  * - This example intentionally uses plain markup so the focus stays on injected globals and iframe runtime behavior
  */
 
-import { createClipboardReadRequest, createClipboardWriteRequest, FDO_SDK, FDOInterface, getInlinePrivilegedActionErrorFormatterSource, PluginMetadata, PluginCapability, PluginRegistry } from "@anikitenko/fdo-sdk";
+import { createClipboardReadRequest, createClipboardWriteRequest, FDO_SDK, type FDOInterface, getInlinePrivilegedActionErrorFormatterSource, handler, type PluginCapability, type PluginMetadata } from "@anikitenko/fdo-sdk";
+import { defineExampleSetup } from "./shared/frontend-lifecycle";
 
 export default class InjectedLibrariesDemoPlugin extends FDO_SDK implements FDOInterface {
     private readonly _metadata: PluginMetadata = {
@@ -33,45 +34,6 @@ export default class InjectedLibrariesDemoPlugin extends FDO_SDK implements FDOI
 
     init(): void {
         this.log("InjectedLibrariesDemoPlugin initialized!");
-        PluginRegistry.registerHandler("demo.getPluginInfo", async (content?: unknown) => {
-            const pluginId =
-                typeof content === "object" &&
-                content !== null &&
-                "id" in content &&
-                typeof (content as { id?: unknown }).id === "string"
-                    ? (content as { id: string }).id
-                    : "unknown-plugin";
-
-            return {
-                pluginId,
-                pluginName: this.metadata.name,
-                sdkPattern: "UI_MESSAGE",
-                runtime: "backend-handler",
-            };
-        });
-
-        PluginRegistry.registerHandler("demo.getClipboardWriteRequest", async (content?: unknown) => {
-            const text =
-                typeof content === "object" &&
-                content !== null &&
-                "text" in content &&
-                typeof (content as { text?: unknown }).text === "string"
-                    ? (content as { text: string }).text
-                    : "";
-
-            if (!text) {
-                throw new Error("Clipboard demo requires a non-empty text payload.");
-            }
-
-            return createClipboardWriteRequest(
-                text,
-                "copy editor content from injected libraries demo"
-            );
-        });
-
-        PluginRegistry.registerHandler("demo.getClipboardReadRequest", async () => {
-            return createClipboardReadRequest("read clipboard content from injected libraries demo");
-        });
     }
 
     render(): string {
@@ -207,23 +169,23 @@ class Plugin extends FDO_SDK &#123;
         `;
     }
 
-    renderOnLoad(): string {
-        const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
-        return `
-            (() => {
+    renderOnLoad() {
+            const formatPrivilegedActionErrorSource = getInlinePrivilegedActionErrorFormatterSource();
+            return defineExampleSetup(`
+            ({listen, timeout, onDispose, isDisposed}) => {
                 const output = document.getElementById("helper-output");
                 /** @type {(response: unknown, options?: {context?: string, fallbackCorrelationId?: string}) => string} */
                 const formatPrivilegedActionError = ${formatPrivilegedActionErrorSource};
                 const setOutput = (html) => {
-                    if (output) {
-                        output.innerHTML = html;
+                    if (output && !isDisposed()) {
+                        output.textContent = html;
                     }
                 };
 
                 const bindClick = (selector, handler) => {
                     const element = document.getElementById(selector);
                     if (element) {
-                        element.addEventListener("click", handler);
+                        listen(element, "click", handler);
                     }
                 };
 
@@ -234,6 +196,7 @@ class Plugin extends FDO_SDK &#123;
                     dismissible: true
                 });
 
+                onDispose(() => notyf.dismissAll());
                 bindClick("show-success-btn", () => {
                     notyf.success("Operation completed successfully! ✓");
                 });
@@ -255,6 +218,7 @@ class Plugin extends FDO_SDK &#123;
 
                 window.waitForElement("#editor", () => {
                     const editor = ace.edit("editor");
+                    onDispose(() => editor.destroy());
                     editor.setTheme("ace/theme/monokai");
                     editor.getSession().setMode("ace/mode/typescript");
                     editor.setValue(\`import { FDO_SDK, FDOInterface, PluginMetadata } from "@anikitenko/fdo-sdk";
@@ -352,13 +316,14 @@ new MyPlugin();\`, 1);
                 });
 
                 window.waitForElement(".gutter-col-1", () => {
-                    Split({
+                    const split = Split({
                         columnGutters: [{
                             track: 1,
                             element: document.querySelector(".gutter-col-1")
                         }],
                         columnMinSize: 100
                     });
+                    onDispose(() => split.destroy());
                 });
 
                 bindClick("test-backend-req-btn", async () => {
@@ -376,7 +341,7 @@ new MyPlugin();\`, 1);
 
                 bindClick("test-wait-for-element-btn", () => {
                     setOutput("Creating dynamic element...");
-                    setTimeout(() => {
+                    timeout(() => {
                         const newDiv = document.createElement("div");
                         newDiv.id = "dynamic-element";
                         newDiv.textContent = "I am a dynamically created element!";
@@ -387,6 +352,7 @@ new MyPlugin();\`, 1);
                     }, 500);
 
                     window.waitForElement("#dynamic-element", (element) => {
+                        if (isDisposed()) return;
                         notyf.success("Found the dynamic element!");
                         if (element instanceof HTMLElement) element.style.animation = "pulse 0.5s";
                     }, 2000);
@@ -399,7 +365,7 @@ new MyPlugin();\`, 1);
                         output.innerHTML = 'Class "pure-button-primary" applied to this element! This visual demo resets after 3 seconds.';
                     }
                     notyf.success("CSS class applied successfully!");
-                    setTimeout(() => {
+                    timeout(() => {
                         if (output) {
                             output.className = "";
                             output.style.cssText = "margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 3px; min-height: 50px;";
@@ -408,7 +374,7 @@ new MyPlugin();\`, 1);
                     }, 3000);
                 });
 
-                window.addGlobalEventListener("keydown", (event) => {
+                listen(window, "keydown", (event) => {
                     if (event instanceof KeyboardEvent && event.key === "F1") {
                         event.preventDefault();
                         notyf.open({
@@ -426,8 +392,49 @@ new MyPlugin();\`, 1);
                     ace: typeof ace !== "undefined",
                     Split: typeof Split !== "undefined"
                 }, null, 2)}</pre>\`);
-            })();
-        `;
+            }
+        `, "07-injected-libraries-demo");
+        }
+
+    @handler("demo.getClipboardReadRequest")
+    private async onDemoGetClipboardReadRequest() {
+        return createClipboardReadRequest("read clipboard content from injected libraries demo");
+    }
+
+    @handler("demo.getClipboardWriteRequest")
+    private async onDemoGetClipboardWriteRequest(content?: unknown) {
+        const text =
+                        typeof content === "object" &&
+                        content !== null &&
+                        "text" in content &&
+                        typeof (content as { text?: unknown }).text === "string"
+                            ? (content as { text: string }).text
+                            : "";
+        if (!text) {
+                        throw new Error("Clipboard demo requires a non-empty text payload.");
+                    }
+
+        return createClipboardWriteRequest(
+                        text,
+                        "copy editor content from injected libraries demo"
+                    );
+    }
+
+    @handler("demo.getPluginInfo")
+    private async onDemoGetPluginInfo(content?: unknown) {
+        const pluginId =
+                        typeof content === "object" &&
+                        content !== null &&
+                        "id" in content &&
+                        typeof (content as { id?: unknown }).id === "string"
+                            ? (content as { id: string }).id
+                            : "unknown-plugin";
+        return {
+                        pluginId,
+                        pluginName: this.metadata.name,
+                        sdkPattern: "UI_MESSAGE",
+                        runtime: "backend-handler",
+                    };
     }
 }
 

@@ -1,5 +1,5 @@
-import {DOMInput, DOMButton, FDO_SDK, PluginCapability, PluginMetadata, sharedLogicCapability, handler, defineRenderOnLoadActions} from '@anikitenko/fdo-sdk';
-import {createWebsiteCheckUI} from './shared/website-check-ui';
+import { defineRenderOnLoadActions, DOMButton, DOMInput, FDO_SDK, handler, type PluginCapability, type PluginMetadata, sharedLogicCapability } from '@anikitenko/fdo-sdk';
+import { createWebsiteCheckUI } from './shared/website-check-ui';
 
 // Replace providerId with the installed provider ID shown in Manage Plugins.
 const target = {providerId:'website-availability-provider',name:'website-availability',version:1} as const;

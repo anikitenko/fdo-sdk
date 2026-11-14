@@ -44,7 +44,7 @@ The examples are still numbered to indicate learning progression:
 
 1. **01-basic-plugin.ts** - Basic plugin creation with lifecycle and rendering
 2. **02-interactive-plugin.ts** - Interactive UI with handlers and messaging
-3. **03-persistence-plugin.ts** - Data persistence with storage backends
+3. **03-persistence-plugin.ts** - Data persistence with explicit session-only fallback when JSON storage is unavailable
 4. **04-ui-extensions-plugin.ts** - Quick actions and side panel integration
 5. **05-advanced-dom-plugin.ts** - Advanced DOM generation with styling
 6. **06-error-handling-plugin.ts** - Error handling and debugging techniques
@@ -288,9 +288,8 @@ To contribute code changes:
 2. Create a new branch for your changes (`git checkout -b improve-example-03`)
 3. Make your changes following these guidelines:
    - Maintain the existing code style and conventions
-   - Keep inline documentation at 20%+ of total lines
-   - Include "CUSTOMIZE HERE" markers where appropriate
-   - Add "COMMON PITFALL" comments for common mistakes
+   - Add comments when they explain a non-obvious lifecycle, API constraint, or trade-off
+   - Keep examples and documentation aligned with the actual host/runtime contract
    - Ensure all examples compile without errors
    - Test your changes in the FDO application
 4. Commit your changes with a clear commit message
@@ -305,9 +304,9 @@ To contribute code changes:
 When contributing to examples:
 
 - **Follow existing patterns**: Match the style and structure of existing examples
-- **Comment thoroughly**: Maintain 20%+ documentation ratio
+- **Comment selectively**: Explain non-obvious decisions; avoid quota-driven or redundant comments
 - **Use TypeScript strict mode**: All examples must compile with strict type checking
-- **Handle errors**: Wrap operations in try-catch blocks
+- **Handle errors explicitly**: Catch failures at meaningful boundaries, log or surface them, and avoid silent fallbacks
 - **Be educational**: Examples are learning resources, prioritize clarity over brevity
 - **Test thoroughly**: Ensure examples run correctly in the FDO application
 
