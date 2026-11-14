@@ -307,21 +307,31 @@ export default class HostsManagerPlugin extends FDO_SDK implements FDOInterface 
                         </div>
                     \`).join('');
 
-                    envList.querySelectorAll("[data-select-id]").forEach((row) => {
-                        listen(row, "click", async () => {
-                            const id = row.getAttribute("data-select-id");
-                            await selectEnvironment(id);
-                        });
-                    });
-
-                    envList.querySelectorAll("[data-toggle-id]").forEach((btn) => {
-                        listen(btn, "click", async (event) => {
-                            event.stopPropagation();
-                            const id = btn.getAttribute("data-toggle-id");
-                            await toggleEnvironment(id);
-                        });
-                    });
                 };
+
+                listen(envList, "click", async (event) => {
+                    const target = event.target;
+                    if (!(target instanceof Element)) {
+                        return;
+                    }
+
+                    const toggleButton = target.closest("[data-toggle-id]");
+                    if (toggleButton && envList.contains(toggleButton)) {
+                        const id = toggleButton.getAttribute("data-toggle-id");
+                        if (id) {
+                            await toggleEnvironment(id);
+                        }
+                        return;
+                    }
+
+                    const row = target.closest("[data-select-id]");
+                    if (row && envList.contains(row)) {
+                        const id = row.getAttribute("data-select-id");
+                        if (id) {
+                            await selectEnvironment(id);
+                        }
+                    }
+                });
 
                 const reloadData = async () => {
                     const response = await window.createBackendReq("UI_MESSAGE", {
